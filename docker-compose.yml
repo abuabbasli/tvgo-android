@@ -1,0 +1,56 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: tvgo-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  backend:
+    build: ./tvgo-backend
+    container_name: tvgo-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=tvGO
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey123}
+      # Use MongoDB Atlas
+      - MONGO_URI=mongodb+srv://boss:TtCbllVwynOwsmyJ@boss.bnzjomc.mongodb.net/?appName=boss
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-tvGO}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      # AWS S3 for image storage
+      - AWS_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=tvgo-images
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./middlewhere
+      args:
+        - VITE_API_URL=http://localhost:8000
+    container_name: tvgo-middleware
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+
+
+networks:
+  default:
+    name: tvgo-network

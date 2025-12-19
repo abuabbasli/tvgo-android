@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.example.androidtviptvapp-merged_res-60:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.androidtviptvapp-main-62:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.androidtviptvapp-merged_res-60:/layout_preview_player.xml.flat",
+        "source": "com.example.androidtviptvapp-main-62:/layout/preview_player.xml"
+    },
+    {
+        "merged": "com.example.androidtviptvapp-merged_res-60:/drawable_banner.xml.flat",
+        "source": "com.example.androidtviptvapp-main-62:/drawable/banner.xml"
+    },
+    {
+        "merged": "com.example.androidtviptvapp-merged_res-60:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.example.androidtviptvapp-main-62:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.androidtviptvapp-merged_res-60:/drawable_app_logo.png.flat",
+        "source": "com.example.androidtviptvapp-main-62:/drawable/app_logo.png"
+    }
+]

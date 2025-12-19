@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.swp
+.env
+.venv/
+Dockerfile.lambda.build
+.idea/
+.vscode/
+**/__pycache__
