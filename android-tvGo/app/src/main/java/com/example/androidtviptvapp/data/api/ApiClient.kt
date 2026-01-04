@@ -242,14 +242,14 @@ data class GameItem(
 )
 
 object ApiClient {
-    // Use AppConfig for centralized configuration
+    // Base URL - uses AppConfig
     private val BASE_URL = AppConfig.BASE_URL
 
     // Optimized OkHttp client with timeouts and connection pooling
     private val okHttpClient = okhttp3.OkHttpClient.Builder()
-        .connectTimeout(AppConfig.Performance.CONNECT_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
-        .readTimeout(AppConfig.Performance.READ_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
-        .writeTimeout(AppConfig.Performance.WRITE_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
+        .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
         // Connection pooling for faster subsequent requests
         .connectionPool(okhttp3.ConnectionPool(5, 30, java.util.concurrent.TimeUnit.SECONDS))
         // Retry on connection failure

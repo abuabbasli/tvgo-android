@@ -2,16 +2,10 @@ package com.example.androidtviptvapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyRow
 import androidx.tv.foundation.lazy.list.items
@@ -21,8 +15,9 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.example.androidtviptvapp.data.Channel
 import com.example.androidtviptvapp.data.Movie
 import com.example.androidtviptvapp.data.TvRepository
-import com.example.androidtviptvapp.data.api.ApiClient
-import com.example.androidtviptvapp.ui.components.*
+import com.example.androidtviptvapp.ui.components.ChannelCard
+import com.example.androidtviptvapp.ui.components.HeroSection
+import com.example.androidtviptvapp.ui.components.MovieCard
 
 /**
  * Optimized HomeScreen with:
@@ -49,28 +44,6 @@ fun HomeScreen(
             if (movies.isNotEmpty()) category to movies else null
         }
     }
-
-    // Fetch broadcast messages on first load
-    LaunchedEffect(Unit) {
-        try {
-            val response = ApiClient.service.getBroadcastMessages()
-            response.items.forEach { msg ->
-                MessagePopupManager.showMessage(
-                    PopupMessage(
-                        id = msg.id,
-                        title = msg.title,
-                        body = msg.body,
-                        url = msg.url
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("HomeScreen", "Failed to fetch messages: ${e.message}")
-        }
-    }
-
-    // Show message popup dialog globally
-    GlobalMessagePopup()
 
     TvLazyColumn(
         modifier = Modifier.fillMaxSize(),
