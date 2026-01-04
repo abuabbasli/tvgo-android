@@ -188,17 +188,25 @@ object TvRepository {
         if (path.isNullOrEmpty()) return ""
 
         val baseUrl = AppConfig.IMAGE_BASE_URL
+        var url = path
 
-        // If already a full URL, return as-is
-        if (path.startsWith("http://") || path.startsWith("https://")) {
-            return path
+        // If it's a relative path, prepend base URL
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = if (url.startsWith("/")) "$baseUrl$url" else "$baseUrl/$url"
         }
 
-        // Build full URL from path
-        return when {
-            path.startsWith("/") -> "$baseUrl$path"
-            else -> "$baseUrl/$path"
-        }
+        // Replace localhost/local IPs with Lambda host (same as stream URLs)
+        val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
+        url = url
+            .replace("localhost", lambdaHost)
+            .replace("127.0.0.1", lambdaHost)
+            .replace("0.0.0.0", lambdaHost)
+
+        // Handle common local network patterns
+        val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
+        url = localIpPattern.replace(url, lambdaHost)
+
+        return url
     }
 
     /**
