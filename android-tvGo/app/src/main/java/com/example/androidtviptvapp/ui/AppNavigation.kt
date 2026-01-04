@@ -8,9 +8,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.androidtviptvapp.ui.components.ViewMode
 import com.example.androidtviptvapp.ui.screens.*
-
-import androidx.compose.material3.Text // fallback
 import com.example.androidtviptvapp.data.TvRepository
+import androidx.tv.material3.Text
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 
 object Routes {
     const val LOGIN = "login"
@@ -25,6 +25,7 @@ object Routes {
     const val PLAYER_CHANNEL = "player_channel/{channelId}"
 }
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun AppNavigation(
     navController: NavHostController,

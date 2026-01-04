@@ -20,7 +20,6 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import coil.Coil
 import com.example.androidtviptvapp.data.PlaybackManager
 import com.example.androidtviptvapp.ui.AppNavigation
 import com.example.androidtviptvapp.ui.Routes
@@ -35,10 +34,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set up optimized Coil ImageLoader as singleton
-        Coil.setImageLoader(TvRepository.getImageLoader(applicationContext))
-
         // Initial Data Load - runs in background, doesn't block UI
+        // Coil is already set up in TvGoApplication
         TvRepository.loadData()
 
         setContent {
