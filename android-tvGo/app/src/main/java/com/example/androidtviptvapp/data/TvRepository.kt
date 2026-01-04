@@ -201,6 +201,35 @@ object TvRepository {
         }
     }
 
+    /**
+     * Resolve stream URLs - handles localhost/local IPs that need to be replaced
+     */
+    private fun resolveStreamUrl(url: String?): String {
+        if (url.isNullOrEmpty()) return ""
+
+        var streamUrl = url
+
+        // If it's a relative path, prepend base URL
+        if (!streamUrl.startsWith("http://") && !streamUrl.startsWith("https://")) {
+            val baseUrl = AppConfig.IMAGE_BASE_URL
+            streamUrl = if (streamUrl.startsWith("/")) "$baseUrl$streamUrl" else "$baseUrl/$streamUrl"
+        }
+
+        // Replace localhost/local IPs with the Lambda URL host
+        val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
+        streamUrl = streamUrl
+            .replace("localhost", lambdaHost)
+            .replace("127.0.0.1", lambdaHost)
+            .replace("0.0.0.0", lambdaHost)
+
+        // Also handle common local network patterns
+        val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
+        streamUrl = localIpPattern.replace(streamUrl, lambdaHost)
+
+        android.util.Log.d("TvRepository", "Resolved stream URL: $streamUrl")
+        return streamUrl
+    }
+
     private suspend fun loadChannelsAsync() {
         try {
             android.util.Log.d("TvRepository", "Loading channels from API...")
@@ -213,7 +242,7 @@ object TvRepository {
                     name = dto.name,
                     logo = resolveUrl(dto.logo),
                     category = dto.category ?: dto.group ?: "all",
-                    streamUrl = dto.streamUrl,
+                    streamUrl = resolveStreamUrl(dto.streamUrl),
                     description = dto.description ?: "",
                     logoColor = dto.logoColor ?: "#000000",
                     schedule = emptyList()
