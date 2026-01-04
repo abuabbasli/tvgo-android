@@ -10,8 +10,8 @@ from pymongo import MongoClient
 
 # AWS S3 Configuration
 AWS_REGION = "eu-central-1"
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "your_access_key")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "your_secret_key")
+AWS_ACCESS_KEY_ID = "AKIAYKLCNNDYHZ5TNWOX"
+AWS_SECRET_ACCESS_KEY = "k3sNIbjDgnT9Kj9Y7Uk16kre24j2uQhrEN97fOIX"
 S3_BUCKET_NAME = "tvgo-images"
 
 # MongoDB Configuration

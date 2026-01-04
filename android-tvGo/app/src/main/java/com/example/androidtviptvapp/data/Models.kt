@@ -22,16 +22,32 @@ data class ScheduleItem(
 data class Movie(
     val id: String,
     val title: String,
-    val thumbnail: String,
+    val thumbnail: String,        // poster
+    val backdrop: String = "",    // landscape/hero image
     val category: String,
     val year: Int,
     val rating: String,
-    val description: String,
-    val videoUrl: String,
-    val genre: List<String>
+    val description: String,      // synopsis
+    val videoUrl: String,         // user's stream URL
+    val trailerUrl: String = "",  // YouTube trailer
+    val genre: List<String>,
+    val runtime: Int = 0,         // minutes
+    val directors: List<String> = emptyList(),
+    val cast: List<String> = emptyList()
 )
 
 data class Category(
     val id: String,
     val name: String
 )
+
+// System Messages from Admin
+data class SystemMessage(
+    val id: String,
+    val title: String,
+    val body: String,
+    val url: String? = null,  // If present, show QR code
+    val createdAt: String? = null,
+    val isRead: Boolean = false
+)
+

@@ -16,6 +16,10 @@ import UserGroups from "./pages/UserGroups";
 import ApiManagement from "./pages/ApiManagement";
 import Tokens from "./pages/Tokens";
 import Settings from "./pages/Settings";
+import Movies from "./pages/Movies";
+import EPGSettings from "./pages/EPGSettings";
+import Messages from "./pages/Messages";
+import Games from "./pages/Games";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,15 +35,19 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/company" element={<CompanySetup />} />
+            <Route path="/movies" element={<Movies />} />
             <Route path="/streamers" element={<Streamers />} />
             <Route path="/streamers/add" element={<AddStreamer />} />
             <Route path="/channels" element={<Channels />} />
+            <Route path="/channels/epg" element={<EPGSettings />} />
             <Route path="/packages" element={<ChannelPackages />} />
             <Route path="/users" element={<Users />} />
             <Route path="/user-groups" element={<UserGroups />} />
             <Route path="/api" element={<ApiManagement />} />
             <Route path="/tokens" element={<Tokens />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/games" element={<Games />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

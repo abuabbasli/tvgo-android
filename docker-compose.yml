@@ -23,9 +23,11 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       # AWS S3 for image storage
       - AWS_REGION=eu-central-1
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=AKIAYKLCNNDYHZ5TNWOX
+      - AWS_SECRET_ACCESS_KEY=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
       - S3_BUCKET_NAME=tvgo-images
+      # TMDB API for movie metadata
+      - TMDB_API_KEY=79da04df044a817723622e1fd6c990f0
     depends_on:
       - mongodb
     healthcheck:

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ import {
 import { MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import api, { Channel, Streamer, resolveImageUrl } from "@/lib/api";
+import { ConnectEPGDialog } from "@/components/ConnectEPGDialog";
 
 // DnD Imports
 import {
@@ -241,6 +243,7 @@ const SortableGridCard = ({ channel, openEditDialog, handleDelete, deletingId }:
 }
 
 export default function Channels() {
+  const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [streamers, setStreamers] = useState<Streamer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -470,6 +473,10 @@ export default function Channels() {
                 <LayoutGrid className="h-4 w-4" />
               </Button>
             </div>
+            <ConnectEPGDialog />
+            <Button variant="ghost" size="icon" title="EPG Settings" onClick={() => navigate('/channels/epg')}>
+              <List className="h-4 w-4" />
+            </Button>
             <Button className="gap-2" disabled>
               <Plus className="h-4 w-4" />
               Add Channel

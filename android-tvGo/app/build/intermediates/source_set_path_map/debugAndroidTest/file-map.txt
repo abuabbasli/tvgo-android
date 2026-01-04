@@ -1,4 +1,6 @@
-com.example.androidtviptvapp.test.app-androidTest-0 /Users/abu/WebstormProjects/Androidtviptvapp/android-tv-app/app/build/generated/res/resValues/androidTest/debug
-com.example.androidtviptvapp.test.app-mergeDebugAndroidTestResources-1 /Users/abu/WebstormProjects/Androidtviptvapp/android-tv-app/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
-com.example.androidtviptvapp.test.app-mergeDebugAndroidTestResources-2 /Users/abu/WebstormProjects/Androidtviptvapp/android-tv-app/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
-com.example.androidtviptvapp.test.app-merged_res-3 /Users/abu/WebstormProjects/Androidtviptvapp/android-tv-app/app/build/intermediates/merged_res/debugAndroidTest
+com.example.androidtviptvapp.test.app-jetified-core-1.5.0-0 /Users/abu/.gradle/caches/transforms-3/6d3f3814a389ee5a64a756926e9ffa6c/transformed/jetified-core-1.5.0/res
+com.example.androidtviptvapp.test.app-jetified-annotation-experimental-1.3.1-1 /Users/abu/.gradle/caches/transforms-3/7b73d85c532b127ac7dc1a7b2ab1312a/transformed/jetified-annotation-experimental-1.3.1/res
+com.example.androidtviptvapp.test.app-androidTest-2 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/generated/res/resValues/androidTest/debug
+com.example.androidtviptvapp.test.app-mergeDebugAndroidTestResources-3 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
+com.example.androidtviptvapp.test.app-mergeDebugAndroidTestResources-4 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
+com.example.androidtviptvapp.test.app-merged_res-5 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/intermediates/merged_res/debugAndroidTest

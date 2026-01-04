@@ -6,7 +6,8 @@ from pathlib import Path
 
 from .routers import auth as auth_router
 from .routers import public as public_router
-from .routers import admin_channels, admin_movies, admin_rails, admin_config, upload, ingest, streamers, packages, admin_users
+from .routers import admin_channels, admin_movies, admin_rails, admin_config, upload, ingest, streamers, packages, admin_users, epg, admin_games
+from .routers import user_groups, messages
 
 app = FastAPI(title="tvGO Middleware API")
 
@@ -46,6 +47,11 @@ app.include_router(ingest.router)
 app.include_router(streamers.router)
 app.include_router(packages.router)
 app.include_router(admin_users.router)
+app.include_router(epg.router)
+app.include_router(user_groups.router)
+app.include_router(messages.admin_router)
+app.include_router(messages.public_router)
+app.include_router(admin_games.router)
 
 handler = Mangum(app)
 

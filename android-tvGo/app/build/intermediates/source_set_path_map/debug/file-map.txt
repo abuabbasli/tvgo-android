@@ -54,10 +54,10 @@ com.example.androidtviptvapp-lifecycle-viewmodel-2.7.0-52 /Users/abu/.gradle/cac
 com.example.androidtviptvapp-jetified-ui-geometry-release-53 /Users/abu/.gradle/caches/transforms-3/e503d013238a8c58df29c2bc4c15f03b/transformed/jetified-ui-geometry-release/res
 com.example.androidtviptvapp-navigation-common-2.7.6-54 /Users/abu/.gradle/caches/transforms-3/e875dc93ea4307f180a4c7b5bfac7088/transformed/navigation-common-2.7.6/res
 com.example.androidtviptvapp-jetified-lifecycle-viewmodel-compose-2.7.0-55 /Users/abu/.gradle/caches/transforms-3/ff87b3bbfb5e9f9be0edcb367164be71/transformed/jetified-lifecycle-viewmodel-compose-2.7.0/res
-com.example.androidtviptvapp-pngs-56 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/generated/res/pngs/debug
-com.example.androidtviptvapp-resValues-57 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/generated/res/resValues/debug
-com.example.androidtviptvapp-packageDebugResources-58 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.example.androidtviptvapp-packageDebugResources-59 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.example.androidtviptvapp-merged_res-60 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/build/intermediates/merged_res/debug
-com.example.androidtviptvapp-debug-61 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/src/debug/res
-com.example.androidtviptvapp-main-62 /Users/abu/Downloads/tvGoBackend/android-tvGo/app/src/main/res
+com.example.androidtviptvapp-pngs-56 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/generated/res/pngs/debug
+com.example.androidtviptvapp-resValues-57 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/generated/res/resValues/debug
+com.example.androidtviptvapp-packageDebugResources-58 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.example.androidtviptvapp-packageDebugResources-59 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.example.androidtviptvapp-merged_res-60 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/merged_res/debug
+com.example.androidtviptvapp-debug-61 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/debug/res
+com.example.androidtviptvapp-main-62 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/main/res

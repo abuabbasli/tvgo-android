@@ -106,6 +106,23 @@
                     }
                 },
                 {
+                    "source": "/Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/main/res/values/themes.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "93",
+                        "endOffsets": "144"
+                    },
+                    "to": {
+                        "startLines": "658",
+                        "startColumns": "4",
+                        "startOffsets": "40014",
+                        "endColumns": "92",
+                        "endOffsets": "40102"
+                    }
+                },
+                {
                     "source": "/Users/abu/.gradle/caches/transforms-3/6e18ccf2ee8846f478c534c579d1ed43/transformed/jetified-androidsvg-aar-1.4/res/values/values.xml",
                     "from": {
                         "startLines": "2",
@@ -292,7 +309,7 @@
                     }
                 },
                 {
-                    "source": "/Users/abu/Downloads/tvGoBackend/android-tvGo/app/src/main/res/values/ic_launcher_background.xml",
+                    "source": "/Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/main/res/values/ic_launcher_background.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -323,23 +340,6 @@
                         "startOffsets": "25295,25365,25427,25492,25556,25633,25698,25788,25872",
                         "endColumns": "69,61,64,63,76,64,89,83,68",
                         "endOffsets": "25360,25422,25487,25551,25628,25693,25783,25867,25936"
-                    }
-                },
-                {
-                    "source": "/Users/abu/Downloads/tvGoBackend/android-tvGo/app/src/main/res/values/themes.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "93",
-                        "endOffsets": "144"
-                    },
-                    "to": {
-                        "startLines": "658",
-                        "startColumns": "4",
-                        "startOffsets": "40014",
-                        "endColumns": "92",
-                        "endOffsets": "40102"
                     }
                 },
                 {

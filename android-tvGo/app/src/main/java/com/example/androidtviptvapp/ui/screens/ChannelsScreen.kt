@@ -1,5 +1,6 @@
 package com.example.androidtviptvapp.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.zIndex
@@ -79,6 +80,9 @@ fun ChannelsScreen(
         }
     }
     
+    // NOTE: Don't release player here! It's shared with PlayerScreen (fullscreen).
+    // The player will be released when leaving the entire playback flow.
+    
     // Update selection when returning with a new channel ID
     LaunchedEffect(initialChannelId) {
         if (initialChannelId != null) {
@@ -98,21 +102,26 @@ fun ChannelsScreen(
             .fillMaxSize()
             .padding(top = 24.dp, start = 24.dp) // Main padding
     ) {
-        // 1. Categories on top
+        // 1. Categories on top - fixed height
         CategoryFilter(
             categories = TvRepository.channelCategories,
             selectedCategory = selectedCategory,
             onCategorySelected = { selectedCategory = it },
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // 2. Split View (List/Grid + Preview)
-        Row(modifier = Modifier.fillMaxSize()) {
+        // 2. Split View (List/Grid + Preview) - takes remaining space
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
             
             // Channel Selection Area (Left)
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .fillMaxHeight()
                     .padding(end = 12.dp)
             ) {
                 if (filteredChannels.isEmpty()) {
@@ -188,73 +197,308 @@ fun ChannelsScreen(
                 }
             }
 
-            // Preview Area (Right) - Bigger
+            // Preview Area (Right) - with visual separation
             Box(
                 modifier = Modifier
-                    .weight(1.5f) // Increased weight to make it bigger
+                    .weight(1.4f)
                     .fillMaxHeight()
-                    .padding(start = 12.dp, end = 24.dp, bottom = 24.dp)
+                    .padding(start = 16.dp, end = 24.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF1A1A2E).copy(alpha = 0.3f))
             ) {
-                 Column(modifier = Modifier.fillMaxWidth()) {
-                    if (previewChannel != null) {
-                        ChannelPreview(channel = previewChannel!!)
+                // State for schedule programs
+                var schedulePrograms by remember { mutableStateOf<List<com.example.androidtviptvapp.data.api.ScheduleProgramItem>>(emptyList()) }
+                var isLoadingSchedule by remember { mutableStateOf(false) }
+                
+                val infoChannel = focusedChannel ?: previewChannel
+                
+                // Fetch schedule when channel changes
+                LaunchedEffect(infoChannel?.id) {
+                    if (infoChannel != null) {
+                        isLoadingSchedule = true
+                        try {
+                            val response = com.example.androidtviptvapp.data.api.ApiClient.service.getChannelSchedule(infoChannel.id)
+                            schedulePrograms = response.programs
+                        } catch (e: Exception) {
+                            android.util.Log.e("ChannelsScreen", "Failed to load schedule: ${e.message}")
+                            schedulePrograms = emptyList()
+                        }
+                        isLoadingSchedule = false
                     } else {
-                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(16f/9f)
-                                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                                .clip(RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Select a channel to preview")
+                        schedulePrograms = emptyList()
+                    }
+                }
+                
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
+                ) {
+                    // Video preview - proportional height (52% of available space)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(0.52f)
+                            .clip(RoundedCornerShape(12.dp))
+                    ) {
+                        if (previewChannel != null) {
+                            ChannelPreview(channel = previewChannel!!)
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.6f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Select a channel to preview",
+                                    color = Color.White.copy(alpha = 0.5f)
+                                )
+                            }
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    val infoChannel = focusedChannel ?: previewChannel
-                    if (infoChannel != null) {
-                        Text(
-                            text = infoChannel.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Text(
-                            text = infoChannel.description,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                        
-                        val currentProgram = infoChannel.schedule.find { it.isLive }
-                        if (currentProgram != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Channel Info & Schedule - remaining space
+                    Column(
+                        modifier = Modifier
+                            .weight(0.48f)
+                            .fillMaxWidth()
+                    ) {
+                        if (infoChannel != null) {
+                            // Channel Name - more prominent
+                            Text(
+                                text = infoChannel.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = Color.White,
+                                maxLines = 1
+                            )
+                            
+                            // Channel Description
+                            if (infoChannel.description.isNotBlank()) {
                                 Text(
-                                    text = "LIVE",
-                                    color = Color.Red,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                                Text(
-                                    text = currentProgram.title,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    text = infoChannel.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    maxLines = 1
                                 )
                             }
-                             Text(
-                                text = "${currentProgram.time} • ${currentProgram.duration}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // Program Schedule Header with divider effect
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Program Schedule",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color(0xFF60A5FA)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(1.dp)
+                                        .background(Color(0xFF60A5FA).copy(alpha = 0.3f))
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Scrollable Program List
+                            if (isLoadingSchedule) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Loading...",
+                                        color = Color.White.copy(alpha = 0.4f)
+                                    )
+                                }
+                            } else if (schedulePrograms.isEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No schedule available",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White.copy(alpha = 0.3f)
+                                    )
+                                }
+                            } else {
+                                // Scrollable list of programs
+                                TvLazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    contentPadding = PaddingValues(bottom = 24.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    items(schedulePrograms) { program ->
+                                        ProgramScheduleItem(
+                                            time = formatProgramTime(program.start),
+                                            title = program.title ?: "Unknown Program",
+                                            duration = calculateDuration(program.start, program.end),
+                                            isLive = program.isLive
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // No channel selected state
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Select a channel",
+                                    color = Color.White.copy(alpha = 0.4f)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProgramScheduleItem(
+    time: String,
+    title: String,
+    duration: String,
+    isLive: Boolean = false
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    
+    androidx.tv.material3.Surface(
+        onClick = { /* No action needed */ },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { isFocused = it.isFocused },
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
+            shape = RoundedCornerShape(8.dp)
+        ),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = Color.Transparent,
+            focusedContainerColor = Color(0xFF3B82F6).copy(alpha = 0.2f)
+        ),
+        border = androidx.tv.material3.ClickableSurfaceDefaults.border(
+            focusedBorder = androidx.tv.material3.Border(
+                border = BorderStroke(2.dp, Color(0xFF3B82F6)),
+                shape = RoundedCornerShape(8.dp)
+            )
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(
+            focusedScale = 1.02f
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Time badge
+            Box(
+                modifier = Modifier
+                    .background(
+                        if (isLive) Color(0xFF1E3A5F) else Color.Transparent,
+                        RoundedCornerShape(4.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (isLive) Color(0xFF3B82F6) else Color(0xFF4B5563),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isLive) Color(0xFF60A5FA) else Color(0xFF9CA3AF)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Title and duration
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    maxLines = 1
+                )
+                Text(
+                    text = duration,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF9CA3AF)
+                )
+            }
+            
+            // LIVE badge
+            if (isLive) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFDC2626), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "LIVE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Helper functions to format program times
+private fun formatProgramTime(isoTime: String?): String {
+    if (isoTime == null) return "--:--"
+    return try {
+        val parts = isoTime.split("T")
+        if (parts.size >= 2) {
+            val timeParts = parts[1].split(":")
+            if (timeParts.size >= 2) {
+                val hour = timeParts[0].toIntOrNull() ?: 0
+                val minute = timeParts[1]
+                val period = if (hour >= 12) "PM" else "AM"
+                val hour12 = if (hour > 12) hour - 12 else if (hour == 0) 12 else hour
+                String.format("%02d:%s %s", hour12, minute, period)
+            } else isoTime
+        } else isoTime
+    } catch (e: Exception) {
+        "--:--"
+    }
+}
+
+private fun calculateDuration(startIso: String?, endIso: String?): String {
+    if (startIso == null || endIso == null) return ""
+    return try {
+        val startParts = startIso.split("T")[1].split(":")
+        val endParts = endIso.split("T")[1].split(":")
+        val startMinutes = startParts[0].toInt() * 60 + startParts[1].toInt()
+        var endMinutes = endParts[0].toInt() * 60 + endParts[1].toInt()
+        if (endMinutes < startMinutes) endMinutes += 24 * 60 // Handle overnight
+        val durationMinutes = endMinutes - startMinutes
+        val hours = durationMinutes / 60
+        val minutes = durationMinutes % 60
+        when {
+            hours > 0 && minutes > 0 -> "$hours hour${if (hours > 1) "s" else ""} $minutes min"
+            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""}"
+            else -> "$minutes min"
+        }
+    } catch (e: Exception) {
+        ""
     }
 }
 

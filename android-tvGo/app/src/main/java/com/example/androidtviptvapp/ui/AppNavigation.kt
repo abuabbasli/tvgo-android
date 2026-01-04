@@ -17,6 +17,9 @@ object Routes {
     const val HOME = "home"
     const val CHANNELS = "channels"
     const val MOVIES = "movies"
+    const val MOVIE_DETAIL = "movie_detail/{movieId}"
+    const val MESSAGES = "messages"
+    const val GAMES = "games"
     const val SETTINGS = "settings"
     const val PLAYER = "player/{url}"
     const val PLAYER_CHANNEL = "player_channel/{channelId}"
@@ -45,7 +48,9 @@ fun AppNavigation(
         composable(Routes.HOME) {
             HomeScreen(
                 onChannelClick = { onPlayChannel(it.id) },
-                onMovieClick = { onPlayUrl(it.videoUrl) }
+                onMovieClick = { movie ->
+                    navController.navigate("movie_detail/${movie.id}")
+                }
             )
         }
         composable(Routes.CHANNELS) { backStackEntry ->
@@ -64,11 +69,29 @@ fun AppNavigation(
         }
         composable(Routes.MOVIES) {
             MoviesScreen(
-                onMovieClick = { onPlayUrl(it.videoUrl) }
+                onMovieClick = { movie ->
+                    navController.navigate("movie_detail/${movie.id}")
+                }
+            )
+        }
+        composable(Routes.MOVIE_DETAIL) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getString("movieId") ?: ""
+            MovieDetailScreen(
+                movieId = movieId,
+                onPlayClick = { videoUrl -> onPlayUrl(videoUrl) },
+                onBackClick = { navController.popBackStack() }
             )
         }
         composable(Routes.SETTINGS) {
             SettingsScreen()
+        }
+        composable(Routes.MESSAGES) {
+            MessagesScreen()
+        }
+        composable(Routes.GAMES) {
+            GamesScreen(
+                onBackToHome = { navController.popBackStack() }
+            )
         }
         composable(Routes.PLAYER) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url")

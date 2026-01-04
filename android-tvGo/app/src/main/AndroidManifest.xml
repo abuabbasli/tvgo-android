@@ -11,6 +11,7 @@
         android:required="true" />
 
     <application
+        android:name=".TvGoApplication"
         android:allowBackup="true"
         android:usesCleartextTraffic="true"
         android:hardwareAccelerated="true"

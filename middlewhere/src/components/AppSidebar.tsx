@@ -11,6 +11,10 @@ import {
   Shield,
   Settings,
   LogOut,
+  Film,
+  List,
+  MessageSquare,
+  Gamepad2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,9 +34,13 @@ import {
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Company Setup", url: "/company", icon: Building2 },
+  { title: "VOD Management", url: "/movies", icon: Film },
   { title: "Streamers", url: "/streamers", icon: Radio },
   { title: "Channels", url: "/channels", icon: Tv },
+  { title: "EPG Settings", url: "/channels/epg", icon: List },
+  { title: "Games", url: "/games", icon: Gamepad2 },
   { title: "Channel Packages", url: "/packages", icon: Package },
+  { title: "Messages", url: "/messages", icon: MessageSquare },
   { title: "Users", url: "/users", icon: Users },
   { title: "User Groups", url: "/user-groups", icon: UsersRound },
   { title: "API Management", url: "/api", icon: Key },
@@ -49,9 +57,9 @@ export function AppSidebar() {
       <SidebarContent>
         <div className="px-6 py-5">
           <div className="flex items-center justify-center">
-            <img 
-              src={tvGoLogo} 
-              alt="tvGO Logo" 
+            <img
+              src={tvGoLogo}
+              alt="tvGO Logo"
               className="h-10 object-contain"
             />
           </div>

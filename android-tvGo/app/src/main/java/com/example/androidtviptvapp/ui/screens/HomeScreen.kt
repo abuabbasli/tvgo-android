@@ -2,6 +2,7 @@ package com.example.androidtviptvapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.remember
@@ -19,9 +20,13 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.example.androidtviptvapp.data.Channel
 import com.example.androidtviptvapp.data.Movie
 import com.example.androidtviptvapp.data.TvRepository
+import com.example.androidtviptvapp.data.api.ApiClient
 import com.example.androidtviptvapp.ui.components.ChannelCard
 import com.example.androidtviptvapp.ui.components.HeroSection
 import com.example.androidtviptvapp.ui.components.MovieCard
+import com.example.androidtviptvapp.ui.components.GlobalMessagePopup
+import com.example.androidtviptvapp.ui.components.MessagePopupManager
+import com.example.androidtviptvapp.ui.components.PopupMessage
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -30,6 +35,28 @@ fun HomeScreen(
     onMovieClick: (Movie) -> Unit
 ) {
     val featuredMovie = TvRepository.movies.firstOrNull()
+    
+    // Fetch broadcast messages on first load
+    LaunchedEffect(Unit) {
+        try {
+            val response = ApiClient.service.getBroadcastMessages()
+            response.items.forEach { msg ->
+                MessagePopupManager.showMessage(
+                    PopupMessage(
+                        id = msg.id,
+                        title = msg.title,
+                        body = msg.body,
+                        url = msg.url
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeScreen", "Failed to fetch messages: ${e.message}")
+        }
+    }
+    
+    // Show message popup dialog globally
+    GlobalMessagePopup()
 
     TvLazyColumn(
         modifier = Modifier.fillMaxSize(),

@@ -49,6 +49,26 @@ def admin_update_brand(
     return build_config_response(db)
 
 
+@router.put("/features", response_model=schemas.ConfigResponse)
+def admin_update_features(
+    features_payload: schemas.Features,
+    db: Database = Depends(get_db),
+):
+    document = {
+        "enable_favorites": features_payload.enableFavorites,
+        "enable_search": features_payload.enableSearch,
+        "autoplay_preview": features_payload.autoplayPreview,
+        "enable_live_tv": features_payload.enableLiveTv,
+        "enable_vod": features_payload.enableVod,
+    }
+
+    db["brand_config"].update_one({"_id": "brand"}, {"$set": document}, upsert=True)
+
+    from .public import build_config_response
+
+    return build_config_response(db)
+
+
 @router.get("/stats", response_model=DashboardStats)
 def get_dashboard_stats(db: Database = Depends(get_db)):
     """Get dashboard statistics."""

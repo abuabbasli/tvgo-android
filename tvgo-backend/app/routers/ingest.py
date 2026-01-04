@@ -150,6 +150,17 @@ async def preview_m3u_from_url(request: schemas.M3UUrlIngestRequest):
     return schemas.M3UParseResponse(channels=channels, total=len(channels))
 
 
+@router.post("/m3u/preview", response_model=schemas.M3UParseResponse)
+async def preview_m3u_file(file: UploadFile = File(...), db: Database = Depends(get_db)):
+    filename = file.filename or ""
+    if not filename.endswith(".m3u") and not filename.endswith(".m3u8"):
+        raise HTTPException(status_code=400, detail="File must be .m3u or .m3u8")
+
+    content = (await file.read()).decode("utf-8", errors="ignore")
+    channels = parse_m3u_content(content)
+    return schemas.M3UParseResponse(channels=channels, total=len(channels))
+
+
 @router.post("/m3u-url")
 async def ingest_m3u_from_url(
     request: schemas.M3UIngestRequest,

@@ -73,6 +73,8 @@ class Features(BaseModel):
     enableFavorites: bool
     enableSearch: bool
     autoplayPreview: bool
+    enableLiveTv: bool = True
+    enableVod: bool = True
 
 
 class RailQuery(BaseModel):
@@ -178,6 +180,7 @@ class Movie(BaseModel):
     rating: Optional[float] = None
     runtimeMinutes: Optional[int] = None
     synopsis: Optional[str] = None
+    order: Optional[int] = None
 
     images: Optional[Dict[str, Optional[HttpUrl]]] = None
     media: Optional[Dict[str, Any]] = None
@@ -258,7 +261,7 @@ class MovieCreate(BaseModel):
     poster_url: Optional[HttpUrl] = None
     landscape_url: Optional[HttpUrl] = None
     hero_url: Optional[HttpUrl] = None
-    stream_url: Optional[HttpUrl] = None
+    stream_url: Optional[str] = None  # Accept any URL format (http, rtsp, hls, etc.)
     trailer_url: Optional[HttpUrl] = None
     drm_type: Optional[str] = None
     drm_license_url: Optional[HttpUrl] = None
@@ -267,6 +270,7 @@ class MovieCreate(BaseModel):
     cast: Optional[List[str]] = None
     availability_start: Optional[datetime] = None
     availability_end: Optional[datetime] = None
+    order: Optional[int] = None
 
 
 class MovieUpdate(BaseModel):
@@ -279,7 +283,7 @@ class MovieUpdate(BaseModel):
     poster_url: Optional[HttpUrl] = None
     landscape_url: Optional[HttpUrl] = None
     hero_url: Optional[HttpUrl] = None
-    stream_url: Optional[HttpUrl] = None
+    stream_url: Optional[str] = None  # Accept any URL format
     trailer_url: Optional[HttpUrl] = None
     drm_type: Optional[str] = None
     drm_license_url: Optional[HttpUrl] = None
@@ -288,6 +292,14 @@ class MovieUpdate(BaseModel):
     cast: Optional[List[str]] = None
     availability_start: Optional[datetime] = None
     availability_end: Optional[datetime] = None
+    order: Optional[int] = None
+
+class MovieReorderItem(BaseModel):
+    id: str
+    order: int
+
+class MovieReorderRequest(BaseModel):
+    items: List[MovieReorderItem]
 
 
 class RailAdminCreate(BaseModel):
@@ -458,3 +470,139 @@ class SubscriberLoginResponse(BaseModel):
     expiresIn: int
     subscriber: SubscriberResponse
     config: Optional[ConfigResponse] = None
+
+
+# ---- User Groups ----
+
+class UserGroupBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class UserGroupCreate(UserGroupBase):
+    user_ids: List[str] = []
+
+
+class UserGroupUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    user_ids: Optional[List[str]] = None
+
+
+class UserGroupResponse(UserGroupBase):
+    id: str
+    user_ids: List[str] = []
+    user_count: int = 0
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserGroupListResponse(BaseModel):
+    items: List[UserGroupResponse]
+    total: int
+
+
+# ---- Messages ----
+
+class MessageTargetType(str, Enum):
+    ALL = "all"
+    GROUPS = "groups"
+    USERS = "users"
+
+
+class MessageBase(BaseModel):
+    title: str
+    body: str
+    url: Optional[str] = None  # If provided, Android app shows QR code
+
+
+class MessageCreate(MessageBase):
+    target_type: MessageTargetType = MessageTargetType.ALL
+    target_ids: List[str] = []  # Group IDs or User IDs based on target_type
+
+
+class MessageResponse(MessageBase):
+    id: str
+    target_type: MessageTargetType
+    target_ids: List[str] = []
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+    read_by: List[str] = []  # User IDs who have read this message
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MessageListResponse(BaseModel):
+    items: List[MessageResponse]
+    total: int
+
+
+class SubscriberMessageResponse(BaseModel):
+    """Message as seen by subscriber (without admin fields)"""
+    id: str
+    title: str
+    body: str
+    url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    is_read: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubscriberMessagesListResponse(BaseModel):
+    items: List[SubscriberMessageResponse]
+    total: int
+    unread_count: int = 0
+
+
+# ---- Games ----
+
+class Game(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    imageUrl: Optional[str] = None
+    gameUrl: str  # Fullscreen game URL (e.g., Poki embed URL)
+    category: Optional[str] = None
+    isActive: bool = True
+    order: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameCreate(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    game_url: str
+    category: Optional[str] = None
+    is_active: bool = True
+    order: Optional[int] = None
+
+
+class GameUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    game_url: Optional[str] = None
+    category: Optional[str] = None
+    is_active: Optional[bool] = None
+    order: Optional[int] = None
+
+
+class GameReorderItem(BaseModel):
+    id: str
+    order: int
+
+
+class GameReorderRequest(BaseModel):
+    items: List[GameReorderItem]
+
+
+class GamesListResponse(BaseModel):
+    total: int
+    items: List[Game]
+    categories: List[str] = []

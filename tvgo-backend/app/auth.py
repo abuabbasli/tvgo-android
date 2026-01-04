@@ -129,3 +129,37 @@ async def get_optional_user(
     if not username:
         return None
     return get_user(db, username)
+
+
+async def get_current_subscriber(
+    token: str = Depends(oauth2_scheme),
+    db: Database = Depends(get_db),
+) -> dict:
+    """Get the current subscriber user from JWT token.
+    
+    Returns the raw MongoDB document for the subscriber.
+    """
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        
+        # Check if this is a subscriber token
+        role = payload.get("role")
+        subscriber_id = payload.get("id")
+        
+        if role != "subscriber" or not subscriber_id:
+            raise unauthorized("Not a valid subscriber token")
+        
+    except JWTError:
+        raise unauthorized("Could not validate credentials")
+    
+    subscriber = db["subscribers"].find_one({"_id": subscriber_id})
+    if not subscriber:
+        raise unauthorized("Subscriber not found")
+    
+    # Check if subscriber is still active
+    status = subscriber.get("status", "active")
+    allowed_statuses = ["active", "bonus", "test"]
+    if status not in allowed_statuses and not subscriber.get("is_active", True):
+        raise forbidden("Account is inactive")
+    
+    return subscriber

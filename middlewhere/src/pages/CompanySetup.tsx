@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Building2, Upload, ImageIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch"; // Import Switch
+import { Loader2, Save, Building2, Upload, ImageIcon, Tv, Film } from "lucide-react"; // Added icons
 import { toast } from "sonner";
-import api, { BrandConfig, resolveImageUrl } from "@/lib/api";
+import api, { BrandConfig, Features, resolveImageUrl } from "@/lib/api"; // Added Features type
 
 export default function CompanySetup() {
     const [isLoading, setIsLoading] = useState(true);
@@ -19,10 +20,18 @@ export default function CompanySetup() {
         accentColor: "#3B82F6",
         backgroundColor: "#0F172A",
     });
+    // Add features state
+    const [features, setFeatures] = useState<Features>({
+        enableFavorites: true,
+        enableSearch: true,
+        autoplayPreview: true,
+        enableLiveTv: true,
+        enableVod: true,
+    });
 
     const fetchConfig = async () => {
         try {
-            const response = await api.config.getAdmin() as { brand: BrandConfig };
+            const response = await api.config.getAdmin() as { brand: BrandConfig; features: Features };
             if (response.brand) {
                 setConfig({
                     appName: response.brand.appName || "",
@@ -30,6 +39,9 @@ export default function CompanySetup() {
                     accentColor: response.brand.accentColor || "#3B82F6",
                     backgroundColor: response.brand.backgroundColor || "#0F172A",
                 });
+            }
+            if (response.features) {
+                setFeatures(response.features);
             }
         } catch (error) {
             console.error("Failed to fetch config:", error);
@@ -76,7 +88,11 @@ export default function CompanySetup() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await api.config.updateBrand(config);
+            // Save both brand config and features
+            await Promise.all([
+                api.config.updateBrand(config),
+                api.config.updateFeatures(features)
+            ]);
             toast.success("Configuration saved");
         } catch (error) {
             console.error("Failed to save:", error);
@@ -103,7 +119,7 @@ export default function CompanySetup() {
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Company Setup</h1>
                         <p className="text-muted-foreground">
-                            Configure your application branding and settings
+                            Configure your application branding and services
                         </p>
                     </div>
                     <Button onClick={handleSave} disabled={isSaving || isUploading}>
@@ -117,6 +133,52 @@ export default function CompanySetup() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
+                    {/* Service Configuration */}
+                    <Card className="md:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Service Configuration</CardTitle>
+                            <CardDescription>
+                                Enable or disable services for your customers
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-6 md:grid-cols-2">
+                            <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                                <div className="flex items-center space-x-4">
+                                    <div className="bg-primary/10 p-2 rounded-full">
+                                        <Tv className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Live TV</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Enable Live TV channels and EPG
+                                        </p>
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={features.enableLiveTv}
+                                    onCheckedChange={(checked) => setFeatures({ ...features, enableLiveTv: checked })}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                                <div className="flex items-center space-x-4">
+                                    <div className="bg-primary/10 p-2 rounded-full">
+                                        <Film className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">VOD / Movies</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Enable Movies and Video on Demand
+                                        </p>
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={features.enableVod}
+                                    onCheckedChange={(checked) => setFeatures({ ...features, enableVod: checked })}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">

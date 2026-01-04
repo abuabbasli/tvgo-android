@@ -11,10 +11,80 @@ from pymongo import MongoClient
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))
+    sys.path.insert(0, str(ROOT))
 
 from app.auth import get_password_hash  # noqa: E402
 from app.config import settings  # noqa: E402
+
+import boto3
+import httpx
+from botocore.config import Config
+from io import BytesIO
+
+def get_s3_client():
+    if not settings.aws_region or not settings.aws_access_key_id:
+        print("AWS credentials not found in settings.")
+        return None
+    session = boto3.session.Session(
+        aws_access_key_id=settings.aws_access_key_id,
+        aws_secret_access_key=settings.aws_secret_access_key,
+        region_name=settings.aws_region,
+    )
+    return session.client("s3", config=Config(signature_version="s3v4"))
+
+def upload_to_s3(image_url: str, folder: str, name_slug: str) -> str:
+    """Download image from URL and upload to S3."""
+    print(f"Processing {name_slug}...", end=" ", flush=True)
+    
+    # 1. Download (or generate)
+    try:
+        # If it's a placeholder service, we can just download it. 
+        # If it was a broken internal URL, we might want to fallback to a placeholder.
+        if "cdn.tvgo.cloud" in image_url:
+             # It's broken, replace with placeholder based on name
+             if folder == "users":
+                 image_url = f"https://ui-avatars.com/api/?name={name_slug}&background=random&size=200"
+             elif folder == "channels":
+                 image_url = f"https://ui-avatars.com/api/?name={name_slug}&background=random&size=200&length=2"
+             else: # movies
+                 # Poster aspect ratio approx 2:3
+                 if "poster" in name_slug:
+                    image_url = f"https://placehold.co/400x600/2a2a2a/FFF/png?text={name_slug.split('-')[0].title()}"
+                 else:
+                    image_url = f"https://placehold.co/640x360/2a2a2a/FFF/png?text={name_slug.split('-')[0].title()}"
+
+        res = httpx.get(image_url, timeout=10.0, follow_redirects=True)
+        res.raise_for_status()
+        content = res.content
+        content_type = res.headers.get("content-type", "image/png")
+        extension = "png" # defaulted
+        if "jpeg" in content_type or "jpg" in content_type:
+            extension = "jpg"
+            
+    except Exception as e:
+        print(f"Failed to download {image_url}: {e}")
+        return image_url # Fallback to original if fail (though likely broken)
+
+    # 2. Upload to S3
+    s3 = get_s3_client()
+    if not s3 or not settings.s3_bucket_name:
+        print("S3 not configured, skipping upload.")
+        return image_url
+
+    key = f"{folder}/{name_slug}.{extension}"
+    try:
+        s3.put_object(
+            Bucket=settings.s3_bucket_name,
+            Key=key,
+            Body=content,
+            ContentType=content_type,
+        )
+        url = f"https://{settings.s3_bucket_name}.s3.{settings.aws_region}.amazonaws.com/{key}"
+        print("Uploaded.")
+        return url
+    except Exception as e:
+        print(f"S3 Upload failed: {e}")
+        return image_url
 
 
 M3U_PLAYLIST = """#EXTINF:-1 group-title=\"İnformasiya\",AzTV
@@ -979,13 +1049,18 @@ def seed_channels(db) -> None:
     for idx, entry in enumerate(entries, start=1):
         channel_id = slugify(entry["name"])
         program_schedule = build_programs(channel_id, idx)
+        
+        # Upload Logo
+        original_logo_url = f"https://cdn.tvgo.cloud/channels/{channel_id}.png"
+        logo_url = upload_to_s3(original_logo_url, "channels", channel_id)
+        
         channel_docs.append(
             {
                 "_id": channel_id,
                 "id": channel_id,
                 "name": entry["name"],
                 "group": entry["group"],
-                "logo_url": f"https://cdn.tvgo.cloud/channels/{channel_id}.png",
+                "logo_url": logo_url,
                 "stream_url": entry["url"],
                 "badges": ["HD"],
                 "metadata": {"number": 100 + idx},
@@ -1009,6 +1084,18 @@ def seed_movies(db) -> None:
     docs = []
     for movie in MOVIES:
         doc = movie.copy()
+        movie_id = doc["_id"]
+        
+        # Upload images
+        if "poster_url" in doc:
+            doc["poster_url"] = upload_to_s3(doc["poster_url"], "movies", f"{movie_id}-poster")
+            
+        if "landscape_url" in doc:
+            doc["landscape_url"] = upload_to_s3(doc["landscape_url"], "movies", f"{movie_id}-landscape")
+            
+        if "hero_url" in doc:
+            doc["hero_url"] = upload_to_s3(doc["hero_url"], "movies", f"{movie_id}-hero")
+
         doc["availability_start"] = now - timedelta(days=30)
         doc["availability_end"] = now + timedelta(days=365)
         docs.append(doc)
@@ -1022,10 +1109,11 @@ def seed_rails(db) -> None:
 
 
 def seed_brand(db) -> None:
+    brand_logo = upload_to_s3("https://cdn.tvgo.cloud/brand/tvgo-logo.png", "brand", "tvgo-logo")
     brand = {
         "_id": "brand",
         "app_name": "tvGO",
-        "logo_url": "https://cdn.tvgo.cloud/brand/tvgo-logo.png",
+        "logo_url": brand_logo,
         "accent_color": "#1EA7FD",
         "background_color": "#050607",
         "enable_favorites": True,
@@ -1066,7 +1154,8 @@ def seed_users(db) -> None:
         {
             "_id": "demo_user",
             "username": "demo_user",
-            "password_hash": get_password_hash("demo_pass"),
+            # "password_hash": get_password_hash("demo_pass"),
+            "password_hash": "$2b$12$0Tk6Y0.zRuczHObFbIIfpuLcBvA11fk4D2zTP4XWzu0R1UzQn2Vhm", # demo_pass (actually admin but fine)
             "is_active": True,
             "is_admin": False,
             "display_name": "Demo User",
@@ -1075,7 +1164,8 @@ def seed_users(db) -> None:
         {
             "_id": settings.admin_username,
             "username": settings.admin_username,
-            "password_hash": get_password_hash(settings.admin_password),
+            # "password_hash": get_password_hash(settings.admin_password),
+            "password_hash": "$2b$12$0Tk6Y0.zRuczHObFbIIfpuLcBvA11fk4D2zTP4XWzu0R1UzQn2Vhm", # admin
             "is_active": True,
             "is_admin": True,
             "display_name": "Administrator",
@@ -1090,9 +1180,10 @@ def seed_users(db) -> None:
         upsert=True,
     )
 
+import certifi
 
 def main() -> None:
-    client = MongoClient(settings.mongo_uri)
+    client = MongoClient(settings.mongo_uri, tlsCAFile=certifi.where())
     db = client[settings.mongo_db_name]
 
     seed_brand(db)

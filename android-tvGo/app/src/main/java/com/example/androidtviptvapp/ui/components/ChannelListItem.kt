@@ -50,10 +50,12 @@ fun ChannelListItem(
             )
         },
         supportingContent = {
+            // Show current program title if available
+            val currentProgram = com.example.androidtviptvapp.data.TvRepository.currentPrograms[channel.id]
             Text(
-                text = channel.description,
+                text = currentProgram?.title ?: channel.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9CA3AF),
+                color = if (currentProgram != null) Color(0xFF60A5FA) else Color(0xFF9CA3AF),
                 maxLines = 1
             )
         },

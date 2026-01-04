@@ -8,10 +8,12 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.androidtviptvapp.R
@@ -22,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
 import androidx.tv.material3.*
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -45,25 +48,11 @@ fun Sidebar(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // App Logo
-        val brandConfig = com.example.androidtviptvapp.data.TvRepository.appConfig
-        if (brandConfig?.logoUrl != null) {
-             coil.compose.AsyncImage(
-                model = brandConfig.logoUrl,
-                contentDescription = "App Logo",
-                modifier = Modifier
-                    .size(48.dp)
-                    .padding(bottom = 8.dp)
-            )
-        } else {
-            Image(
-                painter = painterResource(id = R.drawable.app_logo),
-                contentDescription = "App Logo",
-                modifier = Modifier
-                    .size(48.dp)
-                    .padding(bottom = 8.dp)
-            )
-        }
+        // App Logo - using dedicated component
+        AppLogo(
+            modifier = Modifier.padding(bottom = 8.dp),
+            size = 48.dp
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -73,17 +62,35 @@ fun Sidebar(
             isSelected = selectedRoute == "home",
             onClick = { onNavigate("home") }
         )
+        
+        // Conditional Live TV
+        val showLiveTv = com.example.androidtviptvapp.data.TvRepository.features?.enableLiveTv ?: true
+        if (showLiveTv) {
+            SidebarItem(
+                icon = Icons.Default.LiveTv,
+                label = "Channels",
+                isSelected = selectedRoute == "channels",
+                onClick = { onNavigate("channels") }
+            )
+        }
+
+        // Conditional VOD
+        val showVod = com.example.androidtviptvapp.data.TvRepository.features?.enableVod ?: true
+        if (showVod) {
+            SidebarItem(
+                icon = Icons.Default.Movie,
+                label = "Movies",
+                isSelected = selectedRoute == "movies",
+                onClick = { onNavigate("movies") }
+            )
+        }
+        
+        // Games section
         SidebarItem(
-            icon = Icons.Default.LiveTv,
-            label = "Channels",
-            isSelected = selectedRoute == "channels",
-            onClick = { onNavigate("channels") }
-        )
-        SidebarItem(
-            icon = Icons.Default.Movie,
-            label = "Movies",
-            isSelected = selectedRoute == "movies",
-            onClick = { onNavigate("movies") }
+            icon = Icons.Default.SportsEsports,
+            label = "Games",
+            isSelected = selectedRoute == "games",
+            onClick = { onNavigate("games") }
         )
         
         SidebarItem(
@@ -153,16 +160,46 @@ fun SidebarItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    IconButton(
+    // Determine colors based on selection state manually
+    // because standard Surface/ClickableSurfaceDefaults doesn't handle "selected" state effectively for colors
+    val containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    val focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+    val focusedContentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+
+    Surface(
         onClick = onClick,
-        modifier = Modifier.padding(vertical = 8.dp),
-        colors = IconButtonDefaults.colors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-            contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            focusedContainerColor = MaterialTheme.colorScheme.inverseSurface,
-            focusedContentColor = MaterialTheme.colorScheme.inverseOnSurface
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(50)), // Pill shape
+        modifier = Modifier.padding(vertical = 4.dp),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+            focusedContainerColor = focusedContainerColor,
+            focusedContentColor = focusedContentColor,
+            pressedContainerColor = containerColor,
+            pressedContentColor = contentColor
+        ),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            )
+        ),
+        glow = ClickableSurfaceDefaults.glow(
+            focusedGlow = Glow(
+                elevationColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                elevation = 12.dp
+            )
         )
     ) {
-        Icon(icon, contentDescription = label)
+        Box(
+            modifier = Modifier.padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
