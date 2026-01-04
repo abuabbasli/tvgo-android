@@ -242,12 +242,23 @@ data class GameItem(
 )
 
 object ApiClient {
-    // Emulator localhost alias: 10.0.2.2
-    // Use AppConfig to change this easily
-    private const val BASE_URL = AppConfig.BASE_URL
+    // Use AppConfig for centralized configuration
+    private val BASE_URL = AppConfig.BASE_URL
+
+    // Optimized OkHttp client with timeouts and connection pooling
+    private val okHttpClient = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(AppConfig.Performance.CONNECT_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
+        .readTimeout(AppConfig.Performance.READ_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
+        .writeTimeout(AppConfig.Performance.WRITE_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
+        // Connection pooling for faster subsequent requests
+        .connectionPool(okhttp3.ConnectionPool(5, 30, java.util.concurrent.TimeUnit.SECONDS))
+        // Retry on connection failure
+        .retryOnConnectionFailure(true)
+        .build()
 
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
+        .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 

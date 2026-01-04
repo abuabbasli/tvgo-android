@@ -25,7 +25,49 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.*
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import com.example.androidtviptvapp.data.TvRepository
+
+/**
+ * App Logo component - displays either remote logo from config or local drawable
+ */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun AppLogo(
+    modifier: Modifier = Modifier,
+    size: Dp = 48.dp
+) {
+    val context = LocalContext.current
+    val logoUrl = TvRepository.appConfig?.logoUrl
+
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!logoUrl.isNullOrEmpty()) {
+            // Load logo from server
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(logoUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "App Logo",
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            // Fallback to local drawable
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                contentDescription = "App Logo",
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable

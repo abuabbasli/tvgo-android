@@ -151,7 +151,10 @@ fun ChannelsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(filteredChannels) { channel ->
+                                items(
+                                    items = filteredChannels,
+                                    key = { it.id }  // Stable key for efficient diffing
+                                ) { channel ->
                                     val isFocused = focusedChannel == channel
                                     // Get or create a FocusRequester for this channel
                                     val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
@@ -178,7 +181,10 @@ fun ChannelsScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(filteredChannels) { channel ->
+                                items(
+                                    items = filteredChannels,
+                                    key = { it.id }  // Stable key for efficient diffing
+                                ) { channel ->
                                     ChannelListItem(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
@@ -209,16 +215,16 @@ fun ChannelsScreen(
                 // State for schedule programs
                 var schedulePrograms by remember { mutableStateOf<List<com.example.androidtviptvapp.data.api.ScheduleProgramItem>>(emptyList()) }
                 var isLoadingSchedule by remember { mutableStateOf(false) }
-                
+
                 val infoChannel = focusedChannel ?: previewChannel
-                
-                // Fetch schedule when channel changes
+
+                // Fetch schedule when channel changes - uses cached schedule from TvRepository
                 LaunchedEffect(infoChannel?.id) {
                     if (infoChannel != null) {
                         isLoadingSchedule = true
                         try {
-                            val response = com.example.androidtviptvapp.data.api.ApiClient.service.getChannelSchedule(infoChannel.id)
-                            schedulePrograms = response.programs
+                            // Use cached schedule from TvRepository
+                            schedulePrograms = TvRepository.getChannelSchedule(infoChannel.id)
                         } catch (e: Exception) {
                             android.util.Log.e("ChannelsScreen", "Failed to load schedule: ${e.message}")
                             schedulePrograms = emptyList()
@@ -339,7 +345,10 @@ fun ChannelsScreen(
                                     contentPadding = PaddingValues(bottom = 24.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    items(schedulePrograms) { program ->
+                                    items(
+                                        items = schedulePrograms,
+                                        key = { it.id ?: it.start ?: it.hashCode() }  // Use id or start time as key
+                                    ) { program ->
                                         ProgramScheduleItem(
                                             time = formatProgramTime(program.start),
                                             title = program.title ?: "Unknown Program",

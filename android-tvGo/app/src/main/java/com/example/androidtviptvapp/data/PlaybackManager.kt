@@ -15,6 +15,14 @@ import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import kotlinx.coroutines.*
 
+/**
+ * Optimized PlaybackManager for TV boxes:
+ * - Uses hardware decoders for better performance
+ * - Configurable buffer settings via AppConfig
+ * - Intelligent retry mechanism
+ * - Proper resource cleanup
+ */
+
 @OptIn(UnstableApi::class)
 object PlaybackManager {
     private var exoPlayer: ExoPlayer? = null
@@ -238,43 +246,54 @@ object PlaybackManager {
     }
 
     private fun createOptimizedPlayer(context: Context): ExoPlayer {
-        // Ultra-aggressive buffering for instant playback
+        // Optimized buffering for TV boxes - balanced between startup speed and stability
+        // Uses AppConfig values for easy tuning
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                300,    // Min buffer
-                15000,  // Max buffer
-                100,    // Buffer for playback to start (INSTANT START)
-                300     // Buffer for rebuffering
+                AppConfig.Performance.MIN_BUFFER_MS,        // Min buffer before playback
+                AppConfig.Performance.MAX_BUFFER_MS,        // Max buffer to maintain
+                AppConfig.Performance.BUFFER_FOR_PLAYBACK_MS,   // Buffer for playback to start
+                AppConfig.Performance.BUFFER_FOR_REBUFFER_MS    // Buffer after rebuffering
             )
             .setTargetBufferBytes(C.LENGTH_UNSET)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
-        
-        // Prefer software decoders for faster initialization, enable fallback
+
+        // Prefer hardware decoders on TV boxes (they're optimized for video)
+        // Enable fallback for compatibility
         val renderersFactory = DefaultRenderersFactory(context)
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             .setEnableDecoderFallback(true)
-        
-        // Optimized track selection
+
+        // Optimized track selection for TV boxes
         val trackSelector = DefaultTrackSelector(context, AdaptiveTrackSelection.Factory()).apply {
             setParameters(
                 buildUponParameters()
-                    .setMaxVideoSizeSd()
+                    // Allow up to 1080p for TV boxes
+                    .setMaxVideoSize(1920, 1080)
+                    // Don't force highest bitrate - let adaptive selection work
                     .setForceHighestSupportedBitrate(false)
+                    // Allow flexibility for edge cases
                     .setExceedRendererCapabilitiesIfNecessary(true)
+                    // Enable adaptive switching between formats
                     .setAllowVideoMixedMimeTypeAdaptiveness(true)
                     .setAllowAudioMixedMimeTypeAdaptiveness(true)
+                    // Prefer 5.1 audio if available
+                    .setMaxAudioChannelCount(6)
             )
         }
-            
+
         return ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
             .setRenderersFactory(renderersFactory)
             .setTrackSelector(trackSelector)
             .setSeekBackIncrementMs(10000)
             .setSeekForwardIncrementMs(10000)
+            // Disable audio focus for TV apps (usually not needed)
+            .setHandleAudioBecomingNoisy(false)
             .build().apply {
-                videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
+                // Use SCALE_TO_FIT to avoid cropping on TV
+                videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT
                 repeatMode = Player.REPEAT_MODE_OFF
             }
     }
