@@ -188,22 +188,17 @@ object TvRepository {
         if (path.isNullOrEmpty()) return ""
 
         val baseUrl = AppConfig.IMAGE_BASE_URL
-        val serverIp = AppConfig.SERVER_IP
 
-        var url = when {
-            path.startsWith("http") -> path
+        // If already a full URL, return as-is
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return path
+        }
+
+        // Build full URL from path
+        return when {
             path.startsWith("/") -> "$baseUrl$path"
             else -> "$baseUrl/$path"
         }
-
-        // Fix: If server returns localhost/0.0.0.0, replace with configured SERVER_IP
-        if (url.contains("localhost") || url.contains("0.0.0.0") || url.contains("127.0.0.1")) {
-            url = url.replace("localhost", serverIp)
-                .replace("0.0.0.0", serverIp)
-                .replace("127.0.0.1", serverIp)
-        }
-
-        return url
     }
 
     private suspend fun loadChannelsAsync() {

@@ -13,7 +13,7 @@
     <application
         android:name=".TvGoApplication"
         android:allowBackup="false"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="TV GO"
