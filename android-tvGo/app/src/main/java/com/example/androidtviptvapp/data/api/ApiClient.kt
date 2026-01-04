@@ -62,41 +62,41 @@ data class FeaturesConfig(
 )
 
 interface ApiService {
-    @GET("channels?limit=1000")
+    @GET("api/channels?limit=1000")
     suspend fun getChannels(): ChannelsResponse
-    
-    @GET("config")
+
+    @GET("api/config")
     suspend fun getPublicConfig(): ConfigResponse
 
-    @POST("auth/subscriber/login")
+    @POST("api/auth/subscriber/login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
-    
-    @GET("movies?limit=1000")
+
+    @GET("api/movies?limit=1000")
     suspend fun getMovies(): MoviesApiResponse
 
-    @GET("channels/{id}/epg")
+    @GET("api/channels/{id}/epg")
     suspend fun getPrograms(
         @retrofit2.http.Path("id") id: String,
         @retrofit2.http.Query("start") start: String? = null,
         @retrofit2.http.Query("end") end: String? = null
     ): EpgResponse
-    
-    @GET("messages")
+
+    @GET("api/messages")
     suspend fun getMessages(): MessagesResponse
-    
-    @GET("messages/broadcast")
+
+    @GET("api/messages/broadcast")
     suspend fun getBroadcastMessages(): MessagesResponse
-    
-    @POST("messages/{id}/read")
+
+    @POST("api/messages/{id}/read")
     suspend fun markMessageRead(@retrofit2.http.Path("id") id: String): Any
-    
-    @GET("games")
+
+    @GET("api/games")
     suspend fun getGames(): GamesResponse
-    
-    @GET("epg/now")
+
+    @GET("api/epg/now")
     suspend fun getCurrentPrograms(): CurrentProgramsResponse
-    
-    @GET("epg/schedule/{channelId}")
+
+    @GET("api/epg/schedule/{channelId}")
     suspend fun getChannelSchedule(
         @retrofit2.http.Path("channelId") channelId: String,
         @retrofit2.http.Query("hours") hours: Int = 12

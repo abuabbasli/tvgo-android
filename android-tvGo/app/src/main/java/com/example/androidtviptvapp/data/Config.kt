@@ -4,12 +4,12 @@ package com.example.androidtviptvapp.data
  * Application configuration - API endpoints
  */
 object AppConfig {
-    // Lambda API endpoint - BASE_URL must end with /api/ for Retrofit
-    const val BASE_URL = "https://hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws/api/"
+    // Lambda base URL (without /api/ - endpoints include the path)
+    const val BASE_URL = "https://hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws/"
 
-    // For images/assets
+    // For images/assets (same as base)
     const val IMAGE_BASE_URL = "https://hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
 
-    // Not needed for Lambda but kept for compatibility
+    // Server host for URL replacement
     const val SERVER_IP = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
 }
