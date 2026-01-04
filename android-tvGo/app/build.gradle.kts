@@ -16,9 +16,6 @@ android {
 
         // Vector drawable support for older APIs
         vectorDrawables.useSupportLibrary = true
-
-        // Only include necessary resources
-        resourceConfigurations += listOf("en", "xxhdpi", "xxxhdpi")
     }
 
     buildTypes {
