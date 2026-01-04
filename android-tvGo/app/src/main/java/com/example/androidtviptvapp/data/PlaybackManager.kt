@@ -18,7 +18,7 @@ import kotlinx.coroutines.*
 /**
  * Optimized PlaybackManager for TV boxes:
  * - Uses hardware decoders for better performance
- * - Configurable buffer settings via AppConfig
+ * - Optimized buffer settings for smooth playback
  * - Intelligent retry mechanism
  * - Proper resource cleanup
  */
@@ -247,13 +247,12 @@ object PlaybackManager {
 
     private fun createOptimizedPlayer(context: Context): ExoPlayer {
         // Optimized buffering for TV boxes - balanced between startup speed and stability
-        // Uses AppConfig values for easy tuning
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                AppConfig.Performance.MIN_BUFFER_MS,        // Min buffer before playback
-                AppConfig.Performance.MAX_BUFFER_MS,        // Max buffer to maintain
-                AppConfig.Performance.BUFFER_FOR_PLAYBACK_MS,   // Buffer for playback to start
-                AppConfig.Performance.BUFFER_FOR_REBUFFER_MS    // Buffer after rebuffering
+                2000,   // Min buffer before playback (2s)
+                30000,  // Max buffer to maintain (30s)
+                1000,   // Buffer for playback to start (1s)
+                2000    // Buffer after rebuffering (2s)
             )
             .setTargetBufferBytes(C.LENGTH_UNSET)
             .setPrioritizeTimeOverSizeThresholds(true)

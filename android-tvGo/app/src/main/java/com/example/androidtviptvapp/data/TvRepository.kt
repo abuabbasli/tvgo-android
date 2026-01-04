@@ -94,13 +94,13 @@ object TvRepository {
         return ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(AppConfig.Performance.IMAGE_MEMORY_CACHE_PERCENT)
+                    .maxSizePercent(0.15) // 15% of available memory
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
-                    .maxSizeBytes(AppConfig.Performance.IMAGE_DISK_CACHE_SIZE)
+                    .maxSizeBytes(100L * 1024 * 1024) // 100MB disk cache
                     .build()
             }
             .crossfade(true)
@@ -187,17 +187,20 @@ object TvRepository {
     private fun resolveUrl(path: String?): String {
         if (path.isNullOrEmpty()) return ""
 
+        val baseUrl = AppConfig.IMAGE_BASE_URL
+        val serverIp = AppConfig.SERVER_IP
+
         var url = when {
             path.startsWith("http") -> path
-            path.startsWith("/") -> "${AppConfig.IMAGE_BASE_URL}$path"
-            else -> "${AppConfig.IMAGE_BASE_URL}/$path"
+            path.startsWith("/") -> "$baseUrl$path"
+            else -> "$baseUrl/$path"
         }
 
         // Fix: If server returns localhost/0.0.0.0, replace with configured SERVER_IP
         if (url.contains("localhost") || url.contains("0.0.0.0") || url.contains("127.0.0.1")) {
-            url = url.replace("localhost", AppConfig.SERVER_IP)
-                .replace("0.0.0.0", AppConfig.SERVER_IP)
-                .replace("127.0.0.1", AppConfig.SERVER_IP)
+            url = url.replace("localhost", serverIp)
+                .replace("0.0.0.0", serverIp)
+                .replace("127.0.0.1", serverIp)
         }
 
         return url
@@ -267,8 +270,9 @@ object TvRepository {
         val cached = scheduleCache[channelId]
         val now = System.currentTimeMillis()
 
-        // Return cached if valid
-        if (cached != null && (now - cached.timestamp) < AppConfig.Features.SCHEDULE_CACHE_DURATION_MS) {
+        // Return cached if valid (5 minutes cache)
+        val scheduleCacheDurationMs = 5 * 60 * 1000L
+        if (cached != null && (now - cached.timestamp) < scheduleCacheDurationMs) {
             return cached.programs
         }
 

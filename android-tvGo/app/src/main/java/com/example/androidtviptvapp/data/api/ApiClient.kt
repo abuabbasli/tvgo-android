@@ -176,6 +176,11 @@ data class MovieApiCredits(
     val cast: List<String>?
 )
 
+data class MovieApiAvailability(
+    val start: String?,
+    val end: String?
+)
+
 // ===== EPG API =====
 
 data class EpgResponse(

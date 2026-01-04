@@ -32,43 +32,6 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.example.androidtviptvapp.data.TvRepository
 
-/**
- * App Logo component - displays either remote logo from config or local drawable
- */
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun AppLogo(
-    modifier: Modifier = Modifier,
-    size: Dp = 48.dp
-) {
-    val context = LocalContext.current
-    val logoUrl = TvRepository.appConfig?.logoUrl
-
-    Box(
-        modifier = modifier.size(size),
-        contentAlignment = Alignment.Center
-    ) {
-        if (!logoUrl.isNullOrEmpty()) {
-            // Load logo from server
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(logoUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "App Logo",
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            // Fallback to local drawable
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = "App Logo",
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun Sidebar(
@@ -95,7 +58,7 @@ fun Sidebar(
             modifier = Modifier.padding(bottom = 8.dp),
             size = 48.dp
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
 
         SidebarItem(
@@ -104,7 +67,7 @@ fun Sidebar(
             isSelected = selectedRoute == "home",
             onClick = { onNavigate("home") }
         )
-        
+
         // Conditional Live TV
         val showLiveTv = com.example.androidtviptvapp.data.TvRepository.features?.enableLiveTv ?: true
         if (showLiveTv) {
@@ -126,7 +89,7 @@ fun Sidebar(
                 onClick = { onNavigate("movies") }
             )
         }
-        
+
         // Games section
         SidebarItem(
             icon = Icons.Default.SportsEsports,
@@ -134,16 +97,16 @@ fun Sidebar(
             isSelected = selectedRoute == "games",
             onClick = { onNavigate("games") }
         )
-        
+
         SidebarItem(
             icon = Icons.Default.Settings,
             label = "Settings",
             isSelected = selectedRoute == "settings",
             onClick = { onNavigate("settings") }
         )
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // View Mode Toggle at bottom (only shown on channels screen)
         if (showViewToggle && onViewModeChange != null) {
             Column(
@@ -171,7 +134,7 @@ fun Sidebar(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                
+
                 // List View Button
                 IconButton(
                     onClick = { onViewModeChange(ViewMode.LIST) },
@@ -203,7 +166,6 @@ fun SidebarItem(
     onClick: () -> Unit
 ) {
     // Determine colors based on selection state manually
-    // because standard Surface/ClickableSurfaceDefaults doesn't handle "selected" state effectively for colors
     val containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent
     val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     val focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -211,7 +173,7 @@ fun SidebarItem(
 
     Surface(
         onClick = onClick,
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(50)), // Pill shape
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(50)),
         modifier = Modifier.padding(vertical = 4.dp),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = containerColor,
