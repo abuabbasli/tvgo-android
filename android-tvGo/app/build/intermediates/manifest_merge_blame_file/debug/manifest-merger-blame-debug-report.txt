@@ -26,8 +26,8 @@
 18-->/Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/main/AndroidManifest.xml:11:9-32
 19
 20    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-20-->[androidx.media3:media3-exoplayer:1.2.0] /Users/abu/.gradle/caches/transforms-3/8f2252fb42a17e758d2cca76e8c091e0/transformed/jetified-media3-exoplayer-1.2.0/AndroidManifest.xml:22:5-79
-20-->[androidx.media3:media3-exoplayer:1.2.0] /Users/abu/.gradle/caches/transforms-3/8f2252fb42a17e758d2cca76e8c091e0/transformed/jetified-media3-exoplayer-1.2.0/AndroidManifest.xml:22:22-76
+20-->[com.google.android.exoplayer:exoplayer-core:2.19.1] /Users/abu/.gradle/caches/transforms-3/9f8fa6d7bc01e7bd53f0594817b06ebb/transformed/jetified-exoplayer-core-2.19.1/AndroidManifest.xml:24:5-79
+20-->[com.google.android.exoplayer:exoplayer-core:2.19.1] /Users/abu/.gradle/caches/transforms-3/9f8fa6d7bc01e7bd53f0594817b06ebb/transformed/jetified-exoplayer-core-2.19.1/AndroidManifest.xml:24:22-76
 21
 22    <permission
 22-->[androidx.core:core:1.12.0] /Users/abu/.gradle/caches/transforms-3/4f45b98e148b75ec04f2dda5f28d4175/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47

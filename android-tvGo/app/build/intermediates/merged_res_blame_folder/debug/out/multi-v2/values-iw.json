@@ -4,23 +4,6 @@
             "outputFile": "com.example.androidtviptvapp-mergeDebugResources-57:/values-iw/values-iw.xml",
             "map": [
                 {
-                    "source": "/Users/abu/.gradle/caches/transforms-3/8f2252fb42a17e758d2cca76e8c091e0/transformed/jetified-media3-exoplayer-1.2.0/res/values-iw/values-iw.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10",
-                        "startColumns": "4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,120,179,246,311,385,447,527,607",
-                        "endColumns": "64,58,66,64,73,61,79,79,61",
-                        "endOffsets": "115,174,241,306,380,442,522,602,664"
-                    },
-                    "to": {
-                        "startLines": "94,95,96,97,98,99,100,101,102",
-                        "startColumns": "4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "7844,7909,7968,8035,8100,8174,8236,8316,8396",
-                        "endColumns": "64,58,66,64,73,61,79,79,61",
-                        "endOffsets": "7904,7963,8030,8095,8169,8231,8311,8391,8453"
-                    }
-                },
-                {
                     "source": "/Users/abu/.gradle/caches/transforms-3/7d2cdfc85f8971c1a43be35b3fbd340c/transformed/jetified-ui-release/res/values-iw/values-iw.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
@@ -55,7 +38,7 @@
                     }
                 },
                 {
-                    "source": "/Users/abu/.gradle/caches/transforms-3/bd9ae3fc7ec1e975288490d638aa3301/transformed/jetified-media3-ui-1.2.0/res/values-iw/values-iw.xml",
+                    "source": "/Users/abu/.gradle/caches/transforms-3/8137efacfe55b7397be736c932f0a152/transformed/jetified-exoplayer-ui-2.19.1/res/values-iw/values-iw.xml",
                     "from": {
                         "startLines": "2,11,16,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -71,6 +54,23 @@
                         "endLines": "10,15,20,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120",
                         "endColumns": "17,12,12,78,77,75,84,83,61,61,88,85,64,63,62,67,119,109,117,70,76,68,60,89,88,63,62,53,70,47,60,58,66,60,62,60,56,65,63,65,51,53,67,67,53",
                         "endOffsets": "329,568,802,6025,6103,6179,6264,6348,6410,6472,6561,6647,6712,6776,6839,6907,7027,7137,7255,7326,7403,7472,7533,7623,7712,7776,7839,8507,8578,8626,8687,8746,8813,8874,8937,8998,9055,9121,9185,9251,9303,9357,9425,9493,9547"
+                    }
+                },
+                {
+                    "source": "/Users/abu/.gradle/caches/transforms-3/9f8fa6d7bc01e7bd53f0594817b06ebb/transformed/jetified-exoplayer-core-2.19.1/res/values-iw/values-iw.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10",
+                        "startColumns": "4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,120,179,246,311,385,447,527,607",
+                        "endColumns": "64,58,66,64,73,61,79,79,61",
+                        "endOffsets": "115,174,241,306,380,442,522,602,664"
+                    },
+                    "to": {
+                        "startLines": "94,95,96,97,98,99,100,101,102",
+                        "startColumns": "4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "7844,7909,7968,8035,8100,8174,8236,8316,8396",
+                        "endColumns": "64,58,66,64,73,61,79,79,61",
+                        "endOffsets": "7904,7963,8030,8095,8169,8231,8311,8391,8453"
                     }
                 },
                 {

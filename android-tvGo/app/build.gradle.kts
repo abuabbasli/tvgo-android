@@ -107,10 +107,12 @@ android {
 }
 
 dependencies {
-    // Compose versions - use consistent versions
+    // Compose versions
     val composeVersion = "1.5.4"
     val composeMaterial3Version = "1.1.2"
-    val media3Version = "1.2.0"
+    
+    // ExoPlayer 2 - Same as OnTV-main
+    val exoPlayerVersion = "2.19.1"
 
     // Core Android
     implementation("androidx.core:core-ktx:1.12.0")
@@ -126,32 +128,29 @@ dependencies {
     implementation("androidx.tv:tv-foundation:1.0.0-alpha10")
     implementation("androidx.tv:tv-material:1.0.0-alpha10")
 
-    // Media3 (ExoPlayer) - Only include what's needed
-    implementation("androidx.media3:media3-exoplayer:$media3Version")
-    implementation("androidx.media3:media3-exoplayer-hls:$media3Version")  // HLS streams
-    implementation("androidx.media3:media3-ui:$media3Version")
-    // Only add DASH if you use DASH streams:
-    // implementation("androidx.media3:media3-exoplayer-dash:$media3Version")
+    // ExoPlayer 2 (matching OnTV-main exactly)
+    implementation("com.google.android.exoplayer:exoplayer-core:$exoPlayerVersion")
+    implementation("com.google.android.exoplayer:exoplayer-hls:$exoPlayerVersion")
+    implementation("com.google.android.exoplayer:exoplayer-dash:$exoPlayerVersion")
+    implementation("com.google.android.exoplayer:exoplayer-ui:$exoPlayerVersion")
 
     // Image Loading - Coil is lightweight
     implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("io.coil-kt:coil-svg:2.5.0")  // Only if using SVG logos
+    implementation("io.coil-kt:coil-svg:2.5.0")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.6")
 
-    // Material Icons - needed for extended icons (QrCode, SportsEsports, etc.)
+    // Material Icons - needed for extended icons
     implementation("androidx.compose.material:material-icons-core:$composeVersion")
     implementation("androidx.compose.material:material-icons-extended:$composeVersion")
 
     // Network - Retrofit + OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    // Gson is included transitively, but explicit version ensures consistency
     implementation("com.google.code.gson:gson:2.10.1")
-    // OkHttp is included transitively by Retrofit
 
-    // QR Code - Only if needed for pairing/login
+    // QR Code
     implementation("com.google.zxing:core:3.5.2")
 
     // Debug only

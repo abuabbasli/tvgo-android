@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.example.androidtviptvapp.data.PlaybackManager
+import com.example.androidtviptvapp.player.PlayerView as TvPlayerView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
@@ -17,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.ui.PlayerView
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
@@ -34,7 +34,6 @@ import com.example.androidtviptvapp.ui.components.ChannelListItem
 import com.example.androidtviptvapp.ui.components.ViewMode
 
 @OptIn(ExperimentalTvMaterial3Api::class)
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun ChannelsScreen(
     viewMode: ViewMode = ViewMode.GRID,
@@ -532,48 +531,39 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun ChannelPreview(channel: Channel) {
     val context = LocalContext.current
-    
-    // Use shared PlaybackManager
-    val exoPlayer = remember { PlaybackManager.getPlayer(context) }
+    var playerView by remember { mutableStateOf<TvPlayerView?>(null) }
 
     LaunchedEffect(channel) {
-        // Use debounced playback to prevent thrashing on rapid focus changes
-        PlaybackManager.playUrlDebounced(context, channel.streamUrl)
+        // Give a small delay to avoid rapid switching
+        kotlinx.coroutines.delay(200)
+        playerView?.playUrl(channel.streamUrl)
     }
-
-    // Don't release player here, it's shared!
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .background(Color.Black, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp)) // Defines the clip shape for Compose
+            .clip(RoundedCornerShape(16.dp))
             .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
     ) {
         AndroidView(
             factory = { ctx ->
-                // Inflate layout with TextureView for proper rounded corner support
-                val view = android.view.LayoutInflater.from(ctx)
-                    .inflate(com.example.androidtviptvapp.R.layout.preview_player, null) as PlayerView
-                
-                view.apply {
-                    setKeepScreenOn(true)
-                    // Ensure view itself is clipped to outline for rounded corners
-                    clipToOutline = true
-                    outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
-                    background = android.graphics.drawable.GradientDrawable().apply {
-                        cornerRadius = 16f * ctx.resources.displayMetrics.density
-                        setColor(android.graphics.Color.BLACK)
-                    }
+                TvPlayerView(ctx).apply {
+                    resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FIT
+                    init()
+                    playerView = this
+                    playUrl(channel.streamUrl)
                 }
             },
-            update = { playerView ->
-                playerView.player = exoPlayer
+            update = { view ->
+                // Update handled by LaunchedEffect
+            },
+            onRelease = { view ->
+                view.destroy()
             },
             modifier = Modifier.fillMaxSize()
         )

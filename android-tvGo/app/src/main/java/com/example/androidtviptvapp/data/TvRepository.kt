@@ -94,19 +94,45 @@ object TvRepository {
         return ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.10) // 10% of available memory (reduced for TV boxes)
+                    .maxSizePercent(0.20) // 20% of available memory for better caching
+                    .strongReferencesEnabled(true) // Keep strong refs for TV scrolling
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
-                    .maxSizeBytes(50L * 1024 * 1024) // 50MB disk cache (reduced)
+                    .maxSizeBytes(75L * 1024 * 1024) // 75MB disk cache for logos
                     .build()
             }
             .okHttpClient { getUnsafeOkHttpClient() }
-            .crossfade(150) // Faster crossfade
-            .respectCacheHeaders(false)
+            .crossfade(200) // Smooth transitions
+            .respectCacheHeaders(false) // Force caching regardless of server headers
             .build()
+    }
+    
+    /**
+     * Preload channel logos for faster display when scrolling
+     */
+    fun preloadChannelLogos(context: Context) {
+        val loader = getImageLoader(context)
+        repositoryScope.launch {
+            val logosToPreload = channels.take(50).mapNotNull { it.logo.takeIf { url -> url.isNotEmpty() } }
+            android.util.Log.d("TvRepository", "Preloading ${logosToPreload.size} channel logos")
+            
+            logosToPreload.forEach { logoUrl ->
+                try {
+                    val request = coil.request.ImageRequest.Builder(context)
+                        .data(logoUrl)
+                        .memoryCacheKey(logoUrl)
+                        .diskCacheKey(logoUrl)
+                        .size(120, 120) // Standard tile size
+                        .build()
+                    loader.enqueue(request)
+                } catch (e: Exception) {
+                    // Ignore preload errors
+                }
+            }
+        }
     }
 
     /**
