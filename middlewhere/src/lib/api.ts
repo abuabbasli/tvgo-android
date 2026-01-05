@@ -3,7 +3,7 @@
  * Handles all communication with the backend API
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws';
 
 // Token management
 let accessToken: string | null = localStorage.getItem('accessToken');

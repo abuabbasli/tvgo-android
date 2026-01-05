@@ -33,31 +33,29 @@ com.example.androidtviptvapp-jetified-ui-unit-release-31 /Users/abu/.gradle/cach
 com.example.androidtviptvapp-jetified-material-release-32 /Users/abu/.gradle/caches/transforms-3/a608755ee0986ff5f502a79bf0a1cb34/transformed/jetified-material-release/res
 com.example.androidtviptvapp-jetified-profileinstaller-1.3.1-33 /Users/abu/.gradle/caches/transforms-3/a9e09faf448ec66d04654500805a4067/transformed/jetified-profileinstaller-1.3.1/res
 com.example.androidtviptvapp-jetified-activity-1.8.2-34 /Users/abu/.gradle/caches/transforms-3/accee1f782f362f210d98414435ef949/transformed/jetified-activity-1.8.2/res
-com.example.androidtviptvapp-jetified-ui-test-manifest-1.6.0-alpha07-35 /Users/abu/.gradle/caches/transforms-3/b551450a8dc42f233bcf625b1a28d705/transformed/jetified-ui-test-manifest-1.6.0-alpha07/res
-com.example.androidtviptvapp-jetified-ui-util-release-36 /Users/abu/.gradle/caches/transforms-3/bc8e603294675a4e467997e65f1ef4d0/transformed/jetified-ui-util-release/res
-com.example.androidtviptvapp-jetified-navigation-compose-2.7.6-37 /Users/abu/.gradle/caches/transforms-3/bcf23bafe627f7ccad14a4ecd61c0301/transformed/jetified-navigation-compose-2.7.6/res
-com.example.androidtviptvapp-jetified-media3-ui-1.2.0-38 /Users/abu/.gradle/caches/transforms-3/bd9ae3fc7ec1e975288490d638aa3301/transformed/jetified-media3-ui-1.2.0/res
-com.example.androidtviptvapp-jetified-appcompat-resources-1.6.1-39 /Users/abu/.gradle/caches/transforms-3/be6559349c790e4c870a71d7546d2398/transformed/jetified-appcompat-resources-1.6.1/res
-com.example.androidtviptvapp-recyclerview-1.3.0-40 /Users/abu/.gradle/caches/transforms-3/c100a920a7b0610579ee1b5487a188b1/transformed/recyclerview-1.3.0/res
-com.example.androidtviptvapp-jetified-ui-tooling-data-release-41 /Users/abu/.gradle/caches/transforms-3/c492f1c6281e18dbd0fbadb282d6dbf7/transformed/jetified-ui-tooling-data-release/res
-com.example.androidtviptvapp-core-runtime-2.2.0-42 /Users/abu/.gradle/caches/transforms-3/c78abb728a8c0f3e0f0fff745b5482ba/transformed/core-runtime-2.2.0/res
-com.example.androidtviptvapp-jetified-runtime-saveable-release-43 /Users/abu/.gradle/caches/transforms-3/cd7b8b0967671d291007594c6817ac7b/transformed/jetified-runtime-saveable-release/res
-com.example.androidtviptvapp-jetified-ui-tooling-release-44 /Users/abu/.gradle/caches/transforms-3/cf8f312f6d3222e0842c09de42b56d69/transformed/jetified-ui-tooling-release/res
-com.example.androidtviptvapp-jetified-savedstate-1.2.1-45 /Users/abu/.gradle/caches/transforms-3/d1af21483a1d965714cc444634058250/transformed/jetified-savedstate-1.2.1/res
-com.example.androidtviptvapp-jetified-animation-release-46 /Users/abu/.gradle/caches/transforms-3/d26d706bc9ce83b73b007d0f05931422/transformed/jetified-animation-release/res
-com.example.androidtviptvapp-jetified-foundation-layout-release-47 /Users/abu/.gradle/caches/transforms-3/d37e0d30ea2926829af71c45983749ab/transformed/jetified-foundation-layout-release/res
-com.example.androidtviptvapp-jetified-ui-text-release-48 /Users/abu/.gradle/caches/transforms-3/d75b6389681e37216bc2c08c72b4d2dd/transformed/jetified-ui-text-release/res
-com.example.androidtviptvapp-jetified-lifecycle-viewmodel-ktx-2.7.0-49 /Users/abu/.gradle/caches/transforms-3/d9e5225ecf504c1e629920a8379c2899/transformed/jetified-lifecycle-viewmodel-ktx-2.7.0/res
-com.example.androidtviptvapp-jetified-tv-material-1.0.0-alpha10-50 /Users/abu/.gradle/caches/transforms-3/dc5896e57f4428ba5cd5ce7e382c72e4/transformed/jetified-tv-material-1.0.0-alpha10/res
-com.example.androidtviptvapp-lifecycle-livedata-core-2.7.0-51 /Users/abu/.gradle/caches/transforms-3/dcbe798dcbbf7c534782f30e0a9ae477/transformed/lifecycle-livedata-core-2.7.0/res
-com.example.androidtviptvapp-lifecycle-viewmodel-2.7.0-52 /Users/abu/.gradle/caches/transforms-3/e278309d8449cda457dd9586881a1dd6/transformed/lifecycle-viewmodel-2.7.0/res
-com.example.androidtviptvapp-jetified-ui-geometry-release-53 /Users/abu/.gradle/caches/transforms-3/e503d013238a8c58df29c2bc4c15f03b/transformed/jetified-ui-geometry-release/res
-com.example.androidtviptvapp-navigation-common-2.7.6-54 /Users/abu/.gradle/caches/transforms-3/e875dc93ea4307f180a4c7b5bfac7088/transformed/navigation-common-2.7.6/res
-com.example.androidtviptvapp-jetified-lifecycle-viewmodel-compose-2.7.0-55 /Users/abu/.gradle/caches/transforms-3/ff87b3bbfb5e9f9be0edcb367164be71/transformed/jetified-lifecycle-viewmodel-compose-2.7.0/res
-com.example.androidtviptvapp-pngs-56 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/generated/res/pngs/debug
-com.example.androidtviptvapp-resValues-57 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/generated/res/resValues/debug
-com.example.androidtviptvapp-packageDebugResources-58 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.example.androidtviptvapp-packageDebugResources-59 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.example.androidtviptvapp-merged_res-60 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/merged_res/debug
-com.example.androidtviptvapp-debug-61 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/debug/res
-com.example.androidtviptvapp-main-62 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/main/res
+com.example.androidtviptvapp-jetified-ui-util-release-35 /Users/abu/.gradle/caches/transforms-3/bc8e603294675a4e467997e65f1ef4d0/transformed/jetified-ui-util-release/res
+com.example.androidtviptvapp-jetified-navigation-compose-2.7.6-36 /Users/abu/.gradle/caches/transforms-3/bcf23bafe627f7ccad14a4ecd61c0301/transformed/jetified-navigation-compose-2.7.6/res
+com.example.androidtviptvapp-jetified-media3-ui-1.2.0-37 /Users/abu/.gradle/caches/transforms-3/bd9ae3fc7ec1e975288490d638aa3301/transformed/jetified-media3-ui-1.2.0/res
+com.example.androidtviptvapp-jetified-appcompat-resources-1.6.1-38 /Users/abu/.gradle/caches/transforms-3/be6559349c790e4c870a71d7546d2398/transformed/jetified-appcompat-resources-1.6.1/res
+com.example.androidtviptvapp-recyclerview-1.3.0-39 /Users/abu/.gradle/caches/transforms-3/c100a920a7b0610579ee1b5487a188b1/transformed/recyclerview-1.3.0/res
+com.example.androidtviptvapp-jetified-ui-tooling-data-release-40 /Users/abu/.gradle/caches/transforms-3/c492f1c6281e18dbd0fbadb282d6dbf7/transformed/jetified-ui-tooling-data-release/res
+com.example.androidtviptvapp-core-runtime-2.2.0-41 /Users/abu/.gradle/caches/transforms-3/c78abb728a8c0f3e0f0fff745b5482ba/transformed/core-runtime-2.2.0/res
+com.example.androidtviptvapp-jetified-runtime-saveable-release-42 /Users/abu/.gradle/caches/transforms-3/cd7b8b0967671d291007594c6817ac7b/transformed/jetified-runtime-saveable-release/res
+com.example.androidtviptvapp-jetified-ui-tooling-release-43 /Users/abu/.gradle/caches/transforms-3/cf8f312f6d3222e0842c09de42b56d69/transformed/jetified-ui-tooling-release/res
+com.example.androidtviptvapp-jetified-savedstate-1.2.1-44 /Users/abu/.gradle/caches/transforms-3/d1af21483a1d965714cc444634058250/transformed/jetified-savedstate-1.2.1/res
+com.example.androidtviptvapp-jetified-animation-release-45 /Users/abu/.gradle/caches/transforms-3/d26d706bc9ce83b73b007d0f05931422/transformed/jetified-animation-release/res
+com.example.androidtviptvapp-jetified-foundation-layout-release-46 /Users/abu/.gradle/caches/transforms-3/d37e0d30ea2926829af71c45983749ab/transformed/jetified-foundation-layout-release/res
+com.example.androidtviptvapp-jetified-ui-text-release-47 /Users/abu/.gradle/caches/transforms-3/d75b6389681e37216bc2c08c72b4d2dd/transformed/jetified-ui-text-release/res
+com.example.androidtviptvapp-jetified-lifecycle-viewmodel-ktx-2.7.0-48 /Users/abu/.gradle/caches/transforms-3/d9e5225ecf504c1e629920a8379c2899/transformed/jetified-lifecycle-viewmodel-ktx-2.7.0/res
+com.example.androidtviptvapp-jetified-tv-material-1.0.0-alpha10-49 /Users/abu/.gradle/caches/transforms-3/dc5896e57f4428ba5cd5ce7e382c72e4/transformed/jetified-tv-material-1.0.0-alpha10/res
+com.example.androidtviptvapp-lifecycle-livedata-core-2.7.0-50 /Users/abu/.gradle/caches/transforms-3/dcbe798dcbbf7c534782f30e0a9ae477/transformed/lifecycle-livedata-core-2.7.0/res
+com.example.androidtviptvapp-lifecycle-viewmodel-2.7.0-51 /Users/abu/.gradle/caches/transforms-3/e278309d8449cda457dd9586881a1dd6/transformed/lifecycle-viewmodel-2.7.0/res
+com.example.androidtviptvapp-jetified-ui-geometry-release-52 /Users/abu/.gradle/caches/transforms-3/e503d013238a8c58df29c2bc4c15f03b/transformed/jetified-ui-geometry-release/res
+com.example.androidtviptvapp-navigation-common-2.7.6-53 /Users/abu/.gradle/caches/transforms-3/e875dc93ea4307f180a4c7b5bfac7088/transformed/navigation-common-2.7.6/res
+com.example.androidtviptvapp-jetified-lifecycle-viewmodel-compose-2.7.0-54 /Users/abu/.gradle/caches/transforms-3/ff87b3bbfb5e9f9be0edcb367164be71/transformed/jetified-lifecycle-viewmodel-compose-2.7.0/res
+com.example.androidtviptvapp-resValues-55 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/generated/res/resValues/debug
+com.example.androidtviptvapp-packageDebugResources-56 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.example.androidtviptvapp-packageDebugResources-57 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.example.androidtviptvapp-merged_res-58 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/build/intermediates/merged_res/debug
+com.example.androidtviptvapp-debug-59 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/debug/res
+com.example.androidtviptvapp-main-60 /Users/abu/Downloads/tvGoBackend copy/android-tvGo/app/src/main/res

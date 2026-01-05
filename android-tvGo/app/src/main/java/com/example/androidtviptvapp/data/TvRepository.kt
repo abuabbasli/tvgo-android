@@ -94,17 +94,17 @@ object TvRepository {
         return ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.15) // 15% of available memory
+                    .maxSizePercent(0.10) // 10% of available memory (reduced for TV boxes)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
-                    .maxSizeBytes(100L * 1024 * 1024) // 100MB disk cache
+                    .maxSizeBytes(50L * 1024 * 1024) // 50MB disk cache (reduced)
                     .build()
             }
-            .crossfade(true)
-            .respectCacheHeaders(false) // Use our cache settings
+            .crossfade(150) // Faster crossfade
+            .respectCacheHeaders(false)
             .build()
     }
 

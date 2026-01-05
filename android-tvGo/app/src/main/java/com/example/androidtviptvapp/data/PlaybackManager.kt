@@ -49,16 +49,22 @@ object PlaybackManager {
     private const val SILENT_RETRIES = 3
     private const val MAX_RETRIES = 5
     private const val RETRY_DELAY_MS = 500L
+    private const val DEBOUNCE_DELAY_MS = 200L
 
-    // 50MB cache for stream segments
-    private const val CACHE_SIZE_BYTES = 50L * 1024 * 1024
+    // 20MB cache for low-end TV boxes
+    private const val CACHE_SIZE_BYTES = 20L * 1024 * 1024
 
     var onPlaybackError: ((String, Boolean) -> Unit)? = null
+    
+    // Debounce job for rapid channel switching
+    private var pendingPlayJob: Job? = null
 
     /**
      * Pre-warm the player for faster first playback
      */
     fun warmUp(context: Context) {
+        if (appContext != null && exoPlayer != null) return // Already warmed up
+        
         appContext = context.applicationContext
         if (cache == null) {
             val cacheDir = File(context.cacheDir, "media_cache")
@@ -233,6 +239,7 @@ object PlaybackManager {
             return
         }
 
+        pendingPlayJob?.cancel()
         retryCount = 0
         retryJob?.cancel()
         currentUrl = url
@@ -244,10 +251,20 @@ object PlaybackManager {
             player.setMediaSource(mediaSource)
             player.prepare()
             player.playWhenReady = true
-            android.util.Log.d("PlaybackManager", "Playing: $url")
         } catch (e: Exception) {
-            android.util.Log.e("PlaybackManager", "Error", e)
             onPlaybackError?.invoke("Failed to load", false)
+        }
+    }
+    
+    /**
+     * Debounced playUrl for channel previews - waits before starting playback
+     * Prevents stream thrashing when rapidly navigating through channels
+     */
+    fun playUrlDebounced(context: Context, url: String) {
+        pendingPlayJob?.cancel()
+        pendingPlayJob = CoroutineScope(Dispatchers.Main).launch {
+            delay(DEBOUNCE_DELAY_MS)
+            playUrl(context, url)
         }
     }
 

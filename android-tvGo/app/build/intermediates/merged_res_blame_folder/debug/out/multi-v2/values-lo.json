@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-58:/values-lo/values-lo.xml",
+            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-57:/values-lo/values-lo.xml",
             "map": [
                 {
                     "source": "/Users/abu/.gradle/caches/transforms-3/bd9ae3fc7ec1e975288490d638aa3301/transformed/jetified-media3-ui-1.2.0/res/values-lo/values-lo.xml",

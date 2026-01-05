@@ -3,8 +3,6 @@ package com.example.androidtviptvapp.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.ui.zIndex
-import androidx.navigation.NavController
 import com.example.androidtviptvapp.data.PlaybackManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,8 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -155,7 +151,6 @@ fun ChannelsScreen(
                                     items = filteredChannels,
                                     key = { it.id }  // Stable key for efficient diffing
                                 ) { channel ->
-                                    val isFocused = focusedChannel == channel
                                     // Get or create a FocusRequester for this channel
                                     val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
                                     
@@ -170,7 +165,6 @@ fun ChannelsScreen(
                                                     focusedChannel = channel
                                                 }
                                             }
-                                            .zIndex(if (isFocused) 1f else 0f)
                                     )
                                 }
                             }
@@ -521,8 +515,8 @@ fun ChannelPreview(channel: Channel) {
     val exoPlayer = remember { PlaybackManager.getPlayer(context) }
 
     LaunchedEffect(channel) {
-        // No debounce needed for explicit click
-        PlaybackManager.playUrl(context, channel.streamUrl)
+        // Use debounced playback to prevent thrashing on rapid focus changes
+        PlaybackManager.playUrlDebounced(context, channel.streamUrl)
     }
 
     // Don't release player here, it's shared!

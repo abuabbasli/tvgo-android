@@ -140,7 +140,8 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.6")
 
-    // Icons - Only include if using extended icons, otherwise use core icons
+    // Material Icons - needed for extended icons (QrCode, SportsEsports, etc.)
+    implementation("androidx.compose.material:material-icons-core:$composeVersion")
     implementation("androidx.compose.material:material-icons-extended:$composeVersion")
 
     // Network - Retrofit + OkHttp

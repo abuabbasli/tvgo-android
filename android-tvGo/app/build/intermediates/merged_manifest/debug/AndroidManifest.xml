@@ -27,7 +27,7 @@
 
     <application
         android:name="com.example.androidtviptvapp.TvGoApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:banner="@drawable/banner"
         android:debuggable="true"
@@ -35,7 +35,6 @@
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="TV GO"
-        android:largeHeap="true"
         android:supportsRtl="true"
         android:testOnly="true"
         android:theme="@style/Theme.AndroidTvIptvApp"
@@ -68,9 +67,6 @@
 
         <activity
             android:name="androidx.compose.ui.tooling.PreviewActivity"
-            android:exported="true" />
-        <activity
-            android:name="androidx.activity.ComponentActivity"
             android:exported="true" />
 
         <receiver

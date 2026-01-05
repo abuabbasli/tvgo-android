@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-58:/values-da/values-da.xml",
+            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-57:/values-da/values-da.xml",
             "map": [
                 {
                     "source": "/Users/abu/.gradle/caches/transforms-3/7d2cdfc85f8971c1a43be35b3fbd340c/transformed/jetified-ui-release/res/values-da/values-da.xml",

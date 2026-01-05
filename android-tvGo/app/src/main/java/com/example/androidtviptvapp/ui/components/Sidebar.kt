@@ -98,6 +98,14 @@ fun Sidebar(
             onClick = { onNavigate("games") }
         )
 
+        // Messages section with QR code support
+        SidebarItem(
+            icon = Icons.Default.Email,
+            label = "Messages",
+            isSelected = selectedRoute == "messages",
+            onClick = { onNavigate("messages") }
+        )
+
         SidebarItem(
             icon = Icons.Default.Settings,
             label = "Settings",

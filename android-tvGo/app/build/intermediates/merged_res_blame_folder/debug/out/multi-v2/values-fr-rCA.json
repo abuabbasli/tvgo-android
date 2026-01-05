@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-58:/values-fr-rCA/values-fr-rCA.xml",
+            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-57:/values-fr-rCA/values-fr-rCA.xml",
             "map": [
                 {
                     "source": "/Users/abu/.gradle/caches/transforms-3/8f2252fb42a17e758d2cca76e8c091e0/transformed/jetified-media3-exoplayer-1.2.0/res/values-fr-rCA/values-fr-rCA.xml",

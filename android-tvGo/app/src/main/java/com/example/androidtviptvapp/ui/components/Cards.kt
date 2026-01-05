@@ -32,15 +32,28 @@ fun ChannelCard(
     modifier: Modifier = Modifier,
     width: Dp = 260.dp
 ) {
-    var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    
+    // Remember image request to avoid recreation on recomposition
+    val imageRequest = remember(channel.logo) {
+        ImageRequest.Builder(context)
+            .data(channel.logo)
+            .apply {
+                if (channel.logo.endsWith(".svg", ignoreCase = true)) {
+                    decoderFactory(SvgDecoder.Factory())
+                }
+            }
+            .crossfade(200)
+            .memoryCacheKey(channel.id)
+            .diskCacheKey(channel.id)
+            .build()
+    }
 
     Card(
         onClick = { onClick(channel) },
         modifier = modifier
             .width(width)
-            .aspectRatio(16f / 9f)
-            .onFocusChanged { isFocused = it.isFocused },
+            .aspectRatio(16f / 9f),
         scale = CardDefaults.scale(focusedScale = 1.05f),
         border = CardDefaults.border(
             focusedBorder = Border(
@@ -50,46 +63,26 @@ fun ChannelCard(
                 border = BorderStroke(1.dp, Color(0xFF333333))
             )
         ),
-        // Dark background color matching web screenshot
         colors = CardDefaults.colors(containerColor = Color(0xFF1E1E1E))
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Logo centered - reduced padding for bigger logo
+            // Logo centered - use AsyncImage instead of SubcomposeAsyncImage
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp),  // Reduced from 32dp to 12dp
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(channel.logo)
-                        .apply {
-                            if (channel.logo.endsWith(".svg", ignoreCase = true)) {
-                                decoderFactory(SvgDecoder.Factory())
-                            }
-                        }
-                        .crossfade(true)
-                        .build(),
+                AsyncImage(
+                    model = imageRequest,
                     contentDescription = channel.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
-                    loading = {
-                        Text(
-                            text = channel.name.take(2).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.Gray
-                        )
-                    },
-                    error = {
-                        Text(
-                            text = channel.name.take(2).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.Gray
-                        )
-                    }
+                    // Placeholder shown during loading - no subcomposition needed
+                    placeholder = null,
+                    error = null
                 )
             }
 
@@ -103,15 +96,6 @@ fun ChannelCard(
                     .padding(12.dp)
                     .size(20.dp)
             )
-            
-            // Focus Overlay (Subtle highlight)
-            if (isFocused) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White.copy(alpha = 0.05f))
-                )
-            }
         }
     }
 }
@@ -123,16 +107,24 @@ fun MovieCard(
     onClick: (Movie) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    
+    // Remember image request to avoid recreation
+    val imageRequest = remember(movie.thumbnail) {
+        ImageRequest.Builder(context)
+            .data(movie.thumbnail)
+            .crossfade(200)
+            .memoryCacheKey(movie.id)
+            .diskCacheKey(movie.id)
+            .build()
+    }
 
     Column {
         Card(
             onClick = { onClick(movie) },
             modifier = modifier
                 .width(160.dp)
-                .aspectRatio(2f / 3f)
-                .onFocusChanged { isFocused = it.isFocused },
+                .aspectRatio(2f / 3f),
             scale = CardDefaults.scale(focusedScale = 1.08f),
             border = CardDefaults.border(
                 focusedBorder = Border(
@@ -142,46 +134,13 @@ fun MovieCard(
             colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(movie.thumbnail)
-                        .crossfade(true)
-                        .build(),
+                AsyncImage(
+                    model = imageRequest,
                     contentDescription = movie.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFF333333)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = movie.title.take(1).uppercase(),
-                                style = MaterialTheme.typography.headlineLarge,
-                                color = Color.Gray
-                            )
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        colors = listOf(Color(0xFF4A90A4), Color(0xFF2D5A6A))
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = movie.title.take(2).uppercase(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = Color.White
-                            )
-                        }
-                    }
+                    placeholder = null,
+                    error = null
                 )
                 
                 // Rating badge
@@ -202,7 +161,7 @@ fun MovieCard(
             }
         }
         
-        // Title below card (always visible)
+        // Title below card
         Text(
             text = movie.title,
             style = MaterialTheme.typography.bodySmall,
@@ -210,7 +169,7 @@ fun MovieCard(
                 .padding(top = 8.dp)
                 .width(160.dp),
             maxLines = 1,
-            color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         // Year below title

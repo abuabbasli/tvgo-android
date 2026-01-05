@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-58:/values-en-rXC/values-en-rXC.xml",
+            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-57:/values-en-rXC/values-en-rXC.xml",
             "map": [
                 {
                     "source": "/Users/abu/.gradle/caches/transforms-3/53134693973fd4bca3317b18c5f49c78/transformed/jetified-material3-1.1.2/res/values-en-rXC/values-en-rXC.xml",

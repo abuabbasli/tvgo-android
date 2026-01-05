@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-58:/values-sr/values-sr.xml",
+            "outputFile": "com.example.androidtviptvapp-mergeDebugResources-57:/values-sr/values-sr.xml",
             "map": [
                 {
                     "source": "/Users/abu/.gradle/caches/transforms-3/4f45b98e148b75ec04f2dda5f28d4175/transformed/core-1.12.0/res/values-sr/values-sr.xml",
