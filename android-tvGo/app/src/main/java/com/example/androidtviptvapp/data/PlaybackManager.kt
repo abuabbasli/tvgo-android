@@ -44,6 +44,7 @@ object PlaybackManager {
     private var retryJob: Job? = null
     private var cache: SimpleCache? = null
     private var dataSourceFactory: DataSource.Factory? = null
+    private var appContext: Context? = null
 
     private const val SILENT_RETRIES = 3
     private const val MAX_RETRIES = 5
@@ -58,6 +59,7 @@ object PlaybackManager {
      * Pre-warm the player for faster first playback
      */
     fun warmUp(context: Context) {
+        appContext = context.applicationContext
         if (cache == null) {
             val cacheDir = File(context.cacheDir, "media_cache")
             if (!cacheDir.exists()) cacheDir.mkdirs()
@@ -184,7 +186,7 @@ object PlaybackManager {
      */
     private fun createMediaSource(url: String): MediaSource {
         val uri = Uri.parse(url)
-        val factory = dataSourceFactory ?: return DefaultMediaSourceFactory(exoPlayer!!.applicationContext)
+        val factory = dataSourceFactory ?: return DefaultMediaSourceFactory(appContext!!)
             .createMediaSource(MediaItem.fromUri(uri))
 
         // Use HLS source for .m3u8 streams (most IPTV channels)
@@ -274,6 +276,7 @@ object PlaybackManager {
         }
         cache = null
         dataSourceFactory = null
+        appContext = null
     }
 
     private fun createOptimizedPlayer(context: Context): ExoPlayer {
