@@ -103,9 +103,40 @@ object TvRepository {
                     .maxSizeBytes(50L * 1024 * 1024) // 50MB disk cache (reduced)
                     .build()
             }
+            .okHttpClient { getUnsafeOkHttpClient() }
             .crossfade(150) // Faster crossfade
             .respectCacheHeaders(false)
             .build()
+    }
+
+    /**
+     * Creates an OkHttpClient that trusts all certificates.
+     * Use only for legacy devices where root certs are outdated.
+     */
+    private fun getUnsafeOkHttpClient(): okhttp3.OkHttpClient {
+        return try {
+            // Create a trust manager that does not validate certificate chains
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                }
+            )
+
+            // Install the all-trusting trust manager
+            val sslContext = javax.net.ssl.SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+            val sslSocketFactory = sslContext.socketFactory
+
+            okhttp3.OkHttpClient.Builder()
+                .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as javax.net.ssl.X509TrustManager)
+                .hostnameVerifier { _, _ -> true }
+                .build()
+        } catch (e: Exception) {
+            android.util.Log.e("TvRepository", "Error creating unsafe client", e)
+            okhttp3.OkHttpClient.Builder().build()
+        }
     }
 
     /**

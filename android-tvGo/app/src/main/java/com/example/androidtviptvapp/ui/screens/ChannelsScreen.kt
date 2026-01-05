@@ -59,6 +59,10 @@ fun ChannelsScreen(
     // Map of FocusRequesters for each channel to enable programmatic focus
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
     
+    // Grid and list state for scrolling to specific channel
+    val gridState = androidx.tv.foundation.lazy.grid.rememberTvLazyGridState()
+    val listState = androidx.tv.foundation.lazy.list.rememberTvLazyListState()
+    
     val filteredChannels = remember(selectedCategory) {
         if (selectedCategory == "all") {
             TvRepository.channels
@@ -79,16 +83,32 @@ fun ChannelsScreen(
     // NOTE: Don't release player here! It's shared with PlayerScreen (fullscreen).
     // The player will be released when leaving the entire playback flow.
     
-    // Update selection when returning with a new channel ID
+    // Update selection when returning with a new channel ID - scroll to it and focus
     LaunchedEffect(initialChannelId) {
         if (initialChannelId != null) {
             val channel = TvRepository.channels.find { it.id == initialChannelId }
             if (channel != null) {
                 focusedChannel = channel
                 previewChannel = channel
-                // Request focus on the channel card after a short delay to ensure it's composed
-                kotlinx.coroutines.delay(100)
-                focusRequesters[initialChannelId]?.requestFocus()
+                
+                // Find index of the channel in filtered list
+                val index = filteredChannels.indexOfFirst { it.id == initialChannelId }
+                if (index >= 0) {
+                    // Scroll to the channel first
+                    when (viewMode) {
+                        ViewMode.GRID -> {
+                            // In grid with 2 columns, we need to scroll to the row
+                            gridState.scrollToItem(index)
+                        }
+                        ViewMode.LIST -> {
+                            listState.scrollToItem(index)
+                        }
+                    }
+                    
+                    // Wait for scroll and composition, then request focus
+                    kotlinx.coroutines.delay(150)
+                    focusRequesters[initialChannelId]?.requestFocus()
+                }
             }
         }
     }
@@ -137,6 +157,7 @@ fun ChannelsScreen(
                         ViewMode.GRID -> {
                             TvLazyVerticalGrid(
                                 columns = TvGridCells.Fixed(2),
+                                state = gridState,
                                 contentPadding = PaddingValues(
                                     start = 4.dp,
                                     top = 4.dp,
@@ -171,6 +192,7 @@ fun ChannelsScreen(
                         }
                         ViewMode.LIST -> {
                             TvLazyColumn(
+                                state = listState,
                                 contentPadding = PaddingValues(bottom = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxSize()
@@ -179,11 +201,15 @@ fun ChannelsScreen(
                                     items = filteredChannels,
                                     key = { it.id }  // Stable key for efficient diffing
                                 ) { channel ->
+                                    // Get or create a FocusRequester for this channel
+                                    val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
+                                    
                                     ChannelListItem(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .focusRequester(focusRequester)
                                             .onFocusChanged { 
                                                 if (it.isFocused) {
                                                     focusedChannel = channel

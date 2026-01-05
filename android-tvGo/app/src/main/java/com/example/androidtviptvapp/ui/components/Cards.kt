@@ -8,7 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -18,7 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
@@ -43,9 +45,12 @@ fun ChannelCard(
                     decoderFactory(SvgDecoder.Factory())
                 }
             }
-            .crossfade(200)
-            .memoryCacheKey(channel.id)
-            .diskCacheKey(channel.id)
+            .crossfade(150)
+            .listener(
+                onError = { _, result ->
+                    android.util.Log.e("Cards", "Image load failed for ${channel.name}: ${result.throwable.message}", result.throwable)
+                }
+            )
             .build()
     }
 
@@ -68,27 +73,46 @@ fun ChannelCard(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Logo centered - use AsyncImage instead of SubcomposeAsyncImage
+            // Logo centered with proper loading/error handling
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = imageRequest,
                     contentDescription = channel.name,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                    // Placeholder shown during loading - no subcomposition needed
-                    placeholder = null,
-                    error = null
-                )
+                    contentScale = ContentScale.Fit
+                ) {
+                    when (val state = painter.state) {
+                        is AsyncImagePainter.State.Loading -> {
+                            // Show channel initials while loading
+                            Text(
+                                text = channel.name.take(2).uppercase(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color.Gray
+                            )
+                        }
+                        is AsyncImagePainter.State.Error -> {
+                            // Show channel initials on error
+                            Text(
+                                text = channel.name.take(2).uppercase(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color.Gray
+                            )
+                        }
+                        else -> {
+                            SubcomposeAsyncImageContent()
+                        }
+                    }
+                }
             }
 
             // Favorite Icon (Top Right)
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Default.Star,
+                imageVector = Icons.Default.Star,
                 contentDescription = "Favorite",
                 tint = Color.Gray,
                 modifier = Modifier
@@ -113,9 +137,12 @@ fun MovieCard(
     val imageRequest = remember(movie.thumbnail) {
         ImageRequest.Builder(context)
             .data(movie.thumbnail)
-            .crossfade(200)
-            .memoryCacheKey(movie.id)
-            .diskCacheKey(movie.id)
+            .crossfade(150)
+            .listener(
+                onError = { _, result ->
+                    android.util.Log.e("Cards", "Image load failed for ${movie.title}: ${result.throwable.message}", result.throwable)
+                }
+            )
             .build()
     }
 
@@ -131,17 +158,59 @@ fun MovieCard(
                     border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 )
             ),
-            colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.colors(containerColor = Color(0xFF333333))
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = imageRequest,
                     contentDescription = movie.title,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    placeholder = null,
-                    error = null
-                )
+                    contentScale = ContentScale.Crop
+                ) {
+                    when (val state = painter.state) {
+                        is AsyncImagePainter.State.Loading -> {
+                            // Show gradient placeholder while loading
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color(0xFF3A3A3A), Color(0xFF2A2A2A))
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = movie.title.take(1).uppercase(),
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        is AsyncImagePainter.State.Error -> {
+                            // Show gradient with movie initials on error
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color(0xFF4A90A4), Color(0xFF2D5A6A))
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = movie.title.take(2).uppercase(),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                        else -> {
+                            SubcomposeAsyncImageContent()
+                        }
+                    }
+                }
                 
                 // Rating badge
                 Box(
