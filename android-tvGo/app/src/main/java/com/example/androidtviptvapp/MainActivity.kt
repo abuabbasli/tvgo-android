@@ -28,14 +28,14 @@ import com.example.androidtviptvapp.ui.components.ViewMode
 import com.example.androidtviptvapp.ui.theme.AndroidTvIptvAppTheme
 
 import com.example.androidtviptvapp.data.TvRepository
+import com.example.androidtviptvapp.ui.screens.LoginScreen
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initial Data Load - runs in background, doesn't block UI
-        // Coil is already set up in TvGoApplication
+        // Load public config first (for branding on login screen)
         TvRepository.loadData()
 
         setContent {
@@ -45,28 +45,40 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
+                    // Observe authentication state
+                    val isAuthenticated = TvRepository.isAuthenticated
+
                     // Observe loading state
                     val isLoading by TvRepository.isLoading.collectAsState()
                     val loadingProgress by TvRepository.loadingProgress.collectAsState()
                     val isDataReady by TvRepository.isDataReady.collectAsState()
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        // Show loading screen while data loads
-                        AnimatedVisibility(
-                            visible = isLoading && !isDataReady,
-                            enter = fadeIn(),
-                            exit = fadeOut()
-                        ) {
-                            LoadingScreen(progress = loadingProgress)
-                        }
+                        if (!isAuthenticated) {
+                            // Show login screen if not authenticated
+                            LoginScreen(
+                                onLoginSuccess = {
+                                    // Data is already loaded after successful login
+                                }
+                            )
+                        } else {
+                            // Show loading screen while data loads
+                            AnimatedVisibility(
+                                visible = isLoading && !isDataReady,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                LoadingScreen(progress = loadingProgress)
+                            }
 
-                        // Main app content - shown when data is ready or loading is complete
-                        AnimatedVisibility(
-                            visible = !isLoading || isDataReady,
-                            enter = fadeIn(),
-                            exit = fadeOut()
-                        ) {
-                            MainContent()
+                            // Main app content - shown when data is ready or loading is complete
+                            AnimatedVisibility(
+                                visible = !isLoading || isDataReady,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                MainContent()
+                            }
                         }
                     }
                 }

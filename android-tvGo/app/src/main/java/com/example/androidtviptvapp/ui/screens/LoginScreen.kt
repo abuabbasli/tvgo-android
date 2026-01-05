@@ -26,9 +26,10 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    
+
     val scope = rememberCoroutineScope()
-    
+    val context = LocalContext.current
+
     // Dynamic Brand Configuration
     val brandConfig = TvRepository.appConfig
 
@@ -80,7 +81,7 @@ fun LoginScreen(
                     keyboardController?.hide()
                     scope.launch {
                         isLoading = true
-                        val success = TvRepository.login(username, password)
+                        val success = TvRepository.login(username, password, context)
                         isLoading = false
                         if (success) {
                             onLoginSuccess()
@@ -98,12 +99,12 @@ fun LoginScreen(
 
             // Login Button
             Button(
-                onClick = { 
+                onClick = {
                     keyboardController?.hide()
                     scope.launch {
                         isLoading = true
                         error = null
-                        val success = TvRepository.login(username, password)
+                        val success = TvRepository.login(username, password, context)
                         isLoading = false
                         if (success) {
                             onLoginSuccess()

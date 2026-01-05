@@ -161,10 +161,38 @@ object TvRepository {
         }
     }
 
-    suspend fun login(username: String, pass: String): Boolean {
+    /**
+     * Login with subscriber credentials
+     * @param context Android context to get device ID
+     */
+    suspend fun login(username: String, pass: String, context: Context? = null): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = ApiClient.service.login(LoginRequest(username, pass))
+                // Get device ID (use Android ID as MAC substitute for TV boxes)
+                val deviceId = context?.let {
+                    try {
+                        android.provider.Settings.Secure.getString(
+                            it.contentResolver,
+                            android.provider.Settings.Secure.ANDROID_ID
+                        ) ?: "00:00:00:00:00:00"
+                    } catch (e: Exception) {
+                        "00:00:00:00:00:00"
+                    }
+                } ?: "00:00:00:00:00:00"
+
+                val deviceName = android.os.Build.MODEL ?: "Android TV"
+
+                android.util.Log.d("TvRepository", "Login attempt: user=$username, deviceId=$deviceId, deviceName=$deviceName")
+
+                val response = ApiClient.service.login(
+                    LoginRequest(
+                        username = username,
+                        password = pass,
+                        macAddress = deviceId,
+                        deviceName = deviceName
+                    )
+                )
+
                 withContext(Dispatchers.Main) {
                     authToken = response.accessToken
                     isAuthenticated = true
@@ -175,10 +203,12 @@ object TvRepository {
                     }
                 }
 
+                android.util.Log.d("TvRepository", "Login successful, loading channels...")
                 loadChannelsAsync()
+                loadMoviesAsync()
                 true
             } catch (e: Exception) {
-                android.util.Log.e("TvRepository", "Login failed: ${e.message}")
+                android.util.Log.e("TvRepository", "Login failed: ${e.message}", e)
                 false
             }
         }
@@ -328,16 +358,21 @@ object TvRepository {
             android.util.Log.d("TvRepository", "Got ${response.total} movies from API")
 
             val domainMovies = response.items.map { item ->
+                // Debug: Log image URLs
+                val posterUrl = item.images?.poster
+                val resolvedThumbnail = resolveUrl(posterUrl)
+                android.util.Log.d("TvRepository", "Movie: ${item.title}, poster: $posterUrl -> $resolvedThumbnail")
+
                 Movie(
                     id = item.id,
                     title = item.title,
-                    thumbnail = resolveUrl(item.images?.poster),
+                    thumbnail = resolvedThumbnail,
                     backdrop = resolveUrl(item.images?.landscape ?: item.images?.hero),
                     category = item.genres?.firstOrNull()?.lowercase() ?: "all",
                     year = item.year ?: 2024,
                     rating = item.rating?.toString() ?: "0.0",
                     description = item.synopsis ?: "",
-                    videoUrl = item.media?.streamUrl ?: "",
+                    videoUrl = resolveStreamUrl(item.media?.streamUrl),
                     trailerUrl = item.media?.trailerUrl ?: "",
                     genre = item.genres ?: emptyList(),
                     runtime = item.runtimeMinutes ?: 0,
