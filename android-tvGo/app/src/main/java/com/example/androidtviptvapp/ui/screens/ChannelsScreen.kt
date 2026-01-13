@@ -1,5 +1,6 @@
 package com.example.androidtviptvapp.ui.screens
 
+import android.graphics.Rect
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -24,12 +25,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.zIndex
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
@@ -51,11 +54,9 @@ private const val TAG = "ChannelsScreen"
 /**
  * ChannelsScreen with integrated fullscreen mode (OnTV-main pattern).
  *
- * Architecture:
- * - ONE single AndroidView for the player (always fullscreen, at z-index 0)
- * - Menu UI overlaid on top with opaque backgrounds (z-index 1)
- * - Preview "window" shows through to the player
- * - Fullscreen mode = hide menu overlay, player shows through
+ * Uses outputRect to constrain player to preview area:
+ * - Preview mode: player.outputRect = preview box bounds
+ * - Fullscreen mode: player.outputRect = null (fills screen)
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -67,6 +68,7 @@ fun ChannelsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
     // FULLSCREEN STATE
     var isFullscreen by remember { mutableStateOf(false) }
@@ -112,6 +114,9 @@ fun ChannelsScreen(
     }
     var playerViewRef by remember { mutableStateOf<TvPlayerView?>(null) }
 
+    // Preview box bounds for outputRect
+    var previewBoxRect by remember { mutableStateOf<Rect?>(null) }
+
     // Player state
     val playerState by SharedPlayerManager.playerState.collectAsState()
     var showOverlay by remember { mutableStateOf(true) }
@@ -124,6 +129,21 @@ fun ChannelsScreen(
         onDispose {
             SharedPlayerManager.stopTicking()
             SharedPlayerManager.markDetached()
+        }
+    }
+
+    // Update outputRect based on fullscreen state
+    LaunchedEffect(isFullscreen, previewBoxRect) {
+        playerViewRef?.let { player ->
+            if (isFullscreen) {
+                player.outputRect = null  // Fullscreen
+                player.resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FIT
+            } else {
+                previewBoxRect?.let { rect ->
+                    player.outputRect = rect  // Preview area
+                    player.resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FILL
+                }
+            }
         }
     }
 
@@ -235,21 +255,16 @@ fun ChannelsScreen(
     // Root container
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ========== PLAYER - ALWAYS FULLSCREEN AT Z-INDEX 0 ==========
-        // This is the ONLY AndroidView. It's always fullscreen.
-        // Menu UI is overlaid on top to create the "preview window" effect.
+        // ========== PLAYER - ALWAYS AT ROOT, USES outputRect ==========
         AndroidView(
             factory = { ctx ->
                 singletonPlayer.apply {
-                    resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FIT
                     playerViewRef = this
                 }
             },
             update = { },
             onRelease = { },
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(0f)
+            modifier = Modifier.fillMaxSize()
         )
 
         // ========== FULLSCREEN MODE OVERLAY ==========
@@ -257,7 +272,6 @@ fun ChannelsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .zIndex(1f)
                     .focusRequester(fullscreenFocusRequester)
                     .focusable()
                     .onKeyEvent { event ->
@@ -276,7 +290,6 @@ fun ChannelsScreen(
                         } else false
                     }
             ) {
-                // Overlay with channel info
                 AnimatedVisibility(visible = showOverlay, enter = fadeIn(), exit = fadeOut()) {
                     Box(
                         modifier = Modifier
@@ -332,212 +345,261 @@ fun ChannelsScreen(
             }
         }
 
-        // ========== PREVIEW MODE - MENU UI OVERLAID ON PLAYER ==========
+        // ========== PREVIEW MODE - YOUR ORIGINAL UI ==========
         if (!isFullscreen) {
-            // Left side - Channel list with opaque background (hides player)
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .zIndex(1f)
+                    .padding(top = 24.dp, start = 24.dp)
+                    .onKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown) {
+                            when (event.key) {
+                                Key.DirectionUp, Key.DirectionDown -> {
+                                    val now = System.currentTimeMillis()
+                                    if (now - lastChannelSwitchTime < channelSwitchDebounceMs) true
+                                    else { lastChannelSwitchTime = now; false }
+                                }
+                                Key.Back, Key.Escape -> { onBack(); true }
+                                else -> false
+                            }
+                        } else false
+                    }
             ) {
-                // Channel list panel - opaque background blocks player
-                Column(
+                // Categories
+                CategoryFilter(
+                    categories = TvRepository.channelCategories,
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { selectedCategory = it },
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Split View - YOUR ORIGINAL LAYOUT
+                Row(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
-                        .background(Color(0xFF0D1117))  // Opaque dark background
-                        .padding(top = 24.dp, start = 24.dp, end = 12.dp)
-                        .onKeyEvent { event ->
-                            if (event.type == KeyEventType.KeyDown) {
-                                when (event.key) {
-                                    Key.DirectionUp, Key.DirectionDown -> {
-                                        val now = System.currentTimeMillis()
-                                        if (now - lastChannelSwitchTime < channelSwitchDebounceMs) true
-                                        else { lastChannelSwitchTime = now; false }
-                                    }
-                                    Key.Back, Key.Escape -> { onBack(); true }
-                                    else -> false
-                                }
-                            } else false
-                        }
+                        .fillMaxWidth()
                 ) {
-                    // Categories
-                    CategoryFilter(
-                        categories = TvRepository.channelCategories,
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = { selectedCategory = it },
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    // Channel grid/list
-                    if (filteredChannels.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No channels found", color = Color.Gray)
-                        }
-                    } else {
-                        val onChannelClickAction: (Channel) -> Unit = { channel ->
-                            if (previewChannel == channel && isStreamPlaying) {
-                                isFullscreen = true
-                                showOverlay = true
-                            } else {
-                                isClickTriggered = true
-                                previewChannel = channel
-                            }
-                        }
-
-                        when (viewMode) {
-                            ViewMode.GRID -> {
-                                TvLazyVerticalGrid(
-                                    columns = TvGridCells.Fixed(2),
-                                    state = gridState,
-                                    contentPadding = PaddingValues(4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(filteredChannels, key = { it.id }) { channel ->
-                                        val fr = focusRequesters.getOrPut(channel.id) { FocusRequester() }
-                                        ChannelCard(
-                                            channel = channel,
-                                            onClick = { onChannelClickAction(channel) },
-                                            width = 120.dp,
-                                            modifier = Modifier.focusRequester(fr).onFocusChanged {
-                                                if (it.isFocused) focusedChannel = channel
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                            ViewMode.LIST -> {
-                                TvLazyColumn(
-                                    state = listState,
-                                    contentPadding = PaddingValues(bottom = 24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(filteredChannels, key = { it.id }) { channel ->
-                                        val fr = focusRequesters.getOrPut(channel.id) { FocusRequester() }
-                                        ChannelListItem(
-                                            channel = channel,
-                                            onClick = { onChannelClickAction(channel) },
-                                            modifier = Modifier.fillMaxWidth().focusRequester(fr).onFocusChanged {
-                                                if (it.isFocused) focusedChannel = channel
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Right side - Preview area (transparent to show player) + info
-                Column(
-                    modifier = Modifier
-                        .weight(1.4f)
-                        .fillMaxHeight()
-                        .padding(top = 24.dp, end = 24.dp)
-                ) {
-                    // Preview window - TRANSPARENT to show player behind
+                    // Channel Selection Area
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(0.52f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(2.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(end = 12.dp)
                     ) {
-                        // Buffering indicator
-                        if (playerState.isBuffering && previewChannel != null) {
+                        if (filteredChannels.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Box(modifier = Modifier.size(32.dp).border(2.dp, Color.White.copy(alpha = 0.5f), CircleShape))
+                                Text("No channels found in this category", color = Color.Gray)
                             }
-                        }
-                        if (previewChannel == null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize().background(Color.Black),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Select a channel", color = Color.White.copy(alpha = 0.5f))
+                        } else {
+                            val onChannelClickAction: (Channel) -> Unit = { channel ->
+                                if (previewChannel == channel && isStreamPlaying) {
+                                    isFullscreen = true
+                                    showOverlay = true
+                                } else {
+                                    isClickTriggered = true
+                                    previewChannel = channel
+                                }
+                            }
+
+                            when (viewMode) {
+                                ViewMode.GRID -> {
+                                    TvLazyVerticalGrid(
+                                        columns = TvGridCells.Fixed(2),
+                                        state = gridState,
+                                        contentPadding = PaddingValues(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        items(filteredChannels, key = { it.id }) { channel ->
+                                            val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
+                                            ChannelCard(
+                                                channel = channel,
+                                                onClick = { onChannelClickAction(channel) },
+                                                width = 120.dp,
+                                                modifier = Modifier
+                                                    .focusRequester(focusRequester)
+                                                    .onFocusChanged { if (it.isFocused) focusedChannel = channel }
+                                            )
+                                        }
+                                    }
+                                }
+                                ViewMode.LIST -> {
+                                    TvLazyColumn(
+                                        state = listState,
+                                        contentPadding = PaddingValues(bottom = 24.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        items(filteredChannels, key = { it.id }) { channel ->
+                                            val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
+                                            ChannelListItem(
+                                                channel = channel,
+                                                onClick = { onChannelClickAction(channel) },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .focusRequester(focusRequester)
+                                                    .onFocusChanged { if (it.isFocused) focusedChannel = channel }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Channel info panel - opaque background
-                    Column(
+                    // Preview Area - YOUR ORIGINAL DESIGN
+                    Box(
                         modifier = Modifier
-                            .weight(0.48f)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF1A1A2E).copy(alpha = 0.95f))
-                            .padding(12.dp)
+                            .weight(1.4f)
+                            .fillMaxHeight()
+                            .padding(start = 16.dp, end = 24.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFF1A1A2E).copy(alpha = 0.3f))
                     ) {
+                        var schedulePrograms by remember { mutableStateOf<List<com.example.androidtviptvapp.data.api.ScheduleProgramItem>>(emptyList()) }
+                        var isLoadingSchedule by remember { mutableStateOf(false) }
                         val infoChannel = debouncedFocusedChannel ?: previewChannel
-                        if (infoChannel != null) {
-                            Text(
-                                text = infoChannel.name,
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.White,
-                                maxLines = 1
-                            )
-                            if (infoChannel.description.isNotBlank()) {
-                                Text(
-                                    text = infoChannel.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.5f),
-                                    maxLines = 1
-                                )
+
+                        LaunchedEffect(infoChannel?.id) {
+                            if (infoChannel != null) {
+                                delay(500)
+                                isLoadingSchedule = true
+                                try {
+                                    schedulePrograms = TvRepository.getChannelSchedule(infoChannel.id)
+                                } catch (e: Exception) {
+                                    schedulePrograms = emptyList()
+                                }
+                                isLoadingSchedule = false
+                            } else {
+                                schedulePrograms = emptyList()
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
+                        ) {
+                            // Video Preview Box - capture position for outputRect
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(0.52f)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.Black, RoundedCornerShape(16.dp))
+                                    .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                                    .onGloballyPositioned { coordinates ->
+                                        // Capture preview box position for outputRect
+                                        val bounds = coordinates.boundsInRoot()
+                                        previewBoxRect = Rect(
+                                            bounds.left.toInt(),
+                                            bounds.top.toInt(),
+                                            bounds.right.toInt(),
+                                            bounds.bottom.toInt()
+                                        )
+                                    }
+                            ) {
+                                // Player renders here via outputRect
+                                if (previewChannel == null) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("Select a channel to preview", color = Color.White.copy(alpha = 0.5f))
+                                    }
+                                }
+
+                                // Buffering indicator
+                                if (playerState.isBuffering && previewChannel != null) {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Box(modifier = Modifier.size(32.dp).border(2.dp, Color.White.copy(alpha = 0.5f), CircleShape))
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("Program Schedule", style = MaterialTheme.typography.titleSmall, color = Color(0xFF60A5FA))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFF60A5FA).copy(alpha = 0.3f)))
-                            }
+                            // Channel Info & Schedule - YOUR ORIGINAL DESIGN
+                            Column(modifier = Modifier.weight(0.48f).fillMaxWidth()) {
+                                if (infoChannel != null) {
+                                    Text(
+                                        text = infoChannel.name,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = Color.White,
+                                        maxLines = 1
+                                    )
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            var schedulePrograms by remember { mutableStateOf<List<com.example.androidtviptvapp.data.api.ScheduleProgramItem>>(emptyList()) }
-                            var isLoadingSchedule by remember { mutableStateOf(false) }
-
-                            LaunchedEffect(infoChannel.id) {
-                                delay(500)
-                                isLoadingSchedule = true
-                                try { schedulePrograms = TvRepository.getChannelSchedule(infoChannel.id) }
-                                catch (e: Exception) { schedulePrograms = emptyList() }
-                                isLoadingSchedule = false
-                            }
-
-                            if (isLoadingSchedule) {
-                                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                    Text("Loading...", color = Color.White.copy(alpha = 0.4f))
-                                }
-                            } else if (schedulePrograms.isEmpty()) {
-                                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                    Text("No schedule", color = Color.White.copy(alpha = 0.3f))
-                                }
-                            } else {
-                                TvLazyColumn(
-                                    modifier = Modifier.fillMaxWidth().weight(1f),
-                                    contentPadding = PaddingValues(bottom = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    items(schedulePrograms, key = { it.id ?: it.start ?: it.hashCode() }) { program ->
-                                        ProgramScheduleItem(
-                                            time = formatProgramTime(program.start),
-                                            title = program.title ?: "Unknown",
-                                            duration = calculateDuration(program.start, program.end),
-                                            isLive = program.isLive
+                                    if (infoChannel.description.isNotBlank()) {
+                                        Text(
+                                            text = infoChannel.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            maxLines = 1
                                         )
                                     }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Program Schedule",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = Color(0xFF60A5FA)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(1.dp)
+                                                .background(Color(0xFF60A5FA).copy(alpha = 0.3f))
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    if (isLoadingSchedule) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().weight(1f),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("Loading...", color = Color.White.copy(alpha = 0.4f))
+                                        }
+                                    } else if (schedulePrograms.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().weight(1f),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "No schedule available",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color.White.copy(alpha = 0.3f)
+                                            )
+                                        }
+                                    } else {
+                                        TvLazyColumn(
+                                            modifier = Modifier.fillMaxWidth().weight(1f),
+                                            contentPadding = PaddingValues(bottom = 24.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            items(schedulePrograms, key = { it.id ?: it.start ?: it.hashCode() }) { program ->
+                                                ProgramScheduleItem(
+                                                    time = formatProgramTime(program.start),
+                                                    title = program.title ?: "Unknown Program",
+                                                    duration = calculateDuration(program.start, program.end),
+                                                    isLive = program.isLive
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Text("Select a channel", color = Color.White.copy(alpha = 0.4f))
+                                    }
                                 }
-                            }
-                        } else {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Select a channel", color = Color.White.copy(alpha = 0.4f))
                             }
                         }
                     }
@@ -550,6 +612,7 @@ fun ChannelsScreen(
 @Composable
 private fun ProgramScheduleItem(time: String, title: String, duration: String, isLive: Boolean = false) {
     var isFocused by remember { mutableStateOf(false) }
+
     Surface(
         onClick = { },
         modifier = Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused },
@@ -575,13 +638,20 @@ private fun ProgramScheduleItem(time: String, title: String, duration: String, i
             ) {
                 Text(time, style = MaterialTheme.typography.labelMedium, color = if (isLive) Color(0xFF60A5FA) else Color(0xFF9CA3AF))
             }
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.bodyLarge, color = Color.White, maxLines = 1)
                 Text(duration, style = MaterialTheme.typography.bodySmall, color = Color(0xFF9CA3AF))
             }
+
             if (isLive) {
-                Box(modifier = Modifier.background(Color(0xFFDC2626), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFDC2626), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
                     Text("LIVE", style = MaterialTheme.typography.labelSmall, color = Color.White)
                 }
             }
@@ -618,8 +688,8 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
         val hours = durationMinutes / 60
         val minutes = durationMinutes % 60
         when {
-            hours > 0 && minutes > 0 -> "$hours hr $minutes min"
-            hours > 0 -> "$hours hr"
+            hours > 0 && minutes > 0 -> "$hours hour${if (hours > 1) "s" else ""} $minutes min"
+            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""}"
             else -> "$minutes min"
         }
     } catch (e: Exception) { "" }
