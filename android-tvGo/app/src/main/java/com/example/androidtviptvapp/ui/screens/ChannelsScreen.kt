@@ -48,12 +48,19 @@ fun ChannelsScreen(
             else null
         ) 
     }
+    
+    // DEBOUNCED focused channel for info display - doesn't update immediately during scroll
+    var debouncedFocusedChannel by remember { mutableStateOf(focusedChannel) }
+    
     var previewChannel by remember { 
         mutableStateOf(
             if (initialChannelId != null) TvRepository.channels.find { it.id == initialChannelId }
             else null
         ) 
     }
+    
+    // Track if preview change was triggered by click (instant play) vs focus (debounce)
+    var isClickTriggered by remember { mutableStateOf(false) }
     
     // Map of FocusRequesters for each channel to enable programmatic focus
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
@@ -69,10 +76,21 @@ fun ChannelsScreen(
             TvRepository.channels.filter { it.category == selectedCategory }
         }
     }
-
+    
+    // Debounce focus updates - only update info area after 150ms of stability
+    // This prevents recomposition during fast scrolling
+    LaunchedEffect(focusedChannel?.id) {
+        focusedChannel?.let { channel ->
+            kotlinx.coroutines.delay(150) // Short debounce for info area
+            debouncedFocusedChannel = channel
+        }
+    }
+    
+    // Initialize focus/preview when filtered channels change
     LaunchedEffect(filteredChannels) {
         if (focusedChannel == null || focusedChannel !in filteredChannels) {
             focusedChannel = filteredChannels.firstOrNull()
+            debouncedFocusedChannel = focusedChannel
         }
         if (previewChannel == null || previewChannel !in filteredChannels) {
             previewChannel = filteredChannels.firstOrNull()
@@ -146,8 +164,11 @@ fun ChannelsScreen(
                 } else {
                     val onChannelClickAction: (Channel) -> Unit = { channel ->
                         if (previewChannel == channel) {
+                            // Same channel - go to fullscreen
                             onChannelClick(channel)
                         } else {
+                            // Different channel - instant play (no debounce)
+                            isClickTriggered = true
                             previewChannel = channel
                         }
                     }
@@ -231,21 +252,25 @@ fun ChannelsScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFF1A1A2E).copy(alpha = 0.3f))
             ) {
-                // State for schedule programs
+                // State for schedule programs - DEBOUNCED to not load during scroll
                 var schedulePrograms by remember { mutableStateOf<List<com.example.androidtviptvapp.data.api.ScheduleProgramItem>>(emptyList()) }
                 var isLoadingSchedule by remember { mutableStateOf(false) }
 
-                val infoChannel = focusedChannel ?: previewChannel
+                // Use debounced channel for info display - prevents recomposition during scroll
+                val infoChannel = debouncedFocusedChannel ?: previewChannel
 
-                // Fetch schedule when channel changes - uses cached schedule from TvRepository
+                // DEBOUNCED schedule loading - only load after 500ms of stability
+                // This prevents lag during scroll
                 LaunchedEffect(infoChannel?.id) {
                     if (infoChannel != null) {
+                        // Cancel any pending load and wait 500ms (scroll debounce)
+                        kotlinx.coroutines.delay(500)
+                        
                         isLoadingSchedule = true
                         try {
                             // Use cached schedule from TvRepository
                             schedulePrograms = TvRepository.getChannelSchedule(infoChannel.id)
                         } catch (e: Exception) {
-                            android.util.Log.e("ChannelsScreen", "Failed to load schedule: ${e.message}")
                             schedulePrograms = emptyList()
                         }
                         isLoadingSchedule = false
@@ -267,7 +292,11 @@ fun ChannelsScreen(
                             .clip(RoundedCornerShape(12.dp))
                     ) {
                         if (previewChannel != null) {
-                            ChannelPreview(channel = previewChannel!!)
+                            ChannelPreview(
+                                channel = previewChannel!!,
+                                isClickTriggered = isClickTriggered,
+                                onPlayStarted = { isClickTriggered = false }
+                            )
                         } else {
                             Box(
                                 modifier = Modifier
@@ -530,18 +559,83 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
     }
 }
 
+/**
+ * ChannelPreview - Video preview with OnTV-style scroll optimization.
+ * 
+ * CRITICAL PATTERN (from OnTV-main):
+ * - Player is PAUSED during scroll to prevent frame drops
+ * - Only resumes playback after user stops scrolling for 500ms
+ * - EXCEPT when isClickTriggered=true (user clicked) -> instant play
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun ChannelPreview(channel: Channel) {
+fun ChannelPreview(
+    channel: Channel,
+    isClickTriggered: Boolean = false,
+    onPlayStarted: () -> Unit = {}
+) {
     val context = LocalContext.current
-    var playerView by remember { mutableStateOf<TvPlayerView?>(null) }
-
-    LaunchedEffect(channel) {
-        // Give a small delay to avoid rapid switching
-        kotlinx.coroutines.delay(200)
-        playerView?.playUrl(channel.streamUrl)
+    val scope = rememberCoroutineScope()
+    
+    val sharedManager = com.example.androidtviptvapp.player.SharedPlayerManager
+    
+    // Lifecycle - start/stop ticking
+    DisposableEffect(Unit) {
+        sharedManager.startTicking(scope)
+        onDispose {
+            sharedManager.stopTicking()
+        }
     }
-
+    
+    val skipDebounce = remember { sharedManager.shouldSkipDebounce() }
+    
+    // Scroll state - tracks if user is actively scrolling
+    var isScrolling by remember { mutableStateOf(!isClickTriggered) }
+    var currentChannelToPlay by remember { mutableStateOf(channel) }
+    
+    // Player reference
+    var playerViewRef by remember { mutableStateOf<TvPlayerView?>(null) }
+    
+    // SCROLL DEBOUNCE: 500ms (matches OnTV's DELAY_BEFORE_OPEN_PROGRAMS)
+    // BUT: skip debounce if user clicked (isClickTriggered) or returning from fullscreen
+    LaunchedEffect(channel.id, isClickTriggered) {
+        if (isClickTriggered) {
+            // User clicked - instant play, no debounce!
+            isScrolling = false
+            currentChannelToPlay = channel
+            onPlayStarted() // Reset the flag
+        } else if (skipDebounce && sharedManager.isChannelPlaying(channel.id)) {
+            // Returning from fullscreen - instant play
+            currentChannelToPlay = channel
+            isScrolling = false
+        } else {
+            // Focus change (scrolling) - pause and debounce
+            isScrolling = true
+            playerViewRef?.pause = true
+            
+            kotlinx.coroutines.delay(500)
+            currentChannelToPlay = channel
+            isScrolling = false
+        }
+    }
+    
+    // PLAY only when not scrolling
+    LaunchedEffect(currentChannelToPlay.id, isScrolling) {
+        if (!isScrolling && playerViewRef != null) {
+            val player = playerViewRef!!
+            if (player.streamUrl != currentChannelToPlay.streamUrl) {
+                // Load new stream and RESUME playback
+                player.playUrl(currentChannelToPlay.streamUrl)
+                player.pause = false // Critical: resume after loading!
+                sharedManager.setCurrentChannel(currentChannelToPlay.id, currentChannelToPlay.streamUrl)
+                TvRepository.triggerUpdatePrograms(currentChannelToPlay.id)
+            } else {
+                // Same stream - just resume
+                player.pause = false
+            }
+        }
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -555,17 +649,30 @@ fun ChannelPreview(channel: Channel) {
                 TvPlayerView(ctx).apply {
                     resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FIT
                     init()
-                    playerView = this
-                    playUrl(channel.streamUrl)
+                    playerViewRef = this
+                    // Start paused until debounce completes
+                    pause = true
                 }
             },
-            update = { view ->
-                // Update handled by LaunchedEffect
-            },
+            update = { /* handled by LaunchedEffect */ },
             onRelease = { view ->
+                playerViewRef = null
                 view.destroy()
             },
             modifier = Modifier.fillMaxSize()
         )
+        
+        // Show subtle overlay while scrolling (player is paused)
+        if (isScrolling) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                // Empty - just dims the paused frame
+            }
+        }
     }
 }
+

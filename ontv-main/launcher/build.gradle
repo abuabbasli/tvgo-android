@@ -1,0 +1,81 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlinx-serialization'
+}
+
+android {
+    namespace 'com.mc2soft.ontv.launcher'
+    compileSdk project.ext.compileSdkVersion
+
+    def versionMajor = 1
+    def versionMinor = 0
+    def versionBuild = 47
+
+    defaultConfig {
+        applicationId "com.mc2soft.ontv.launcher"
+        minSdk project.ext.minSdkVersion
+        targetSdk project.ext.targetSdkVersion
+        versionCode 100 * (versionMajor * 100 + versionMinor) + versionBuild
+        versionName "${versionMajor}.${versionMinor}(${versionBuild})"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
+    signingConfigs {
+        debug {
+            storeFile file("../keystore.jks")
+            storePassword "brjmkGGHSE"
+            keyAlias "key0"
+            keyPassword "brjmkGGHSE"
+        }
+        release {
+            storeFile file("../keystore.jks")
+            storePassword "brjmkGGHSE"
+            keyAlias "key0"
+            keyPassword "brjmkGGHSE"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation project(path: ':common')
+}
+
+apply from: "$rootDir/common/common_methods.gradle"
+
+android.applicationVariants.all { variant ->
+    if (variant.name == 'release') {
+        String apkFilePath = "${project.buildDir.absolutePath}/outputs/apk/${variant.buildType.name}/launcher-release.apk"
+
+        String dropboxDir = System.getProperty("user.home") + "/Dropbox/ontv"
+        def task = project.tasks.create("publish${variant.name.capitalize()}Apk", Copy)
+        task.from file(apkFilePath)
+        task.into file(dropboxDir)
+        task.doLast {
+            updateVersionInJsonFile(variant.mergedFlavor.applicationId, android.defaultConfig.versionCode, dropboxDir + "/apps_list.json")
+        }
+
+        tasks["assemble${variant.name.capitalize()}"].finalizedBy = [task]
+    }
+}

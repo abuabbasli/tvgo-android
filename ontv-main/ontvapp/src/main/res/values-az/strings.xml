@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OnTv</string>
+    <string name="select_audio_track_title">Audio Treklər</string>
+
+    <string name="movie_about_time_units">dəqiqə</string>
+    <string name="movie_about_country">Ölkə</string>
+    <string name="movie_about_genre">Janr</string>
+    <string name="movie_about_director">Direktor</string>
+    <string name="movie_about_actors">Aktyorlar</string>
+    <string name="series_about_season">Mövsüm</string>
+
+    <string name="search_hint">Axtar</string>
+    <string name="channel_not_found">Tapılmadı</string>
+
+    <string name="pin_code_dlg_enter_old_pin">PİN kodu daxil edin</string>
+    <string name="pin_code_dlg_enter_new_pin">Yeni PİN kodu daxil edin</string>
+    <string name="pin_code_dlg_enter_new_pin_again">Yeni PİN kodu yenidən daxil edin</string>
+
+    <string name="clear_history_dlg_button">Təmizlə</string>
+    <string name="clear_history_dlg_title">İzləmə keçmişini təmizləmək?</string>
+    <string name="clear_history_dlg_mesage">İzləmə keçmişini təmizləmək istədiyinizə əminsiniz?</string>
+
+    <string name="go_to_live_dlg_title">Canlı yayıma keçid</string>
+    <string name="go_to_live_dlg_message"></string>
+    <string name="go_to_live_dlg_btn_live">Canlı yayım</string>
+    <string name="go_to_live_dlg_btn_prev">Əvvəlki</string>
+    <string name="go_to_live_dlg_btn_next">Sonrakı</string>
+
+</resources>

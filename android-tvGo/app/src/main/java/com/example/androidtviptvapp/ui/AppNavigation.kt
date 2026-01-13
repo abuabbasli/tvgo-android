@@ -18,6 +18,7 @@ object Routes {
     const val CHANNELS = "channels"
     const val MOVIES = "movies"
     const val MOVIE_DETAIL = "movie_detail/{movieId}"
+    const val MOVIE_PLAYER = "movie_player/{movieId}"
     const val MESSAGES = "messages"
     const val GAMES = "games"
     const val SETTINGS = "settings"
@@ -79,9 +80,30 @@ fun AppNavigation(
             val movieId = backStackEntry.arguments?.getString("movieId") ?: ""
             MovieDetailScreen(
                 movieId = movieId,
-                onPlayClick = { videoUrl -> onPlayUrl(videoUrl) },
+                onPlayClick = { _ ->
+                    // Navigate to MoviePlayerScreen instead of generic player
+                    navController.navigate("movie_player/$movieId")
+                },
                 onBackClick = { navController.popBackStack() }
             )
+        }
+        composable(Routes.MOVIE_PLAYER) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getString("movieId") ?: ""
+            val movie = TvRepository.movies.find { it.id == movieId }
+            
+            if (movie != null && movie.videoUrl.isNotEmpty()) {
+                // Get saved resume position
+                val resumePosition = TvRepository.getMoviePosition(movieId)
+                
+                MoviePlayerScreen(
+                    movieId = movieId,
+                    videoUrl = movie.videoUrl,
+                    resumePosition = resumePosition,
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                Text("Movie not available: $movieId")
+            }
         }
         composable(Routes.SETTINGS) {
             SettingsScreen()
@@ -108,7 +130,10 @@ fun AppNavigation(
             }
             
             if (decodedUrl != null) {
-                PlayerScreen(videoUrl = decodedUrl!!)
+                PlayerScreen(
+                    videoUrl = decodedUrl!!,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
         composable(Routes.PLAYER_CHANNEL) { backStackEntry ->
@@ -127,7 +152,8 @@ fun AppNavigation(
                         onChannelChanged = { newChannelId ->
                             // Update previous back stack entry (ChannelsScreen) with new selection
                             navController.previousBackStackEntry?.savedStateHandle?.set("channelId", newChannelId)
-                        }
+                        },
+                        onBack = { navController.popBackStack() }
                     )
                 } else {
                     // Channel not found - show error

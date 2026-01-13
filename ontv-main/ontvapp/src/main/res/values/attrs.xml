@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PlayerControlButton">
+        <attr name="player_control_icon" format="reference" />
+    </declare-styleable>
+
+    <attr name="theme_series_details_bubble" format="reference"/>
+    <attr name="theme_series_details_season_button" format="color"/>
+    <attr name="theme_series_details_season_button_sel" format="color"/>
+    <attr name="theme_series_details_season_button_text" format="color"/>
+    <attr name="theme_series_details_season_button_text_sel" format="color"/>
+    <attr name="theme_series_details_episode_button" format="color"/>
+    <attr name="theme_series_details_episode_button_sel" format="color"/>
+    <attr name="theme_series_details_episode_button_text" format="color"/>
+    <attr name="theme_series_details_episode_button_text_sel" format="color"/>
+    <attr name="theme_movie_details_dlg_button_bg" format="color"/>
+    <attr name="theme_movie_details_dlg_button_bg_sel" format="color"/>
+    <attr name="theme_movie_details_dlg_button_icon" format="color"/>
+    <attr name="theme_genre_bg" format="reference"/>
+    <attr name="theme_genre_text" format="color"/>
+    <attr name="theme_genre_text_sel" format="color"/>
+    <attr name="theme_channel_tile_bg" format="reference"/>
+    <attr name="theme_channel_tile_title" format="color"/>
+    <attr name="theme_channel_tile_title_sel" format="color"/>
+    <attr name="theme_channel_tile_subtitle" format="color"/>
+    <attr name="theme_channel_tile_subtitle_sel" format="color"/>
+    <attr name="theme_channel_tile_progress_frame" format="color"/>
+    <attr name="theme_channel_tile_progress_line" format="color"/>
+    <attr name="theme_channel_tile_icons_tint" format="color"/>
+    <attr name="theme_movie_tile_bg" format="reference"/>
+    <attr name="theme_hotbar_tile_bg" format="reference"/>
+    <attr name="theme_hotbar_tile_text" format="reference"/>
+    <attr name="theme_hotbar_tile_icon_sel" format="color"/>
+    <attr name="theme_pin_code_dlg_button" format="reference"/>
+    <attr name="theme_pin_code_dlg_button_text" format="color"/>
+    <attr name="theme_pin_code_dlg_button_text_sel" format="color"/>
+
+</resources>

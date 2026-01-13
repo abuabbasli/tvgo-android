@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="theme_logo_sm" format="reference"/>
+    <attr name="theme_background_img" format="reference"/>
+    <attr name="theme_dialog_bg_color" format="color"/>
+    <attr name="theme_dialog_bg_image" format="reference"/>
+    <attr name="theme_dialog_bg_corner_radius" format="dimension"/>
+
+    <declare-styleable name="MyBackgroundView">
+        <attr name="mybg_image" format="reference" />
+        <attr name="mybg_color" format="color" />
+        <attr name="mybg_corner_radius" format="dimension" />
+    </declare-styleable>
+</resources>

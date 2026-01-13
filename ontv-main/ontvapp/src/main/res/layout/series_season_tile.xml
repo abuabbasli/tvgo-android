@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="android.widget.FrameLayout"
+    android:padding="6dp"
+    android:layout_width="@dimen/season_tile_width"
+    android:layout_height="@dimen/episode_tile_height"
+    >
+    <FrameLayout
+        android:duplicateParentState="true"
+        android:background="@drawable/series_season_tile_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:duplicateParentState="true"
+            android:layout_gravity="center"
+            android:textSize="16sp"
+            android:textColor="@color/series_season_tile_text"
+            tools:text="XXX"
+            android:maxLines="1"
+            />
+    </FrameLayout>
+</merge>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Launcher</string>
+
+    <string name="button_tv">ТВ</string>
+    <string name="button_vod">Видео клуб</string>
+    <string name="button_youtube">Youtube</string>
+    <string name="button_netflix">Netflix</string>
+    <string name="button_settings">Настройки</string>
+    <string name="button_updates">Обновления</string>
+    <string name="button_prefs">Параметры Сервера</string>
+    <string name="button_diagnostics">Диагностика</string>
+
+    <string name="update_applications_dlg_message">Обновить приложения?</string>
+    <string name="update_applications_dlg_ok">Обновить</string>
+</resources>

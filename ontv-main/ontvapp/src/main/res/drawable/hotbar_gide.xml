@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <bitmap android:src="@mipmap/baseline_view_list_filled_white_48"
+            android:tint="?attr/theme_hotbar_tile_icon_sel" android:tintMode="multiply"
+            />
+    </item>
+    <item android:drawable="@mipmap/outline_view_list_white_48" />
+</selector>

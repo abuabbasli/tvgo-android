@@ -26,32 +26,31 @@ import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
 import com.example.androidtviptvapp.data.Movie
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+/**
+ * ChannelCard with logos - optimized for smooth scrolling.
+ * 
+ * Uses simple AsyncImage with memory caching and no crossfade animation
+ * to minimize GPU work during scroll.
+ */
 @Composable
 fun ChannelCard(
     channel: Channel,
     onClick: (Channel) -> Unit,
     modifier: Modifier = Modifier,
-    width: Dp = 260.dp
+    width: Dp = 120.dp
 ) {
     val context = LocalContext.current
     
-    // Remember image request to avoid recreation on recomposition
-    val imageRequest = remember(channel.logo) {
-        ImageRequest.Builder(context)
-            .data(channel.logo)
-            .apply {
-                if (channel.logo.endsWith(".svg", ignoreCase = true)) {
-                    decoderFactory(SvgDecoder.Factory())
-                }
-            }
-            .crossfade(150)
-            .listener(
-                onError = { _, result ->
-                    android.util.Log.e("Cards", "Image load failed for ${channel.name}: ${result.throwable.message}", result.throwable)
-                }
-            )
-            .build()
+    // Stable image request with memory-first caching, NO crossfade
+    val imageRequest = remember(channel.id) {
+        if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
+            ImageRequest.Builder(context)
+                .data(channel.logo)
+                .memoryCacheKey(channel.id)
+                .diskCacheKey(channel.id)
+                .crossfade(false) // No animation - faster
+                .build()
+        } else null
     }
 
     Card(
@@ -62,64 +61,35 @@ fun ChannelCard(
         scale = CardDefaults.scale(focusedScale = 1.05f),
         border = CardDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, Color(0xFFE0E0E0))
+                border = BorderStroke(3.dp, Color.White)
             ),
             border = Border(
-                border = BorderStroke(1.dp, Color(0xFF333333))
+                border = BorderStroke(1.dp, Color(0xFF444444))
             )
         ),
         colors = CardDefaults.colors(containerColor = Color(0xFF1E1E1E))
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            // Logo centered with proper loading/error handling
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                SubcomposeAsyncImage(
+            if (imageRequest != null) {
+                AsyncImage(
                     model = imageRequest,
-                    contentDescription = channel.name,
-                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
                     contentScale = ContentScale.Fit
-                ) {
-                    when (val state = painter.state) {
-                        is AsyncImagePainter.State.Loading -> {
-                            // Show channel initials while loading
-                            Text(
-                                text = channel.name.take(2).uppercase(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = Color.Gray
-                            )
-                        }
-                        is AsyncImagePainter.State.Error -> {
-                            // Show channel initials on error
-                            Text(
-                                text = channel.name.take(2).uppercase(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = Color.Gray
-                            )
-                        }
-                        else -> {
-                            SubcomposeAsyncImageContent()
-                        }
-                    }
-                }
+                )
+            } else {
+                // Fallback: channel initials
+                Text(
+                    text = channel.name.take(2).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
             }
-
-            // Favorite Icon (Top Right)
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = "Favorite",
-                tint = Color.Gray,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(12.dp)
-                    .size(20.dp)
-            )
         }
     }
 }

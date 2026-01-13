@@ -1,0 +1,149 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.OnTvCommon" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="fontFamily">@font/roboto_regular</item>
+        <item name="theme_dialog_bg_image">@null</item>
+        <item name="theme_dialog_bg_corner_radius">16dp</item>
+    </style>
+
+    <style name="Theme.OnTvCommon.Test">
+        <item name="backgroundColor">#011f37</item>
+        <item name="android:windowBackground">#011f37</item>
+        <item name="colorOnBackground">#FFFFFF</item>
+        <item name="colorOnSurface">#EEEEEE</item>
+        <item name="colorPrimary">#003367</item>
+        <item name="colorPrimaryVariant">#095093</item>
+        <item name="colorOnPrimary">#a2d4ff</item>
+        <item name="colorSecondary">#02448a</item>
+        <item name="colorSecondaryVariant">#3886CC</item>
+        <item name="colorOnSecondary">#71BDFF</item>
+        <item name="colorAccent">#56DCFF</item>
+        <item name="colorTertiary">#4AAAFF</item>
+        <item name="android:statusBarColor" tools:targetApi="21">?attr/colorPrimaryVariant</item>
+        <item name="theme_logo_sm">@null</item>
+        <item name="theme_background_img">@null</item>
+        <item name="theme_dialog_bg_color">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Theme.OnTvCommon.OnTV">
+        //основной фон экрана
+        <item name="backgroundColor">#1f0137</item>
+        <item name="android:windowBackground">#1f0137</item>
+
+        //использую как замену белому, используется везде где белые текста или белая заливка тайлов при фокусе.
+        <item name="colorOnBackground">#FFFFFF</item>
+
+        //аналог colorOnBackground только менее яркий, чистый белый слишком яркий
+        <item name="colorOnSurface">#EEEEEE</item>
+
+        //фон диалога, текст кнопки смены пин кода при фокусе, фон диалога ввода номера канала с пульта(клавиатуры)
+        //текст сезона при фокусе, фон тайла каналаб фон тайла фильма, фон конкретной звуковой дорожки
+        <item name="colorPrimary">#330067</item>
+
+        //фон зафокусированного тайла канала, фон большого квадратного тайла гайд в плеере внизу
+        //фон зафокусированной аудиодорожки в диалоге выбора аудиодорожки
+        //фон зафокусированного тайла программы
+        <item name="colorPrimaryVariant">#500993</item>
+
+        //основной цвет текстов, выделенных элементов. встречается в куче мест. самый распростаренный цвет.
+        <item name="colorOnPrimary">#d4a2ff</item>
+
+        //фон заголовка над каналами на экране тв каналов
+        //фон полного прогрессе на тайле канала
+        //фон заголовка в диалоге выбора языка
+        <item name="colorSecondary">#44028a</item>
+
+        //полный прогресс эпизода на экране сериала, круглешек кнопки(плей замок сердечко) на экране сериала\фильма
+        //обводка тайла эпизода, заливка тайла сезона на экране сериала
+        //иконки на тайле канала замок сердечко архив итд
+        //прогресс на тайле канала
+        <item name="colorSecondaryVariant">#8638CC</item>
+
+        //текст заголовка в диалоге выбора звуковой дорожки
+        //прогресса эпизода на экране сериала
+        <item name="colorOnSecondary">#BD71FF</item>
+
+        //зафокусированный текст кнопки и иконки в ланчере
+        <item name="colorAccent">#DC56FF</item>
+
+        //зафокусированный круг кнопки(плей замок сердечко) на экране сериала\фильма
+        <item name="colorTertiary">#AA4AFF</item>
+
+        <item name="android:statusBarColor" tools:targetApi="21">?attr/colorSecondary</item>
+        <item name="theme_logo_sm">@mipmap/logo_sm_ontv</item>
+        <item name="theme_background_img">@mipmap/background_ontv</item>
+        <item name="theme_dialog_bg_color">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Theme.OnTvCommon.TvinTV">
+        <item name="backgroundColor">#0005a1</item>
+        <item name="android:windowBackground">#0005a1</item>
+        <item name="colorOnBackground">#FFFFFF</item>
+        <item name="colorOnSurface">#d4f9fc</item>
+
+        <item name="colorPrimary">#042bb0</item>
+        <item name="colorPrimaryVariant">#0191f0</item>
+        <item name="colorOnPrimary">#00aeff</item>
+
+        <item name="colorSecondary">#033dbb</item>
+        <item name="colorSecondaryVariant">#00aeff</item>
+        <item name="colorOnSecondary">#00ddff</item>
+
+        <item name="colorAccent">#00d8ff</item>
+        <item name="colorTertiary">#00ddff</item>
+
+        <item name="android:statusBarColor" tools:targetApi="21">?attr/colorSecondary</item>
+        <item name="theme_logo_sm">@mipmap/logo_sm_tvin</item>
+        <item name="theme_background_img">@drawable/background_tvin</item>
+        <item name="theme_dialog_bg_color">?attr/backgroundColor</item>
+        <item name="theme_dialog_bg_image">@null</item>
+    </style>
+
+    <style name="Theme.OnTvCommon.BirLink">
+        <item name="backgroundColor">#03238F</item>
+        <item name="android:windowBackground">#03238F</item>
+        <item name="colorOnBackground">#FFFFFF</item>
+        <item name="colorOnSurface">#80FFFFFF</item>
+
+        <item name="colorPrimary">#03238F</item>
+        <item name="colorPrimaryVariant">#80FFFFFF</item> //this color change dialog's button color
+        <item name="colorOnPrimary">#ffffff</item>
+
+        <item name="colorSecondary">#033dbb</item>
+        <item name="colorSecondaryVariant">#80FFFFFF</item>
+        <item name="colorOnSecondary">#80FFFFFF</item>
+
+        <item name="colorAccent">#66FFFFFF</item> //this color change items color when it selected
+
+
+        <item name="colorTertiary">#66FFFFFF</item>
+
+        <item name="android:statusBarColor" tools:targetApi="21">?attr/colorSecondary</item>
+        <item name="theme_logo_sm">@mipmap/birlink_logo</item>
+        <item name="theme_background_img">@drawable/background_birlink</item>
+        <item name="theme_dialog_bg_color">?attr/backgroundColor</item>
+        <item name="theme_dialog_bg_image">@null</item>
+    </style>
+
+    <style name="Theme.OnTvCommon.Default">
+        <item name="android:windowDisablePreview">true</item>
+
+        <item name="backgroundColor">#1f1f1f</item>
+        <item name="android:windowBackground">#1f1f1f</item>
+        <item name="colorOnBackground">#FFFFFF</item>
+        <item name="colorOnSurface">#EEEEEE</item>
+        <item name="colorPrimary">#333333</item>
+        <item name="colorPrimaryVariant">#505050</item>
+        <item name="colorOnPrimary">#d4d4d4</item>
+        <item name="colorSecondary">#444444</item>
+        <item name="colorSecondaryVariant">#868686</item>
+        <item name="colorOnSecondary">#BDBDBD</item>
+        <item name="colorAccent">#DCDCDC</item>
+        <item name="colorTertiary">#AAAAAA</item>
+        <item name="android:statusBarColor" tools:targetApi="21">?attr/colorPrimaryVariant</item>
+        <item name="theme_logo_sm">@null</item>
+        <item name="theme_background_img">@null</item>
+        <item name="theme_dialog_bg_color">?attr/colorPrimary</item>
+    </style>
+</resources>

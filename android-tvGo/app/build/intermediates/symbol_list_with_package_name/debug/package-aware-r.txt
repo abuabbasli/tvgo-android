@@ -408,7 +408,6 @@ id notification_main_column_container
 id off
 id one
 id pooling_container_listener_holder_tag
-id preview_player_view
 id report_drawn
 id right_icon
 id right_side
@@ -474,7 +473,6 @@ layout notification_template_media
 layout notification_template_media_custom
 layout notification_template_part_chronometer
 layout notification_template_part_time
-layout preview_player
 mipmap ic_launcher
 plurals exo_controls_fastforward_by_amount_description
 plurals exo_controls_rewind_by_amount_description

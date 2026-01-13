@@ -1,0 +1,197 @@
+<resources>
+
+    <style name="Theme.OnTv.OnTV" parent="Theme.OnTvCommon.OnTV">
+        //бекграунд панели о годе рейтинге длительности наградах на экране информации о сериале
+        <item name="theme_series_details_bubble">@drawable/series_details_stats_bg_ontv</item>
+        <item name="theme_series_details_season_button">?attr/colorSecondaryVariant</item>
+        <item name="theme_series_details_season_button_sel">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_season_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_season_button_text_sel">?attr/colorPrimary</item>
+        <item name="theme_series_details_episode_button">?attr/colorSecondaryVariant</item>
+        <item name="theme_series_details_episode_button_sel">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_episode_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_episode_button_text_sel">?attr/colorOnPrimary</item>
+        <item name="theme_movie_details_dlg_button_bg">?attr/colorSecondaryVariant</item>
+        <item name="theme_movie_details_dlg_button_bg_sel">?attr/colorTertiary</item>
+        <item name="theme_movie_details_dlg_button_icon">?attr/colorOnPrimary</item>
+        <item name="theme_genre_bg">@null</item>
+        <item name="theme_genre_text">?attr/colorOnBackground</item>
+        <item name="theme_genre_text_sel">?attr/colorOnPrimary</item>
+        <item name="theme_channel_tile_bg">@drawable/channel_tile_bg</item>
+        <item name="theme_channel_tile_title">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_title_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_progress_frame">?attr/colorSecondary</item>
+        <item name="theme_channel_tile_progress_line">?attr/colorSecondaryVariant</item>
+        <item name="theme_channel_tile_icons_tint">?attr/colorSecondaryVariant</item>
+        <item name="theme_movie_tile_bg">@drawable/movie_tile_bg</item>
+        <item name="theme_hotbar_tile_bg">@drawable/hotbar_tile_bg</item>
+        <item name="theme_hotbar_tile_text">@color/button_text</item>
+        <item name="theme_hotbar_tile_icon_sel">@color/black</item>
+        <item name="theme_pin_code_dlg_button">@drawable/pin_code_dialog_button</item>
+        <item name="theme_pin_code_dlg_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_pin_code_dlg_button_text_sel">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Theme.OnTv.TvinTV" parent="Theme.OnTvCommon.TvinTV">
+        <item name="theme_series_details_bubble">@drawable/series_details_stats_bg_tvin</item>
+        <item name="theme_series_details_season_button">#00aeff</item>
+        <item name="theme_series_details_season_button_sel">#00ddff</item>
+        <item name="theme_series_details_season_button_text">#888888</item>
+        <item name="theme_series_details_season_button_text_sel">#0005a1</item>
+        <item name="theme_series_details_episode_button">#00aeff</item>
+        <item name="theme_series_details_episode_button_sel">#00ddff</item>
+        <item name="theme_series_details_episode_button_text">#00aeff</item>
+        <item name="theme_series_details_episode_button_text_sel">#00ddff</item>
+        <item name="theme_movie_details_dlg_button_bg">#00aeff</item>
+        <item name="theme_movie_details_dlg_button_bg_sel">#00ddff</item>
+        <item name="theme_movie_details_dlg_button_icon">?attr/colorOnBackground</item>
+        <item name="theme_genre_bg">@drawable/genre_tile_bg_tvin</item>
+        <item name="theme_genre_text">?attr/colorOnBackground</item>
+        <item name="theme_genre_text_sel">?attr/backgroundColor</item>
+        <item name="theme_channel_tile_title">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_bg">@drawable/channel_tile_bg_tvin</item>
+        <item name="theme_channel_tile_subtitle">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_title_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_progress_frame">#6c81c8</item>
+        <item name="theme_channel_tile_progress_line">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_icons_tint">?attr/colorOnBackground</item>
+        <item name="theme_movie_tile_bg">@drawable/movie_tile_bg_tvin</item>
+        <item name="theme_hotbar_tile_bg">@drawable/hotbar_tile_bg_tvin</item>
+        <item name="theme_hotbar_tile_text">@color/hotar_tile_text_tvin</item>
+        <item name="theme_hotbar_tile_icon_sel">@color/white</item>
+        <item name="theme_pin_code_dlg_button">@drawable/pin_code_dialog_button_tvin</item>
+        <item name="theme_pin_code_dlg_button_text">?attr/backgroundColor</item>
+        <item name="theme_pin_code_dlg_button_text_sel">?attr/colorOnBackground</item>
+    </style>
+
+    <style name="Theme.OnTv.BirLink" parent="Theme.OnTvCommon.BirLink">
+        <item name="theme_series_details_bubble">@drawable/series_details_stats_bg_tvin</item>
+        <item name="theme_series_details_season_button">#4D000000</item>
+        <item name="theme_series_details_season_button_sel">#B3FFFFFF</item>
+        <item name="theme_series_details_season_button_text">#888888</item>
+        <item name="theme_series_details_season_button_text_sel">#ffffff</item>
+        <item name="theme_series_details_episode_button">#ffffff</item>
+        <item name="theme_series_details_episode_button_sel">#ffffff</item>
+        <item name="theme_series_details_episode_button_text">#ffffff</item>
+        <item name="theme_series_details_episode_button_text_sel">#ffffff</item>
+        <item name="theme_movie_details_dlg_button_bg">#00aeff</item>
+        <item name="theme_movie_details_dlg_button_bg_sel">#00ddff</item>
+        <item name="theme_movie_details_dlg_button_icon">?attr/colorOnBackground</item>
+        <item name="theme_genre_bg">@drawable/genre_tile_bg_tvin</item>
+        <item name="theme_genre_text">?attr/colorOnBackground</item>
+        <item name="theme_genre_text_sel">?attr/backgroundColor</item>
+        <item name="theme_channel_tile_title">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_bg">@drawable/channel_tile_bg_tvin</item>
+        <item name="theme_channel_tile_subtitle">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_title_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_progress_frame">#6c81c8</item>
+        <item name="theme_channel_tile_progress_line">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_icons_tint">?attr/colorOnBackground</item>
+        <item name="theme_movie_tile_bg">@drawable/movie_tile_bg_tvin</item>
+        <item name="theme_hotbar_tile_bg">@drawable/hotbar_tile_bg_tvin</item>
+        <item name="theme_hotbar_tile_text">@color/hotar_tile_text_tvin</item>
+        <item name="theme_hotbar_tile_icon_sel">@color/white</item>
+        <item name="theme_pin_code_dlg_button">@drawable/pin_code_dialog_button_bitlink</item>
+        <item name="theme_pin_code_dlg_button_text">#ffffff</item>
+        <item name="theme_pin_code_dlg_button_text_sel">#CCFFFFFF</item>
+    </style>
+
+    <style name="Theme.OnTv.Test" parent="Theme.OnTvCommon.Test">
+        <item name="theme_series_details_bubble">@null</item>
+        <item name="theme_series_details_season_button">?attr/colorSecondaryVariant</item>
+        <item name="theme_series_details_season_button_sel">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_season_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_season_button_text_sel">?attr/colorPrimary</item>
+        <item name="theme_series_details_episode_button">?attr/colorSecondaryVariant</item>
+        <item name="theme_series_details_episode_button_sel">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_episode_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_episode_button_text_sel">?attr/colorOnPrimary</item>
+        <item name="theme_movie_details_dlg_button_bg">?attr/colorSecondaryVariant</item>
+        <item name="theme_movie_details_dlg_button_bg_sel">?attr/colorTertiary</item>
+        <item name="theme_movie_details_dlg_button_icon">?attr/colorOnPrimary</item>
+        <item name="theme_genre_bg">@null</item>
+        <item name="theme_genre_text">?attr/colorOnBackground</item>
+        <item name="theme_genre_text_sel">?attr/colorOnPrimary</item>
+        <item name="theme_channel_tile_bg">@drawable/channel_tile_bg</item>
+        <item name="theme_channel_tile_title">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_title_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_progress_frame">?attr/colorSecondary</item>
+        <item name="theme_channel_tile_progress_line">?attr/colorSecondaryVariant</item>
+        <item name="theme_channel_tile_icons_tint">?attr/colorSecondaryVariant</item>
+        <item name="theme_movie_tile_bg">@drawable/movie_tile_bg</item>
+        <item name="theme_hotbar_tile_bg">@drawable/hotbar_tile_bg</item>
+        <item name="theme_hotbar_tile_text">@color/button_text</item>
+        <item name="theme_hotbar_tile_icon_sel">@color/black</item>
+        <item name="theme_pin_code_dlg_button">@drawable/pin_code_dialog_button</item>
+        <item name="theme_pin_code_dlg_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_pin_code_dlg_button_text_sel">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Theme.OnTv.Default" parent="Theme.OnTvCommon.Default">
+        <item name="theme_series_details_bubble">@null</item>
+        <item name="theme_series_details_season_button">?attr/colorSecondaryVariant</item>
+        <item name="theme_series_details_season_button_sel">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_season_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_season_button_text_sel">?attr/colorPrimary</item>
+        <item name="theme_series_details_episode_button">?attr/colorSecondaryVariant</item>
+        <item name="theme_series_details_episode_button_sel">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_episode_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_series_details_episode_button_text_sel">?attr/colorOnPrimary</item>
+        <item name="theme_movie_details_dlg_button_bg">?attr/colorSecondaryVariant</item>
+        <item name="theme_movie_details_dlg_button_bg_sel">?attr/colorTertiary</item>
+        <item name="theme_movie_details_dlg_button_icon">?attr/colorOnPrimary</item>
+        <item name="theme_genre_bg">@null</item>
+        <item name="theme_genre_text">?attr/colorOnBackground</item>
+        <item name="theme_genre_text_sel">?attr/colorOnPrimary</item>
+        <item name="theme_channel_tile_bg">@drawable/channel_tile_bg</item>
+        <item name="theme_channel_tile_title">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_title_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_subtitle_sel">?attr/colorOnBackground</item>
+        <item name="theme_channel_tile_progress_frame">?attr/colorSecondary</item>
+        <item name="theme_channel_tile_progress_line">?attr/colorSecondaryVariant</item>
+        <item name="theme_channel_tile_icons_tint">?attr/colorSecondaryVariant</item>
+        <item name="theme_movie_tile_bg">@drawable/movie_tile_bg</item>
+        <item name="theme_hotbar_tile_bg">@drawable/hotbar_tile_bg</item>
+        <item name="theme_hotbar_tile_text">@color/button_text</item>
+        <item name="theme_hotbar_tile_icon_sel">@color/black</item>
+        <item name="theme_pin_code_dlg_button">@drawable/pin_code_dialog_button</item>
+        <item name="theme_pin_code_dlg_button_text">?attr/colorOnPrimary</item>
+        <item name="theme_pin_code_dlg_button_text_sel">?attr/colorPrimary</item>
+    </style>
+
+    <style name="PinCodeDialogButtonBase">
+        <item name="android:layout_width">58dp</item>
+        <item name="android:layout_height">58dp</item>
+        <item name="android:background">?attr/theme_pin_code_dlg_button</item>
+        <item name="android:layout_margin">6dp</item>
+    </style>
+
+    <style name="PinCodeDialogButtonText" parent="PinCodeDialogButtonBase">
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/pin_dialog_button_text</item>
+    </style>
+
+    <style name="ChannelTileCornerCut" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <style name="PlayerImageCornerCut" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <style name="MoviePosterCornerCut" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">6.67dp</item>
+    </style>
+
+</resources>

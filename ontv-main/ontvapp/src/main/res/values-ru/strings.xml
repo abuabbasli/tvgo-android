@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OnTv</string>
+    <string name="select_audio_track_title">Аудио дорожки</string>
+
+    <string name="movie_about_time_units">мин</string>
+    <string name="movie_about_country">Страна</string>
+    <string name="movie_about_genre">Жанр</string>
+    <string name="movie_about_director">Режиссер</string>
+    <string name="movie_about_actors">В главных ролях</string>
+    <string name="series_about_season">Сезон</string>
+
+    <string name="search_hint">поиск</string>
+    <string name="channel_not_found">не найден</string>
+
+    <string name="pin_code_dlg_enter_old_pin">Введите пин</string>
+    <string name="pin_code_dlg_enter_new_pin">Введите новый пин</string>
+    <string name="pin_code_dlg_enter_new_pin_again">Введите повторно новый пин</string>
+
+    <string name="clear_history_dlg_button">Очистить</string>
+    <string name="clear_history_dlg_title">Очистить историю?</string>
+    <string name="clear_history_dlg_mesage">Вы действительно хочите очистить историю</string>
+
+    <string name="go_to_live_dlg_title">Переключится на живую рансляцию</string>
+    <string name="go_to_live_dlg_message"></string>
+    <string name="go_to_live_dlg_btn_live">Live</string>
+    <string name="go_to_live_dlg_btn_prev">Предыдущая</string>
+    <string name="go_to_live_dlg_btn_next">Следующая</string>
+
+    <string name="use_saved_or_not_dlg_title">Использовать сохраненную позицию?</string>
+    <string name="use_saved_or_not_dlg_message">вы можете начать с предыдущей сохраненной позиции</string>
+    <string name="use_saved_or_not_dlg_button_saved">продолжить</string>
+    <string name="use_saved_or_not_dlg_button_begin">с начала</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:state_selected="true">
+        <bitmap android:src="@mipmap/outline_favorite_white_48"
+            android:tint="?attr/theme_hotbar_tile_icon_sel" android:tintMode="multiply"
+            />
+    </item>
+    <item android:state_focused="true">
+        <bitmap android:src="@mipmap/outline_favorite_border_white_48"
+            android:tint="?attr/theme_hotbar_tile_icon_sel" android:tintMode="multiply"
+            />
+    </item>
+    <item android:drawable="@mipmap/outline_favorite_white_48" android:state_selected="true" />
+    <item android:drawable="@mipmap/outline_favorite_border_white_48" />
+</selector>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Update Applications</string>
+
+    <string name="stage_check_updates">Check updates</string>
+    <string name="stage_downloading">Downloading</string>
+    <string name="stage_installing">Installing</string>
+    <string name="stage_update_success">Success updated</string>
+    <string name="stage_no_need_updates">Already up to date, no need update</string>
+    <string name="subtitle">please wait</string>
+</resources>

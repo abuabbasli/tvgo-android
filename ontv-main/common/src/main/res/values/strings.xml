@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">Cancel</string>
+    <string name="ok">Ok</string>
+
+    <string name="category_favorites">Favorites</string>
+    <string name="category_all">All</string>
+    <string name="category_video">Video</string>
+    <string name="category_series">Series</string>
+    <string name="category_cartoons">Cartoons</string>
+    <string name="category_music">Music</string>
+    <string name="category_turk">Turkey</string>
+    <string name="category_azerbaycan">Azerbaijan</string>
+    <string name="category_animation">Animation</string>
+    <string name="category_history">History</string>
+
+    <string name="category_education">Educational</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_child">Child</string>
+    <string name="category_film">Film</string>
+    <string name="category_info">Information</string>
+    <string name="category_sport">Sport</string>
+
+    <string name="category_videoclub">Video Club</string>
+    <string name="category_tv">TV</string>
+
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <layer-list>
+            <item android:left="5dp" >
+                <bitmap android:tint="?attr/theme_movie_details_dlg_button_icon" android:src="@mipmap/series_play"/>
+            </item>
+        </layer-list>
+    </item>
+</selector>

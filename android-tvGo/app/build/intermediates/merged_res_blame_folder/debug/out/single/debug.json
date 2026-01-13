@@ -4,10 +4,6 @@
         "source": "com.example.androidtviptvapp-main-61:/drawable/banner.xml"
     },
     {
-        "merged": "com.example.androidtviptvapp-merged_res-59:/layout_preview_player.xml.flat",
-        "source": "com.example.androidtviptvapp-main-61:/layout/preview_player.xml"
-    },
-    {
         "merged": "com.example.androidtviptvapp-merged_res-59:/mipmap-anydpi-v26_ic_launcher.xml.flat",
         "source": "com.example.androidtviptvapp-main-61:/mipmap-anydpi-v26/ic_launcher.xml"
     },

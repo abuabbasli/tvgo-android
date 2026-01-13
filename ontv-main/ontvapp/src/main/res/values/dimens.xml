@@ -1,0 +1,31 @@
+<resources>
+    <dimen name="fab_margin">16dp</dimen>
+
+    <dimen name="genre_tile_width">320dp</dimen>
+    <dimen name="genre_tile_height">48dp</dimen>
+
+    <dimen name="channel_tile_width">400dp</dimen>
+    <dimen name="channel_tile_height">80dp</dimen>
+
+    <dimen name="program_tile_width">320dp</dimen>
+    <dimen name="program_tile_height">48dp</dimen>
+    <dimen name="program_day_tile_height">48dp</dimen>
+
+    <dimen name="hotbar_tile_width">170dp</dimen>
+    <dimen name="hotbar_tile_height">120dp</dimen>
+
+    <dimen name="movies_genre_tile_width">320dp</dimen>
+    <dimen name="movie_tile_width">160dp</dimen>
+    <dimen name="movie_tile_height">240dp</dimen>
+
+    <dimen name="channel_col_header_height">46dp</dimen>
+
+    <dimen name="player_button_size">64dp</dimen>
+
+    <dimen name="player_select_audio_track_dlg_width">480dp</dimen>
+    <dimen name="player_select_audio_track_tile_height">64dp</dimen>
+
+    <dimen name="season_tile_width">150dp</dimen>
+    <dimen name="episode_tile_width">150dp</dimen>
+    <dimen name="episode_tile_height">61dp</dimen>
+</resources>

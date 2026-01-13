@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <bitmap android:tint="?attr/theme_movie_details_dlg_button_icon" android:tintMode="multiply" android:src="@mipmap/series_fav_on" />
+    </item>
+    <item>
+        <bitmap android:tint="?attr/theme_movie_details_dlg_button_icon" android:tintMode="multiply" android:src="@mipmap/series_fav_off" />
+    </item>
+</selector>

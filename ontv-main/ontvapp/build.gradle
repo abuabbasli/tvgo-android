@@ -1,0 +1,100 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlinx-serialization'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
+}
+
+android {
+    namespace 'com.mc2soft.ontv.ontvapp'
+    compileSdk project.ext.compileSdkVersion
+
+    def versionMajor = 1
+    def versionMinor = 0
+    def versionBuild = 114
+
+    defaultConfig {
+        applicationId "com.mc2soft.ontv.ontvapp"
+        minSdk project.ext.minSdkVersion
+        targetSdk project.ext.targetSdkVersion
+        versionCode 100 * (versionMajor * 100 + versionMinor) + versionBuild
+        versionName "${versionMajor}.${versionMinor}(${versionBuild})"
+        multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../keystore.jks")
+            storePassword "brjmkGGHSE"
+            keyAlias "key0"
+            keyPassword "brjmkGGHSE"
+        }
+    }
+
+    flavorDimensions += "platform_type"
+
+    productFlavors {
+        embedded {
+            dimension = "platform_type"
+        }
+        standalone {
+            dimension = "platform_type"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation project(path: ':common')
+
+    implementation ('com.google.android.exoplayer:exoplayer:2.18.7')
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
+}
+
+apply from: "$rootDir/common/common_methods.gradle"
+
+android.applicationVariants.all { variant ->
+    if (variant.name == 'embeddedRelease') {
+        String apkFilePath = "${project.buildDir.absolutePath}/outputs/apk/${variant.getFlavorName()}/${variant.buildType.name}/ontvapp-${variant.getFlavorName()}-${variant.buildType.name}.apk"
+        project.logger.lifecycle("look apk $apkFilePath")
+
+        String dropboxDir = System.getProperty("user.home") + "/Dropbox/ontv"
+        def task = project.tasks.create("publish${variant.name.capitalize()}Apk", Copy)
+        task.from file(apkFilePath)
+        task.into file(dropboxDir)
+        task.doLast {
+            updateVersionInJsonFile(variant.mergedFlavor.applicationId, android.defaultConfig.versionCode, dropboxDir + "/apps_list.json")
+        }
+
+        tasks["assemble${variant.name.capitalize()}"].finalizedBy = [task]
+    }
+}
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        languageVersion = "1.9"
+    }
+}

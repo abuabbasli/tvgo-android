@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="AppButtonView">
+        <attr name="app_button_title_text" format="string" />
+        <attr name="app_button_icon" format="reference" />
+    </declare-styleable>
+
+    <attr name="theme_appbutton_tv" format="reference"/>
+    <attr name="theme_appbutton_vod" format="reference"/>
+    <attr name="theme_appbutton_youtube" format="reference"/>
+    <attr name="theme_appbutton_netflix" format="reference"/>
+    <attr name="theme_appbutton_settings" format="reference"/>
+    <attr name="theme_appbutton_updates" format="reference"/>
+    <attr name="theme_appbutton_server_prefs" format="reference"/>
+    <attr name="theme_appbutton_diagnostics" format="reference"/>
+    <attr name="theme_appbutton_speedtest" format="reference"/>
+    <attr name="theme_appbutton_text" format="reference"/>
+</resources>

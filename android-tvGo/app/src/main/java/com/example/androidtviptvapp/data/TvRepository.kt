@@ -63,6 +63,162 @@ object TvRepository {
         val programs: List<ScheduleProgramItem>,
         val timestamp: Long
     )
+    
+    // =========================================================================
+    // LAZY EPG LOADING (OnTV-main Pattern)
+    // Only fetch program schedules when a channel is actually viewed
+    // =========================================================================
+    
+    private const val TAG = "TvRepository"
+    private const val SCHEDULE_CACHE_DURATION_MS = 5 * 60 * 1000L // 5 minutes
+    private const val EPG_RELOAD_MIN_INTERVAL_MS = 20 * 60 * 1000L // 20 minutes
+    
+    /**
+     * Lazy EPG loading per channel - only fetches programs when needed.
+     * Based on OnTV-main's ChannelsCache.ChannelPrograms pattern.
+     */
+    class ChannelPrograms(private val channelId: String) {
+        private val _programs = MutableStateFlow<List<ScheduleProgramItem>>(emptyList())
+        val programs: StateFlow<List<ScheduleProgramItem>> = _programs.asStateFlow()
+        
+        private var loadJob: Job? = null
+        var lastLoadTime = 0L
+            private set
+        val isLoaded: Boolean get() = lastLoadTime > 0
+        
+        /**
+         * Trigger a reload if stale or never loaded. Returns current programs flow.
+         */
+        fun maybeNeedReload(): StateFlow<List<ScheduleProgramItem>> {
+            val now = System.currentTimeMillis()
+            if (loadJob?.isActive != true && 
+                lastLoadTime + EPG_RELOAD_MIN_INTERVAL_MS < now) {
+                loadJob = repositoryScope.launch {
+                    try {
+                        android.util.Log.d(TAG, "Loading EPG for channel $channelId")
+                        val response = ApiClient.service.getChannelSchedule(channelId)
+                        _programs.value = response.programs
+                        lastLoadTime = System.currentTimeMillis()
+                        android.util.Log.d(TAG, "Loaded ${response.programs.size} programs for $channelId")
+                    } catch (e: Exception) {
+                        android.util.Log.e(TAG, "Failed to load EPG for $channelId: ${e.message}")
+                    }
+                    loadJob = null
+                }
+            }
+            return programs
+        }
+        
+        /**
+         * Mark this channel's programs as needing a refresh
+         */
+        fun markNeedsReload() {
+            lastLoadTime = 0L
+        }
+    }
+    
+    // Map of channel-specific EPG loaders (lazy initialization)
+    private val channelProgramsMap = mutableMapOf<String, ChannelPrograms>()
+    
+    /**
+     * Get or create lazy EPG loader for a channel. Triggers background load if stale.
+     * Use this instead of getChannelSchedule for reactive UI updates.
+     */
+    fun triggerUpdatePrograms(channelId: String): StateFlow<List<ScheduleProgramItem>> {
+        return channelProgramsMap.getOrPut(channelId) { ChannelPrograms(channelId) }
+            .maybeNeedReload()
+    }
+    
+    /**
+     * Get cached programs if available (no API call)
+     */
+    fun getCachedPrograms(channelId: String): List<ScheduleProgramItem>? {
+        return channelProgramsMap[channelId]?.programs?.value?.takeIf { it.isNotEmpty() }
+    }
+    
+    /**
+     * Mark all channel programs as needing refresh (e.g., after subscription update)
+     */
+    fun markAllProgramsNeedReload() {
+        channelProgramsMap.values.forEach { it.markNeedsReload() }
+    }
+    
+    // =========================================================================
+    // LOOPED CHANNEL NAVIGATION (OnTV-main Pattern)
+    // =========================================================================
+    
+    /**
+     * Get next/previous channel with looping support.
+     * @param currentId Current channel ID
+     * @param direction +1 for next, -1 for previous
+     * @param category Optional category filter (null or "all" = all channels)
+     */
+    fun getNextChannel(currentId: String, direction: Int, category: String? = null): Channel? {
+        val list = if (category == null || category == "all") {
+            channels.toList()
+        } else {
+            channels.filter { it.category == category }
+        }
+        if (list.isEmpty()) return null
+        
+        val currentIndex = list.indexOfFirst { it.id == currentId }
+        if (currentIndex < 0) return list.firstOrNull()
+        
+        val newIndex = (currentIndex + direction + list.size) % list.size
+        return list.getOrNull(newIndex)?.takeIf { it.id != currentId }
+    }
+    
+    /**
+     * Get channel by ID
+     */
+    fun getChannel(channelId: String): Channel? {
+        return channels.find { it.id == channelId }
+    }
+    
+    // =========================================================================
+    // MEMORY-AWARE CLEANUP (TV Box Optimization)
+    // =========================================================================
+    
+    /**
+     * Check memory usage and cleanup caches if too high.
+     * Call this periodically (e.g., every 60 seconds) on TV boxes.
+     */
+    fun checkMemoryAndCleanup() {
+        val runtime = Runtime.getRuntime()
+        val usedMem = runtime.totalMemory() - runtime.freeMemory()
+        val maxMem = runtime.maxMemory()
+        val usagePercent = (usedMem.toFloat() / maxMem * 100).toInt()
+        
+        android.util.Log.d(TAG, "Memory: ${usedMem/1024/1024}MB / ${maxMem/1024/1024}MB ($usagePercent%)")
+        
+        if (usagePercent > 80) {
+            android.util.Log.w(TAG, "High memory usage ($usagePercent%) - clearing caches")
+            imageLoader?.memoryCache?.clear()
+            scheduleCache.clear()
+            // Keep channel programs but clear the data
+            channelProgramsMap.values.forEach { it.markNeedsReload() }
+        }
+    }
+    
+    // Movie playback positions (movieId -> position in ms)
+    private val moviePositions = mutableMapOf<String, Long>()
+    
+    /**
+     * Save movie playback position for resume
+     */
+    fun saveMoviePosition(movieId: String, positionMs: Long) {
+        if (positionMs > 0) {
+            moviePositions[movieId] = positionMs
+            android.util.Log.d("TvRepository", "Saved position for movie $movieId: ${positionMs/1000}s")
+        }
+    }
+    
+    /**
+     * Get saved movie position
+     */
+    fun getMoviePosition(movieId: String): Long {
+        return moviePositions[movieId] ?: 0L
+    }
 
     // Dynamic Categories - populated from loaded channels
     val channelCategories = mutableStateListOf<Category>()
@@ -94,19 +250,32 @@ object TvRepository {
         return ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.20) // 20% of available memory for better caching
+                    .maxSizePercent(0.15) // 15% - leave more RAM for player on TV boxes
                     .strongReferencesEnabled(true) // Keep strong refs for TV scrolling
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
-                    .maxSizeBytes(75L * 1024 * 1024) // 75MB disk cache for logos
+                    .maxSizeBytes(50L * 1024 * 1024) // 50MB - TV boxes have limited storage
                     .build()
             }
             .okHttpClient { getUnsafeOkHttpClient() }
             .crossfade(200) // Smooth transitions
             .respectCacheHeaders(false) // Force caching regardless of server headers
+            .components {
+                add(coil.decode.SvgDecoder.Factory()) // Add SVG support
+            }
+            .logger(object : coil.util.Logger {
+                override var level: Int = android.util.Log.DEBUG
+                override fun log(tag: String, priority: Int, message: String?, throwable: Throwable?) {
+                    when (priority) {
+                        android.util.Log.ERROR -> android.util.Log.e("CoilLoader", message ?: "", throwable)
+                        android.util.Log.WARN -> android.util.Log.w("CoilLoader", message ?: "")
+                        else -> android.util.Log.d("CoilLoader", message ?: "")
+                    }
+                }
+            })
             .build()
     }
     
@@ -169,12 +338,30 @@ object TvRepository {
      * Initialize app - called from Application class or MainActivity
      * Runs entirely in background, doesn't block UI
      */
-    fun loadData() {
+    
+    // EMBEDDED CREDENTIALS - Auto-login (disable login screen)
+    // TODO: Re-enable login screen later by setting this to false
+    private const val AUTO_LOGIN_ENABLED = true
+    private const val EMBEDDED_USERNAME = "EBzN7ibs"
+    private const val EMBEDDED_PASSWORD = "PBCOIIPM"
+    
+    fun loadData(context: Context? = null) {
         repositoryScope.launch {
             _isLoading.value = true
             _loadingProgress.value = "Initializing..."
 
             try {
+                // Auto-login with embedded credentials if enabled
+                if (AUTO_LOGIN_ENABLED && !isAuthenticated) {
+                    _loadingProgress.value = "Logging in..."
+                    try {
+                        login(EMBEDDED_USERNAME, EMBEDDED_PASSWORD, context)
+                        android.util.Log.d("TvRepository", "Auto-login successful")
+                    } catch (e: Exception) {
+                        android.util.Log.w("TvRepository", "Auto-login failed, continuing without auth: ${e.message}")
+                    }
+                }
+                
                 // Load config first (fast)
                 _loadingProgress.value = "Loading configuration..."
                 loadPublicConfigAsync()
@@ -272,7 +459,10 @@ object TvRepository {
     }
 
     private fun resolveUrl(path: String?): String {
-        if (path.isNullOrEmpty()) return ""
+        if (path.isNullOrEmpty()) {
+            android.util.Log.w("TvRepository", "resolveUrl: path is null or empty")
+            return ""
+        }
 
         val baseUrl = AppConfig.IMAGE_BASE_URL
         var url = path
@@ -293,6 +483,7 @@ object TvRepository {
         val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
         url = localIpPattern.replace(url, lambdaHost)
 
+        android.util.Log.d("TvRepository", "resolveUrl: '$path' -> '$url'")
         return url
     }
 
@@ -487,6 +678,7 @@ object TvRepository {
         repositoryScope.cancel()
         imageLoader = null
         scheduleCache.clear()
+        channelProgramsMap.clear()
     }
 
     // Pre-computed filtered lists for better performance

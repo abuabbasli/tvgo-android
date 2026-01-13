@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.mc2soft.ontv.ontvapp.ui.TempFocusView
+        android:id="@+id/tempKeepFocusView"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        />
+    <FrameLayout
+        android:id="@+id/htroot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+</FrameLayout>

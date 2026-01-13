@@ -1,0 +1,1292 @@
+[
+  {
+    "id": "000001390",
+    "display_name": "Живая планета",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001390.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001419",
+    "display_name": "Bollywood HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001419.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002696",
+    "display_name": "TRT MUZIK",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002696.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002697",
+    "display_name": "TRT HABER",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002697.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002700",
+    "display_name": "POWER HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002700.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002701",
+    "display_name": "Sports TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002701.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002703",
+    "display_name": "BRIDGE TV DELUXE",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002703.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002718",
+    "display_name": "BBC",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002718.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001478",
+    "display_name": "БОБЁР",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001478.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002762",
+    "display_name": "В гостях у сказки",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002762.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002864",
+    "display_name": "Кинопремьера HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002864.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003227",
+    "display_name": "Euronews Rus",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003227.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002928",
+    "display_name": "O!",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002928.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003237",
+    "display_name": "Akilli TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003237.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003238",
+    "display_name": "FB TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003238.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003241",
+    "display_name": "ARB TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003241.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001491",
+    "display_name": "Ani",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001491.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003369",
+    "display_name": "ARB Gunesh",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003369.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001494",
+    "display_name": "Конный мир",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001494.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003415",
+    "display_name": "Discovery Channel HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003415.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003416",
+    "display_name": "Animal Planet HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003416.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003425",
+    "display_name": "ARB 24",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003425.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003427",
+    "display_name": "Dьnya TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003427.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003433",
+    "display_name": "Teve2",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003433.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003434",
+    "display_name": "SHOW MAX HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003434.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003436",
+    "display_name": "TGRT Haber HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003436.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003437",
+    "display_name": "TLC",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003437.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003438",
+    "display_name": "TRT Belgesel HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003438.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003441",
+    "display_name": "360TV Turk",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003441.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003442",
+    "display_name": "TV 8.5",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003442.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003174",
+    "display_name": "Диалоги о рыбалке",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003174.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001575",
+    "display_name": "Комедия",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001575.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001671",
+    "display_name": "World Fashion",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001671.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001672",
+    "display_name": "Cartoon Network TR",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001672.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001673",
+    "display_name": "Star TV TR",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001673.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001676",
+    "display_name": "TRT Spor",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001676.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001677",
+    "display_name": "TV8",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001677.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003239",
+    "display_name": "HABERTЬRK",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003239.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003240",
+    "display_name": "TRT Avaz",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003240.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003264",
+    "display_name": "TLC Russia",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003264.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001700",
+    "display_name": "Продвижение",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001700.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002478",
+    "display_name": "Eurosport 1",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002478.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002480",
+    "display_name": "Eurosport 1 HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002480.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002513",
+    "display_name": "Animal Planet",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002513.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001829",
+    "display_name": "E TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001829.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001868",
+    "display_name": "UA TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001868.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002035",
+    "display_name": "MTV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002035.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002043",
+    "display_name": "Discovery Channel",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002043.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002541",
+    "display_name": "Fashion TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002541.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002547",
+    "display_name": "A Spor",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002547.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002549",
+    "display_name": "A Haber",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002549.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003359",
+    "display_name": "Дикий",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003359.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003475",
+    "display_name": "Investigation Discovery",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002222.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003392",
+    "display_name": "Дорама",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003392.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003448",
+    "display_name": "minikaCOCUK",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003448.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003449",
+    "display_name": "minikaGO",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003449.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003452",
+    "display_name": "TMB",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003452.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003615",
+    "display_name": "НТВ-ХИТ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003615.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003578",
+    "display_name": "beIN SPORTS HABER",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003578.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003580",
+    "display_name": "Dream",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003580.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003591",
+    "display_name": "Суббота !",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003591.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003672",
+    "display_name": "NTV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003672.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003689",
+    "display_name": "MMA-TV.com",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003689.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003747",
+    "display_name": "TV 100 HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003747.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003811",
+    "display_name": "Real TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003811.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003812",
+    "display_name": "DMAX",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003812.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003892",
+    "display_name": "CTC Kids HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003892.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000003963",
+    "display_name": "Eurosport 2 HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000003963.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002437",
+    "display_name": "КВН ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000002437.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004422",
+    "display_name": "ATV TR",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004422.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000177",
+    "display_name": "Fox Life",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004471.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004472",
+    "display_name": "FOX Russia",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004472.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004473",
+    "display_name": "National Geographic",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004473.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004474",
+    "display_name": "Nat Geo Wild",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004474.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004479",
+    "display_name": "MuzTV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004479.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004487",
+    "display_name": "National Geographic HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004487.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004496",
+    "display_name": "Мир баскетбола",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004496.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004647",
+    "display_name": "NR1 TURK TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004647.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004649",
+    "display_name": "TV8 int",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004649.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000004650",
+    "display_name": "EURO D",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000004650.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000005279",
+    "display_name": "Киноужас",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000005279.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000006280",
+    "display_name": "Haber Global HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000006280.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000006518",
+    "display_name": "TRT2 HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000006518.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000006970",
+    "display_name": "Танцуй!",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000006970.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000007613",
+    "display_name": "Classic Music",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000007613.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000007914",
+    "display_name": "Da Vinci",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000007914.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000007977",
+    "display_name": "TRT SPOR2",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000007977.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000166",
+    "display_name": "Моя Планета",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000166.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000192",
+    "display_name": "Bridge TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000192.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000198",
+    "display_name": "Россия 24",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000198.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000200",
+    "display_name": "ЖИВИ!",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000200.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000202",
+    "display_name": "English club",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000202.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000203",
+    "display_name": "Мультиландия",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000203.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000204",
+    "display_name": "Музыка Первого",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000204.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000205",
+    "display_name": "Время: далекое и близкое",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000205.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000206",
+    "display_name": "Телекафе",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000206.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000208",
+    "display_name": "TV 1000 Action",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000208.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000210",
+    "display_name": "Шансон",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000210.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000095",
+    "display_name": "Россия 1",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000095.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000432",
+    "display_name": "ЮТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000432.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000778",
+    "display_name": "Киносемья",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000778.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000711",
+    "display_name": "KHL Prime",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000711.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001207",
+    "display_name": "Мульт",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001207.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001231",
+    "display_name": "РТР Планета",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001231.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000129",
+    "display_name": "365 Дней",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000129.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000130",
+    "display_name": "Кухня ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000130.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000135",
+    "display_name": "Viasat Sport",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000135.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000076",
+    "display_name": "Ностальгия",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000076.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000091",
+    "display_name": "РБК",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000091.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000092",
+    "display_name": "РЕН ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000092.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000004",
+    "display_name": "Первый Канал",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000004.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000002",
+    "display_name": "НТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000002.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000111",
+    "display_name": "ТВ центр",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000111.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000054",
+    "display_name": "Че",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000054.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000007",
+    "display_name": "Доктор",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000007.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000073",
+    "display_name": "Муз ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000073.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000137",
+    "display_name": "Disney Channel",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000137.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000023",
+    "display_name": "TV 1000",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000023.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000022",
+    "display_name": "Viasat History",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000022.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000024",
+    "display_name": "TV 1000 Русское кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000024.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000066",
+    "display_name": "Россия К",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000066.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000085",
+    "display_name": "Охота и Рыбалка",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000085.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000124",
+    "display_name": "Усадьба-ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000124.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000140",
+    "display_name": "Кинокомедия",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000140.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000558",
+    "display_name": "Кино ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000558.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000560",
+    "display_name": "Мир 24",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000560.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000613",
+    "display_name": "Европа+",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000613.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000635",
+    "display_name": "История",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000635.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001343",
+    "display_name": "France 24",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001343.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000677",
+    "display_name": "Морской",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000677.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000146",
+    "display_name": "Домашние животные",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000146.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000152",
+    "display_name": "Еврокино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000152.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000156",
+    "display_name": "Мультимузыка",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000156.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001285",
+    "display_name": "TRT1",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001285.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001292",
+    "display_name": "CNN Turk",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001292.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001293",
+    "display_name": "Power Turk",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001293.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001294",
+    "display_name": "Medeniyyet",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001294.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001296",
+    "display_name": "Xezer",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001296.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000525",
+    "display_name": "Travel+Adventure",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000525.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000157",
+    "display_name": "Карусель",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000157.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000494",
+    "display_name": "Hollywood HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000494.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001279",
+    "display_name": "AzTV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001279.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001280",
+    "display_name": "İctimai",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001280.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001281",
+    "display_name": "Kanal 7 turk",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001281.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000868",
+    "display_name": "VIP Premiere HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000868.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000869",
+    "display_name": "VIP Megahit HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000869.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000870",
+    "display_name": "VIP Comedy HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000870.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000446",
+    "display_name": "Моторспорт ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000446.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000481",
+    "display_name": "Русский Бестселлер",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000481.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000429",
+    "display_name": "Mezzo",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000429.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001311",
+    "display_name": "ATV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001311.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000009",
+    "display_name": "2x2",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000009.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000056",
+    "display_name": "Звезда",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000056.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000108",
+    "display_name": "ТВ 3",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000108.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000109",
+    "display_name": "ЖАРА",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000109.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000060",
+    "display_name": "Индийское Кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000060.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000102",
+    "display_name": "Русский Иллюзион",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000102.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000048",
+    "display_name": "Уникум",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000048.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000058",
+    "display_name": "Иллюзион +",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000058.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000051",
+    "display_name": "Домашний",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000051.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000008",
+    "display_name": "24 Техно",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000008.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000070",
+    "display_name": "Мама",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000070.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000107",
+    "display_name": "СТС",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000107.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000089",
+    "display_name": "Пятый Канал",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000089.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000071",
+    "display_name": "Мир",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000071.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000006",
+    "display_name": "ТВ-21М",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000006.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000078",
+    "display_name": "НСТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000078.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000101",
+    "display_name": "RU TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000101.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000013",
+    "display_name": "TNT MUSIC",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000013.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000050",
+    "display_name": "Дом Кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000050.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000728",
+    "display_name": "Shot TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000728.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001304",
+    "display_name": "CBC",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001304.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001307",
+    "display_name": "Show TV HD",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001307.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000002544",
+    "display_name": "İdman TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001309.jpg",
+    "lang": "ru"
+  },
+  {
+    "id": "000001312",
+    "display_name": "Space",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001312.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001313",
+    "display_name": "TRT Cocuk",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001313.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001315",
+    "display_name": "Kanal D",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001315.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000139",
+    "display_name": "КХЛ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000139.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001214",
+    "display_name": "TRT Turk",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001214.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000001243",
+    "display_name": "Бокс ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000001243.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000989",
+    "display_name": "CTC Love",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000989.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000171",
+    "display_name": "Мужское Кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000171.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000173",
+    "display_name": "Киносерия",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000173.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000174",
+    "display_name": "Tiji",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000174.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000176",
+    "display_name": "Ля-минор ТВ",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000176.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000019",
+    "display_name": "DTX",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000019.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000016",
+    "display_name": "CNN",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000016.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000025",
+    "display_name": "Euronews Eng",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000025.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000026",
+    "display_name": "Extreme Sport",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000026.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000031",
+    "display_name": "Hollywood",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000031.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000040",
+    "display_name": "Discovery Science",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000040.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000049",
+    "display_name": "Детский мир",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000049.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000062",
+    "display_name": "Киносвидание",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000062.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000065",
+    "display_name": "Кинохит",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000065.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000074",
+    "display_name": "Родное кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000074.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000075",
+    "display_name": "Наше новое кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000075.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000226",
+    "display_name": "BRIDGE TV Русский Хит",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000226.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000230",
+    "display_name": "Наука 2.0",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000230.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000239",
+    "display_name": "Синема",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000239.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000243",
+    "display_name": "Радость моя",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000243.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000264",
+    "display_name": "MTV 00s",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000264.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000281",
+    "display_name": "RTG TV",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000281.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000283",
+    "display_name": "Любимое кино",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000283.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000284",
+    "display_name": "Gulli Girl",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000284.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000287",
+    "display_name": "MTV 90s",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000287.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000296",
+    "display_name": "Viasat Nature",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000296.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000297",
+    "display_name": "Телеканал 360",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000297.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000307",
+    "display_name": "Кто есть кто",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000307.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000319",
+    "display_name": "Мир сериала",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000319.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000327",
+    "display_name": "MCM Top",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000327.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000138",
+    "display_name": "Киномикс",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000138.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000815",
+    "display_name": "Авто 24",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000815.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000183",
+    "display_name": "HDL",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000183.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000185",
+    "display_name": "Авто Плюс",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000185.png",
+    "lang": "ru"
+  },
+  {
+    "id": "000000418",
+    "display_name": "ТНВ-Планета",
+    "icon_url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/logo/000000418.png",
+    "lang": "ru"
+  }
+]

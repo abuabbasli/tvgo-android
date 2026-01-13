@@ -1,0 +1,65 @@
+<resources>
+    <style name="Theme.Launcher.OnTV" parent="Theme.OnTvCommon.OnTV">
+        <item name="theme_appbutton_tv">@drawable/tv_azo</item>
+        <item name="theme_appbutton_vod">@drawable/vod_azo</item>
+        <item name="theme_appbutton_youtube">@drawable/youtube_azo</item>
+        <item name="theme_appbutton_netflix">@drawable/netflix_azo</item>
+        <item name="theme_appbutton_settings">@drawable/settings_azo</item>
+        <item name="theme_appbutton_updates">@drawable/update_azo</item>
+        <item name="theme_appbutton_server_prefs">@drawable/server_prefs_azo</item>
+        <item name="theme_appbutton_diagnostics">@drawable/diagnostics_azo</item>
+        <item name="theme_appbutton_speedtest">@drawable/speedtest_azo</item>
+        <item name="theme_appbutton_text">@color/button_text</item>
+    </style>
+    <style name="Theme.Launcher.TvinTV" parent="Theme.OnTvCommon.TvinTV">
+        <item name="theme_appbutton_tv">@drawable/tv_tvin</item>
+        <item name="theme_appbutton_vod">@drawable/vod_tvin</item>
+        <item name="theme_appbutton_youtube">@drawable/youtube_tvin</item>
+        <item name="theme_appbutton_netflix">@drawable/netflix_tvin</item>
+        <item name="theme_appbutton_settings">@drawable/settings_tvin</item>
+        <item name="theme_appbutton_updates">@drawable/update_tvin</item>
+        <item name="theme_appbutton_server_prefs">@drawable/server_prefs_tvin</item>
+        <item name="theme_appbutton_diagnostics">@drawable/diagnostics_tvin</item>
+        <item name="theme_appbutton_speedtest">@drawable/speedtest_tvin</item>
+        <item name="theme_appbutton_text">@color/button_text_tvin</item>
+    </style>
+
+    <style name="Theme.Launcher.Birlink" parent="Theme.OnTvCommon.BirLink">
+        <item name="theme_appbutton_tv">@drawable/tv_tvin</item>
+        <item name="theme_appbutton_vod">@drawable/vod_tvin</item>
+        <item name="theme_appbutton_youtube">@drawable/youtube_tvin</item>
+        <item name="theme_appbutton_netflix">@drawable/netflix_tvin</item>
+        <item name="theme_appbutton_settings">@drawable/settings_tvin</item>
+        <item name="theme_appbutton_updates">@drawable/update_tvin</item>
+        <item name="theme_appbutton_server_prefs">@drawable/server_prefs_tvin</item>
+        <item name="theme_appbutton_diagnostics">@drawable/diagnostics_tvin</item>
+        <item name="theme_appbutton_speedtest">@drawable/speedtest_tvin</item>
+        <item name="theme_appbutton_text">@color/button_text_tvin</item>
+    </style>
+
+    <style name="Theme.Launcher.Test" parent="Theme.OnTvCommon.Test">
+        <item name="theme_appbutton_tv">@drawable/tv_azo</item>
+        <item name="theme_appbutton_vod">@drawable/vod_azo</item>
+        <item name="theme_appbutton_youtube">@drawable/youtube_azo</item>
+        <item name="theme_appbutton_netflix">@drawable/netflix_azo</item>
+        <item name="theme_appbutton_settings">@drawable/settings_azo</item>
+        <item name="theme_appbutton_updates">@drawable/update_azo</item>
+        <item name="theme_appbutton_server_prefs">@drawable/server_prefs_azo</item>
+        <item name="theme_appbutton_diagnostics">@drawable/diagnostics_azo</item>
+        <item name="theme_appbutton_speedtest">@drawable/speedtest_azo</item>
+        <item name="theme_appbutton_text">@color/button_text</item>
+    </style>
+
+    <style name="Theme.Launcher.Default" parent="Theme.OnTvCommon.Default">
+        <item name="theme_appbutton_tv">@drawable/tv_azo</item>
+        <item name="theme_appbutton_vod">@drawable/vod_azo</item>
+        <item name="theme_appbutton_youtube">@drawable/youtube_azo</item>
+        <item name="theme_appbutton_netflix">@drawable/netflix_azo</item>
+        <item name="theme_appbutton_settings">@drawable/settings_azo</item>
+        <item name="theme_appbutton_updates">@drawable/update_azo</item>
+        <item name="theme_appbutton_server_prefs">@drawable/server_prefs_azo</item>
+        <item name="theme_appbutton_diagnostics">@drawable/diagnostics_azo</item>
+        <item name="theme_appbutton_speedtest">@drawable/speedtest_azo</item>
+        <item name="theme_appbutton_text">@color/button_text</item>
+    </style>
+</resources>

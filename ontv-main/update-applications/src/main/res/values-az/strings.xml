@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tətbiqlərin yenilənməsi</string>
+
+    <string name="stage_check_updates">Yeniləmələrin yoxlanması</string>
+    <string name="stage_downloading">Endirilir</string>
+    <string name="stage_installing">Quraşdırılır</string>
+    <string name="stage_update_success">Uğurla yeniləndi</string>
+    <string name="stage_no_need_updates">Artıq yenilənib, yeniləməyə ehtiyac yoxdur</string>
+    <string name="subtitle">Zəhmət olmasa, gözləyin</string>
+</resources> 

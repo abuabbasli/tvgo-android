@@ -1,0 +1,28 @@
+
+def updateVersionInJsonFile(applicationId, versionCode, infFilePath) {
+    BufferedReader infFileReader = new BufferedReader(new FileReader(infFilePath));
+    String line
+    StringBuffer inputBuffer = new StringBuffer()
+    while ((line = infFileReader.readLine()) != null) {
+        inputBuffer.append(line)
+        inputBuffer.append('\n')
+    }
+    String inputStr = inputBuffer.toString()
+    infFileReader.close()
+
+    int beginAppIndex = inputStr.indexOf(applicationId)
+    String findString = "versionCode\" : \""
+    int startIndex = inputStr.indexOf(findString, beginAppIndex)
+    int endIndex = inputStr.indexOf("\"", startIndex + findString.size())
+    String newStr = inputStr.substring(0, startIndex + findString.size())
+    newStr += versionCode
+    newStr += inputStr.substring(endIndex)
+
+    FileOutputStream fileOut = new FileOutputStream(infFilePath)
+    fileOut.write(newStr.getBytes())
+    fileOut.close()
+}
+
+ext {
+    updateVersionInJsonFile = this.&updateVersionInJsonFile
+}

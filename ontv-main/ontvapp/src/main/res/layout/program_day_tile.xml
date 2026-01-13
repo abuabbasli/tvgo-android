@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/program_tile_width"
+    android:layout_height="@dimen/program_day_tile_height"
+    tools:parentTag="android.widget.FrameLayout"
+    >
+    <TextView
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:duplicateParentState="true"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:textSize="18sp"
+        android:textColor="?attr/colorOnPrimary"
+        android:layout_gravity="center_vertical"
+        android:text="00:00"
+        android:maxLines="1"
+        />
+</merge>

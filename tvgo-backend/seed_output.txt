@@ -1,0 +1,49 @@
+Processing tvgo-logo... Uploaded.
+Traceback (most recent call last):
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/scripts/seed_data.py", line 1196, in <module>
+    main()
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/scripts/seed_data.py", line 1186, in main
+    seed_brand(db)
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/scripts/seed_data.py", line 1148, in seed_brand
+    db["brand_config"].replace_one({"_id": "brand"}, brand, upsert=True)
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/collection.py", line 1217, in replace_one
+    self._update_retryable(
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/collection.py", line 1118, in _update_retryable
+    return self._database.client._retryable_write(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 2082, in _retryable_write
+    return self._retry_with_session(retryable, func, s, bulk, operation, operation_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 1968, in _retry_with_session
+    return self._retry_internal(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/_csot.py", line 125, in csot_wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 2014, in _retry_internal
+    ).run()
+      ^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 2765, in run
+    return self._read() if self._is_read else self._write()
+                                              ^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 2875, in _write
+    self._server = self._get_server()
+                   ^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 2858, in _get_server
+    return self._client._select_server(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/mongo_client.py", line 1833, in _select_server
+    server = topology.select_server(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/topology.py", line 409, in select_server
+    server = self._select_server(
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/topology.py", line 387, in _select_server
+    servers = self.select_servers(
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/topology.py", line 294, in select_servers
+    server_descriptions = self._select_servers_loop(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abu/Downloads/tvGoBackend/tvgo-backend/.venv/lib/python3.11/site-packages/pymongo/synchronous/topology.py", line 344, in _select_servers_loop
+    raise ServerSelectionTimeoutError(
+pymongo.errors.ServerSelectionTimeoutError: ac-svmpnmm-shard-00-00.bnzjomc.mongodb.net:27017: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms),ac-svmpnmm-shard-00-02.bnzjomc.mongodb.net:27017: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms),ac-svmpnmm-shard-00-01.bnzjomc.mongodb.net:27017: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms), Timeout: 30s, Topology Description: <TopologyDescription id: 69454b1649948985e8d45f5f, topology_type: ReplicaSetNoPrimary, servers: [<ServerDescription ('ac-svmpnmm-shard-00-00.bnzjomc.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('ac-svmpnmm-shard-00-00.bnzjomc.mongodb.net:27017: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>, <ServerDescription ('ac-svmpnmm-shard-00-01.bnzjomc.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('ac-svmpnmm-shard-00-01.bnzjomc.mongodb.net:27017: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>, <ServerDescription ('ac-svmpnmm-shard-00-02.bnzjomc.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('ac-svmpnmm-shard-00-02.bnzjomc.mongodb.net:27017: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>]>

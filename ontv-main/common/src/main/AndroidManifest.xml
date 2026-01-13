@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="com.mc2soft.ontv.ontvapp" />
+        <package android:name="com.mc2soft.ontv.update_applications" />
+        <package android:name="com.mc2soft.ontv.update_firmware" />
+        <package android:name="com.mc2soft.ontv.launcher" />
+        <package android:name="com.mc2soft.ontv.control" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.netflix.mediaclient" />
+        <package android:name="org.zwanoo.android.speedtest" />
+        <package android:name="com.teamsmart.videomanager.tv" />
+        <package android:name="com.mbx.settingsmbox" />
+    </queries>
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

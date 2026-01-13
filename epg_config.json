@@ -1,0 +1,18 @@
+{
+    "epg_sources": [
+        {
+            "name": "EPG Service RU - Main",
+            "url": "http://xml-epgservice.cdnvideo.ru/EPGService/hs/xmldata/6c038e50-4241-4dc9-ad30-ff1f24b96fd/tv_pack",
+            "enabled": true,
+            "priority": 1,
+            "description": "Main Russian EPG source"
+        }
+    ],
+    "channel_mappings": {},
+    "settings": {
+        "cache_duration_hours": 24,
+        "auto_download": true,
+        "download_on_startup": true
+    },
+    "notes": "Add new EPG sources to epg_sources array. Each source needs: name, url, enabled, priority. Lower priority number = higher priority."
+}

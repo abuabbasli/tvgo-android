@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Обновление Приложений</string>
+
+    <string name="stage_check_updates">Проверка наличия обновлений</string>
+    <string name="stage_downloading">Загрузка</string>
+    <string name="stage_installing">Установка</string>
+    <string name="stage_update_success">Обновление прошло успешно</string>
+    <string name="stage_no_need_updates">У Вас самые свежие версиии, обновление не требуется</string>
+    <string name="subtitle">пожалуйста подождите</string>
+</resources>

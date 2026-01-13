@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="154dp"
+    android:layout_height="206dp"
+    android:orientation="vertical"
+    android:duplicateParentState="true">
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="match_parent"
+        android:layout_height="154dp"
+        android:scaleType="centerInside"
+        android:layout_gravity="center_horizontal"
+        android:duplicateParentState="true"
+        tools:src="@drawable/tv_azo"
+        />
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        tools:text="name name name nameq namename \name"
+        android:textColor="?attr/theme_appbutton_text"
+        android:textSize="20sp"
+        android:duplicateParentState="true"
+        android:letterSpacing="0.07"
+        android:lines="2"
+        />
+</LinearLayout>

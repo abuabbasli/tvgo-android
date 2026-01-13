@@ -4,7 +4,5 @@ color ic_launcher_background
 drawable app_logo
 drawable banner
 drawable ic_launcher_foreground
-id preview_player_view
-layout preview_player
 mipmap ic_launcher
 style Theme.AndroidTvIptvApp

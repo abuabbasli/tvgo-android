@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:state_selected="true">
+        <bitmap android:tint="?attr/backgroundColor" android:src="@mipmap/baseline_radio_button_checked_white_36" />
+    </item>
+    <item android:state_focused="true" android:state_selected="false">
+        <bitmap android:tint="?attr/backgroundColor" android:src="@mipmap/baseline_radio_button_unchecked_white_36" />
+    </item>
+    <item android:state_selected="true">
+        <bitmap android:tint="?attr/colorOnPrimary" android:src="@mipmap/baseline_radio_button_checked_white_36" />
+    </item>
+    <item>
+        <bitmap android:tint="?attr/colorOnPrimary" android:src="@mipmap/baseline_radio_button_unchecked_white_36" />
+    </item>
+</selector>
