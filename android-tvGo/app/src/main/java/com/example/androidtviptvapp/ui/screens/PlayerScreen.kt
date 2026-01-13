@@ -97,6 +97,20 @@ fun PlayerScreen(
         }
     }
 
+    // CRITICAL: Tick loop for health monitoring (OnTV-main pattern)
+    // This runs every 300ms and calls player.tick() to detect frozen streams
+    LaunchedEffect(playerView) {
+        playerView?.let { pv ->
+            while (true) {
+                delay(300) // OnTV-main TICK_DT = 300ms
+                pv.tick()
+                // Update UI state from player
+                isPlaying = !pv.pause && pv.isPlayReady
+                isBuffering = pv.isBuffering
+            }
+        }
+    }
+
     // Switch channel
     fun switchChannel(direction: Int) {
         val next = playerView?.jumpChannel(direction)

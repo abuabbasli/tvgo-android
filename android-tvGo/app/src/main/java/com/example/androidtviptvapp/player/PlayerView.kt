@@ -35,8 +35,8 @@ class PlayerView @JvmOverloads constructor(
         private const val TAG = "PlayerView"
         private const val DELAY_AFTER_ERROR = 2000L  // OnTV-main uses 2 seconds
         private const val MAX_RETRIES = 5
-        private const val HEALTH_CHECK_INTERVAL = 5000L
-        private const val FREEZE_THRESHOLD = 3000L
+        private const val TICK_DT = 300L  // OnTV-main tick interval
+        private const val FREEZE_TICK_COUNT = 10  // 10 ticks = 3 seconds without position change
     }
 
     // =========================================================================
@@ -83,11 +83,9 @@ class PlayerView @JvmOverloads constructor(
     var isRetryAfterError: Throwable? = null
         private set
 
-    // Health monitoring
-    private var healthCheckJob: Job? = null
-    private var lastPosition = 0L
-    private var lastPositionCheckTime = 0L
-    private var frozenCount = 0
+    // Health monitoring - OnTV-main uses tick-based monitoring, not separate job
+    private var lastTickPosition = 0L
+    private var frozenTickCount = 0
 
     // Play ready counter for history tracking (OnTV-main pattern)
     var playReadyCount = 0
@@ -176,8 +174,13 @@ class PlayerView @JvmOverloads constructor(
         closeStream()
         _playbackSourceFlow.value = ps
         onSourceChanged?.invoke(ps)
+
+        // Reset health monitoring state
+        lastTickPosition = 0L
+        frozenTickCount = 0
+        playReadyCount = 0
+
         openStream(url, vod, pos, pauseAfter)
-        startHealthMonitoring()
     }
 
     /**
@@ -194,6 +197,10 @@ class PlayerView @JvmOverloads constructor(
         closeStream()
         _playbackSourceFlow.value = ps
         onSourceChanged?.invoke(ps)
+
+        // Reset health monitoring state
+        lastTickPosition = 0L
+        frozenTickCount = 0
     }
 
     /**
@@ -208,11 +215,14 @@ class PlayerView @JvmOverloads constructor(
 
         loadAndPlayJob?.cancel()
         loadAndPlayJob = null
-        healthCheckJob?.cancel()
-        healthCheckJob = null
         closeStream()
         _playbackSourceFlow.value = null
         onSourceChanged?.invoke(null)
+
+        // Reset health monitoring state
+        lastTickPosition = 0L
+        frozenTickCount = 0
+        playReadyCount = 0
     }
 
     /**
@@ -264,90 +274,84 @@ class PlayerView @JvmOverloads constructor(
     fun playUrl(url: String, vod: Boolean = false) {
         Log.d(TAG, "playUrl: $url")
         closePlaybackSource()
+        lastTickPosition = 0L
+        frozenTickCount = 0
         openStream(url, vod)
-        startHealthMonitoring()
     }
 
     // =========================================================================
-    // Health Monitoring (OnTV-main pattern for detecting frozen streams)
+    // TICK-BASED HEALTH MONITORING (OnTV-main pattern)
+    // Called externally every 300ms by SharedPlayerManager
     // =========================================================================
 
-    private fun startHealthMonitoring() {
-        healthCheckJob?.cancel()
-        lastPosition = 0L
-        lastPositionCheckTime = System.currentTimeMillis()
-        frozenCount = 0
-
-        healthCheckJob = scope?.launch {
-            while (true) {
-                delay(HEALTH_CHECK_INTERVAL)
-                checkPlaybackHealth()
-            }
-        }
-    }
-
-    private fun checkPlaybackHealth() {
-        if (pause || !isPlayReady || seekProcessDirection != 0) return
-
-        val currentPosition = seek
-        val currentTime = System.currentTimeMillis()
-
-        // For live streams, check if position is advancing
-        if (channelPlaybackSource != null || streamUrl?.contains(".m3u8") == true) {
-            if (currentPosition == lastPosition && currentTime - lastPositionCheckTime > FREEZE_THRESHOLD) {
-                frozenCount++
-                Log.w(TAG, "Possible freeze detected (count: $frozenCount)")
-
-                if (frozenCount >= 2) {
-                    Log.w(TAG, "Stream appears frozen - auto-recovering")
-                    frozenCount = 0
-                    restartStream()
-                }
-            } else {
-                frozenCount = 0
-            }
-        }
-
-        lastPosition = currentPosition
-        lastPositionCheckTime = currentTime
-    }
-
-    // =========================================================================
-    // Player State Callbacks (OnTV-main Pattern)
-    // =========================================================================
-
-    override fun onPlayerChange() {
-        // Reset retry state on successful playback
-        if (isPlayReady) {
-            retryCount = 0
-            isRetryAfterError = null
-            frozenCount = 0
-            onPlaybackReady?.invoke()
-            onPlaybackError?.invoke("", false)
-        }
-
-        // Track play ready count for history
+    /**
+     * Main tick function - OnTV-main pattern
+     * Called every 300ms from SharedPlayerManager to monitor playback health.
+     * This is CRITICAL for detecting frozen streams and auto-recovering.
+     */
+    fun tick() {
+        // Track playReadyCount for history (OnTV-main pattern)
         if (isPlayReady) {
             playReadyCount += 1
         } else if (!isBuffering) {
             playReadyCount = 0
         }
 
-        // Handle seek process ticks
-        tick()
-    }
+        // Handle seek process
+        handleSeekProcessTick()
 
-    override fun onError(error: Throwable) {
-        super.onError(error)
-        discardSeekProcess()
-        handleError()
+        // CRITICAL: Check for frozen stream (OnTV-main pattern)
+        checkFrozenStream()
     }
 
     /**
-     * Tick function - called on every player state change
-     * OnTV-main pattern for seek process handling
+     * Check if stream is frozen and auto-recover - OnTV-main pattern
+     * A stream is frozen if position doesn't advance for FREEZE_TICK_COUNT ticks (~3 seconds)
      */
-    private fun tick() {
+    private fun checkFrozenStream() {
+        // Only check when playing (not paused, not seeking, not buffering)
+        if (pause || seekProcessDirection != 0 || !isPlayReady) {
+            frozenTickCount = 0
+            return
+        }
+
+        // Only check for live streams and HLS
+        if (channelPlaybackSource == null && streamUrl?.contains(".m3u8") != true) {
+            return
+        }
+
+        val currentPosition = seek
+
+        // Check if position is advancing
+        if (currentPosition == lastTickPosition && currentPosition > 0) {
+            frozenTickCount++
+
+            if (frozenTickCount >= FREEZE_TICK_COUNT) {
+                Log.w(TAG, "Stream frozen for ${frozenTickCount * TICK_DT}ms - auto-recovering")
+                frozenTickCount = 0
+
+                // Try to recover - OnTV-main pattern
+                if (currentError != null) {
+                    // There's an error - let error handling deal with it
+                    handleError(immediate = true)
+                } else {
+                    // No error but frozen - restart stream
+                    Log.d(TAG, "No error but frozen - restarting stream")
+                    restartStream()
+                }
+            }
+        } else {
+            // Position is advancing - reset counter
+            frozenTickCount = 0
+        }
+
+        lastTickPosition = currentPosition
+    }
+
+    /**
+     * Handle seek process during tick - OnTV-main pattern
+     */
+    private fun handleSeekProcessTick() {
         if (seekProcessDirection != 0) {
             val target = calculateTargetSeek()
             when {
@@ -364,6 +368,30 @@ class PlayerView @JvmOverloads constructor(
                 }
             }
         }
+    }
+
+    // =========================================================================
+    // Player State Callbacks (OnTV-main Pattern)
+    // =========================================================================
+
+    override fun onPlayerChange() {
+        // Reset retry state on successful playback
+        if (isPlayReady) {
+            retryCount = 0
+            isRetryAfterError = null
+            frozenTickCount = 0
+            onPlaybackReady?.invoke()
+            onPlaybackError?.invoke("", false)
+        }
+
+        // Note: playReadyCount tracking is done in tick() now
+        // This ensures it's updated continuously, not just on state changes
+    }
+
+    override fun onError(error: Throwable) {
+        super.onError(error)
+        discardSeekProcess()
+        handleError()
     }
 
     // =========================================================================
@@ -478,21 +506,19 @@ class PlayerView @JvmOverloads constructor(
         Log.d(TAG, "destroy")
         loadAndPlayJob?.cancel()
         loadAndPlayJob = null
-        healthCheckJob?.cancel()
-        healthCheckJob = null
         discardSeekProcess()
         _playbackSourceFlow.value = null
+        lastTickPosition = 0L
+        frozenTickCount = 0
+        playReadyCount = 0
         super.destroy()
     }
 
     override fun reinit() {
         Log.d(TAG, "reinit - preserving playback source")
-        val savedSource = playbackSource
-        healthCheckJob?.cancel()
-        healthCheckJob = null
+        // Reset tick state but preserve source
+        lastTickPosition = 0L
+        frozenTickCount = 0
         super.reinit()
-        if (savedSource != null) {
-            startHealthMonitoring()
-        }
     }
 }

@@ -104,14 +104,25 @@ object SharedPlayerManager {
     }
     
     /**
-     * Internal tick - updates player state for UI observation.
-     * Also periodically checks memory usage.
-     * Enhanced with OnTV-main style state tracking
+     * Internal tick - OnTV-main pattern EXACTLY
+     *
+     * CRITICAL: This calls player.tick() which monitors playback health.
+     * This is the CORE of the freeze detection and auto-recovery system.
+     *
+     * Called every 300ms to:
+     * 1. Update player state for UI
+     * 2. Call player.tick() for health monitoring (CRITICAL!)
+     * 3. Check memory periodically
      */
     private fun tick() {
         tickCount++
 
         singletonPlayer?.let { player ->
+            // CRITICAL: Call player tick for health monitoring (OnTV-main pattern)
+            // This checks for frozen streams and auto-recovers
+            player.tick()
+
+            // Update state flow for UI observation
             _playerState.value = PlayerState(
                 isPlaying = !player.pause && player.isPlayReady,
                 isBuffering = player.isBuffering,
@@ -124,7 +135,7 @@ object SharedPlayerManager {
             )
         }
 
-        // Periodic memory check (every ~60 seconds)
+        // Periodic memory check (every ~60 seconds = 200 ticks at 300ms)
         if (tickCount % MEMORY_CHECK_INTERVAL == 0) {
             com.example.androidtviptvapp.data.TvRepository.checkMemoryAndCleanup()
         }
