@@ -38,13 +38,16 @@ object SharedPlayerManager {
     
     /**
      * Player state for UI observation - updated by tick()
+     * Enhanced with OnTV-main style error tracking
      */
     data class PlayerState(
         val isPlaying: Boolean = false,
         val isBuffering: Boolean = false,
+        val isPlayReady: Boolean = false,
         val currentPosition: Long = 0L,
         val duration: Long = 0L,
         val error: String? = null,
+        val isRetrying: Boolean = false,
         val channelId: String? = null
     )
     
@@ -103,21 +106,24 @@ object SharedPlayerManager {
     /**
      * Internal tick - updates player state for UI observation.
      * Also periodically checks memory usage.
+     * Enhanced with OnTV-main style state tracking
      */
     private fun tick() {
         tickCount++
-        
+
         singletonPlayer?.let { player ->
             _playerState.value = PlayerState(
-                isPlaying = !player.pause,
+                isPlaying = !player.pause && player.isPlayReady,
                 isBuffering = player.isBuffering,
+                isPlayReady = player.isPlayReady,
                 currentPosition = player.seek,
                 duration = player.duration,
                 error = player.currentError?.message,
+                isRetrying = player.isRetryAfterError != null,
                 channelId = _currentChannelId.value
             )
         }
-        
+
         // Periodic memory check (every ~60 seconds)
         if (tickCount % MEMORY_CHECK_INTERVAL == 0) {
             com.example.androidtviptvapp.data.TvRepository.checkMemoryAndCleanup()
@@ -217,20 +223,32 @@ object SharedPlayerManager {
     
     /**
      * COMPLETELY release all resources. Call only on app exit or OOM.
+     * Enhanced with proper tick job cleanup - OnTV-main pattern
      */
     fun releaseCompletely() {
         Log.w(TAG, "RELEASING COMPLETELY - destroying singleton player")
         logMemoryUsage()
-        
+
+        // Stop tick updates first
+        stopTicking()
+
+        // Cancel any pending load jobs on the player
+        singletonPlayer?.loadAndPlayJob?.cancel()
+        singletonPlayer?.loadAndPlayJob = null
+
+        // Destroy player
         singletonPlayer?.destroy()
         singletonPlayer = null
         playerContext = null
         isAttached = false
         clearCurrentChannel()
-        
+
+        // Reset state
+        _playerState.value = PlayerState()
+
         // Force garbage collection
         System.gc()
-        
+
         logMemoryUsage()
     }
     

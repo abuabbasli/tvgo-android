@@ -259,15 +259,17 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
     }
 
     /**
-     * Close current stream
+     * Close current stream - OnTV-main pattern
      */
     protected fun closeStream() {
         currentError = null
         mediaSource = null
         streamUrl = null
+        isCurrentStreamVod = false
         player?.stop()
         _audioTracks.value = emptyList()
         _selectedAudioTrack.value = null
+        postPlayerChange()
     }
 
     /**
@@ -342,6 +344,7 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
 
             mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
             streamUrl = url
+            isCurrentStreamVod = vod
 
             if (startPosition != null) {
                 player.setMediaSource(mediaSource!!, startPosition)
@@ -354,6 +357,7 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
             }
 
             player.prepare()
+            postPlayerChange()
 
         } catch (ex: RuntimeException) {
             Log.e(TAG, "Error opening stream", ex)
@@ -382,6 +386,14 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
         if (playbackState == Player.STATE_READY) {
             currentError = null
         }
+        postPlayerChange()
+    }
+
+    /**
+     * Post player state change to UI thread - OnTV-main pattern
+     * This ensures UI updates happen correctly and avoids race conditions
+     */
+    fun postPlayerChange() {
         scope?.launch {
             onPlayerChange()
         }
@@ -548,16 +560,25 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
     }
 
     /**
-     * Reinitialize player completely
+     * Reinitialize player completely - OnTV-main pattern
+     * Saves current stream state, destroys player, reinits, and restores playback
      */
     open fun reinit() {
         Log.d(TAG, "reinit - full player reinitialization")
         val savedUrl = streamUrl
-        val savedVod = false
+        val savedVod = isCurrentStreamVod
+        val savedPosition = seek
         destroy()
         init()
-        savedUrl?.let { openStream(it, savedVod) }
+        savedUrl?.let { url ->
+            Log.d(TAG, "reinit - restoring stream: $url at position $savedPosition")
+            openStream(url, savedVod, if (savedVod && savedPosition > 0) savedPosition else null)
+        }
     }
+
+    // Track if current stream is VOD (for reinit restoration)
+    protected var isCurrentStreamVod: Boolean = false
+        private set
 
     /**
      * Get the player instance

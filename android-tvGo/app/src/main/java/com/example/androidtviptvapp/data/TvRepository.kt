@@ -88,15 +88,17 @@ object TvRepository {
         
         /**
          * Trigger a reload if stale or never loaded. Returns current programs flow.
+         * Uses retry mechanism (OnTV-main pattern)
          */
         fun maybeNeedReload(): StateFlow<List<ScheduleProgramItem>> {
             val now = System.currentTimeMillis()
-            if (loadJob?.isActive != true && 
+            if (loadJob?.isActive != true &&
                 lastLoadTime + EPG_RELOAD_MIN_INTERVAL_MS < now) {
                 loadJob = repositoryScope.launch {
                     try {
                         android.util.Log.d(TAG, "Loading EPG for channel $channelId")
-                        val response = ApiClient.service.getChannelSchedule(channelId)
+                        // Use standard retry for EPG (OnTV-main pattern)
+                        val response = ApiClient.retry { ApiClient.service.getChannelSchedule(channelId) }
                         _programs.value = response.programs
                         lastLoadTime = System.currentTimeMillis()
                         android.util.Log.d(TAG, "Loaded ${response.programs.size} programs for $channelId")
@@ -519,7 +521,8 @@ object TvRepository {
     private suspend fun loadChannelsAsync() {
         try {
             android.util.Log.d("TvRepository", "Loading channels from API...")
-            val response = ApiClient.service.getChannels()
+            // Use bigRetry for channel list - critical operation (OnTV-main pattern)
+            val response = ApiClient.bigRetry { ApiClient.service.getChannels() }
             android.util.Log.d("TvRepository", "Got ${response.items.size} channels from API")
 
             val domainChannels = response.items.map { dto ->
@@ -602,7 +605,8 @@ object TvRepository {
     private suspend fun loadMoviesAsync() {
         try {
             android.util.Log.d("TvRepository", "=== LOADING MOVIES ===")
-            val response = ApiClient.service.getMovies()
+            // Use bigRetry for movies list - critical operation (OnTV-main pattern)
+            val response = ApiClient.bigRetry { ApiClient.service.getMovies() }
             android.util.Log.d("TvRepository", "Got ${response.total} movies from API")
 
             val domainMovies = response.items.map { item ->

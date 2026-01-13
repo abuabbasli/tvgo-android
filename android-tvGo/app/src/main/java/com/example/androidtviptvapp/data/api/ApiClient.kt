@@ -242,6 +242,8 @@ data class GameItem(
 )
 
 object ApiClient {
+    private const val TAG = "ApiClient"
+
     // Base URL - uses AppConfig
     private val BASE_URL = AppConfig.BASE_URL
 
@@ -263,4 +265,58 @@ object ApiClient {
         .build()
 
     val service: ApiService = retrofit.create(ApiService::class.java)
+
+    // =========================================================================
+    // RETRY MECHANISM (OnTV-main Pattern)
+    // Exponential backoff for network resilience
+    // =========================================================================
+
+    /**
+     * Retry a network call with exponential backoff - OnTV-main pattern
+     *
+     * @param retryCount Number of retries (default 2)
+     * @param delayMS Base delay in milliseconds (default 400ms)
+     * @param call The suspend function to call
+     * @return The result of the call
+     * @throws Exception if all retries fail
+     */
+    suspend inline fun <reified T> retry(
+        retryCount: Int = 2,
+        delayMS: Long = 400,
+        crossinline call: suspend () -> T
+    ): T {
+        var lastException: Exception? = null
+
+        for (i in 0..retryCount) {
+            try {
+                return call()
+            } catch (e: Exception) {
+                lastException = e
+                android.util.Log.w(TAG, "Retry ${i + 1}/$retryCount failed: ${e.message}")
+
+                if (i < retryCount) {
+                    // Exponential backoff: delay * (attempt + 1)
+                    val actualDelay = delayMS * (i + 1)
+                    android.util.Log.d(TAG, "Waiting ${actualDelay}ms before retry...")
+                    kotlinx.coroutines.delay(actualDelay)
+                }
+            }
+        }
+
+        throw lastException ?: Exception("Retry failed with unknown error")
+    }
+
+    /**
+     * Big retry for critical operations like channel list - OnTV-main pattern
+     */
+    suspend inline fun <reified T> bigRetry(
+        crossinline call: suspend () -> T
+    ): T = retry(retryCount = 10, delayMS = 200, call = call)
+
+    /**
+     * Video stream retry - OnTV-main pattern
+     */
+    suspend inline fun <reified T> streamRetry(
+        crossinline call: suspend () -> T
+    ): T = retry(retryCount = 5, delayMS = 500, call = call)
 }
