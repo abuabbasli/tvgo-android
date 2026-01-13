@@ -561,11 +561,13 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
 
 /**
  * ChannelPreview - Video preview with OnTV-style scroll optimization.
- * 
+ *
  * CRITICAL PATTERN (from OnTV-main):
+ * - Uses SharedPlayerManager's SINGLETON player (ONE player for entire app!)
  * - Player is PAUSED during scroll to prevent frame drops
  * - Only resumes playback after user stops scrolling for 500ms
  * - EXCEPT when isClickTriggered=true (user clicked) -> instant play
+ * - Does NOT destroy player on dispose - it's shared with PlayerScreen!
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -576,26 +578,34 @@ fun ChannelPreview(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     val sharedManager = com.example.androidtviptvapp.player.SharedPlayerManager
-    
+
+    // Get the SINGLETON player - CRITICAL: do NOT create a new one!
+    val singletonPlayer = remember(context) {
+        sharedManager.getOrCreatePlayer(context)
+    }
+
+    // Player reference for local use
+    var playerViewRef by remember { mutableStateOf<TvPlayerView?>(null) }
+
     // Lifecycle - start/stop ticking
     DisposableEffect(Unit) {
         sharedManager.startTicking(scope)
+        sharedManager.markAttached()
         onDispose {
             sharedManager.stopTicking()
+            sharedManager.markDetached()
+            // DO NOT destroy player - it's shared!
         }
     }
-    
+
     val skipDebounce = remember { sharedManager.shouldSkipDebounce() }
-    
+
     // Scroll state - tracks if user is actively scrolling
     var isScrolling by remember { mutableStateOf(!isClickTriggered) }
     var currentChannelToPlay by remember { mutableStateOf(channel) }
-    
-    // Player reference
-    var playerViewRef by remember { mutableStateOf<TvPlayerView?>(null) }
-    
+
     // SCROLL DEBOUNCE: 500ms (matches OnTV's DELAY_BEFORE_OPEN_PROGRAMS)
     // BUT: skip debounce if user clicked (isClickTriggered) or returning from fullscreen
     LaunchedEffect(channel.id, isClickTriggered) {
@@ -612,13 +622,13 @@ fun ChannelPreview(
             // Focus change (scrolling) - pause and debounce
             isScrolling = true
             playerViewRef?.pause = true
-            
+
             kotlinx.coroutines.delay(500)
             currentChannelToPlay = channel
             isScrolling = false
         }
     }
-    
+
     // PLAY only when not scrolling
     LaunchedEffect(currentChannelToPlay.id, isScrolling) {
         if (!isScrolling && playerViewRef != null) {
@@ -635,7 +645,7 @@ fun ChannelPreview(
             }
         }
     }
-    
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -646,9 +656,9 @@ fun ChannelPreview(
     ) {
         AndroidView(
             factory = { ctx ->
-                TvPlayerView(ctx).apply {
+                // CRITICAL: Use the SINGLETON player from SharedPlayerManager!
+                singletonPlayer.apply {
                     resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FIT
-                    init()
                     playerViewRef = this
                     // Start paused until debounce completes
                     pause = true
@@ -657,11 +667,13 @@ fun ChannelPreview(
             update = { /* handled by LaunchedEffect */ },
             onRelease = { view ->
                 playerViewRef = null
-                view.destroy()
+                // DO NOT destroy player - it's shared with PlayerScreen!
+                // Just detach (the view will be removed from hierarchy automatically)
+                (view.parent as? android.view.ViewGroup)?.removeView(view)
             },
             modifier = Modifier.fillMaxSize()
         )
-        
+
         // Show subtle overlay while scrolling (player is paused)
         if (isScrolling) {
             Box(
