@@ -242,8 +242,6 @@ data class GameItem(
 )
 
 object ApiClient {
-    private const val TAG = "ApiClient"
-
     // Base URL - uses AppConfig
     private val BASE_URL = AppConfig.BASE_URL
 
@@ -292,12 +290,12 @@ object ApiClient {
                 return call()
             } catch (e: Exception) {
                 lastException = e
-                android.util.Log.w(TAG, "Retry ${i + 1}/$retryCount failed: ${e.message}")
+                android.util.Log.w("ApiClient", "Retry ${i + 1}/$retryCount failed: ${e.message}")
 
                 if (i < retryCount) {
                     // Exponential backoff: delay * (attempt + 1)
                     val actualDelay = delayMS * (i + 1)
-                    android.util.Log.d(TAG, "Waiting ${actualDelay}ms before retry...")
+                    android.util.Log.d("ApiClient", "Waiting ${actualDelay}ms before retry...")
                     kotlinx.coroutines.delay(actualDelay)
                 }
             }

@@ -116,7 +116,8 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
     private var bandwidthMeter: DefaultBandwidthMeter? = null
     private var loadControl: DefaultLoadControl? = null
 
-    protected var scope: CoroutineScope? = null
+    var scope: CoroutineScope? = null
+        protected set
 
     // Stream URL tracking
     var streamUrl: String? = null
