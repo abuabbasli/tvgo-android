@@ -357,6 +357,15 @@ class PlayerView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Play URL directly (compatibility method)
+     */
+    fun playUrl(url: String, vod: Boolean = false) {
+        Timber.d("playUrl: $url, vod=$vod")
+        closePlaybackSource()
+        openStream(url, vod)
+    }
+
     // =========================================================================
     // TICK-BASED HEALTH MONITORING (OnTV-main pattern EXACTLY)
     // Called externally every 300ms by SharedPlayerManager
@@ -477,7 +486,7 @@ class PlayerView @JvmOverloads constructor(
 
         // Content age check - if content is >2 days old, jump to live (OnTV-main pattern)
         channelPlaybackSource?.let { src ->
-            (src.currentProgram?.startTimeMS ?: src.startAbsTime)?.let { startTime ->
+            (src.currentProgram?.startTime ?: src.startAbsTime)?.let { startTime ->
                 if (System.currentTimeMillis() - startTime > 2 * 24 * 60 * 60000) {
                     Timber.d("Content too old (>2 days), jumping to live")
                     ChannelPlaybackSource(

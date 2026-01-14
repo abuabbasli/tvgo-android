@@ -225,7 +225,7 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
             }
     }
 
-    fun destroy() {
+    open fun destroy() {
         Timber.d("destroy")
 
         scope?.cancel()
@@ -529,7 +529,7 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
         player?.prepare()
     }
 
-    fun reinit() {
+    open fun reinit() {
         destroy()
         init()
     }

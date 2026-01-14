@@ -23,21 +23,22 @@ import com.example.androidtviptvapp.player.AdaptExoPlayerView
 
 /**
  * Audio Track Selection Dialog - OnTV-main style
+ * Uses TrackInfo (new ontv-main pattern with TrackGroup)
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun AudioTrackSelectionDialog(
-    tracks: List<AdaptExoPlayerView.AudioTrackInfo>,
-    selectedTrack: AdaptExoPlayerView.AudioTrackInfo?,
-    onTrackSelected: (AdaptExoPlayerView.AudioTrackInfo) -> Unit,
+    tracks: List<AdaptExoPlayerView.TrackInfo>,
+    selectedTrack: AdaptExoPlayerView.TrackInfo?,
+    onTrackSelected: (AdaptExoPlayerView.TrackInfo) -> Unit,
     onDismiss: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
-    
+
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
-    
+
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -59,7 +60,7 @@ fun AudioTrackSelectionDialog(
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 if (tracks.isEmpty()) {
                     Text(
                         text = "No audio tracks available",
@@ -72,9 +73,8 @@ fun AudioTrackSelectionDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(tracks) { track ->
-                            val isSelected = selectedTrack?.groupIndex == track.groupIndex && 
-                                           selectedTrack?.trackIndex == track.trackIndex
-                            
+                            val isSelected = selectedTrack == track
+
                             Surface(
                                 onClick = {
                                     onTrackSelected(track)
@@ -115,7 +115,7 @@ fun AudioTrackSelectionDialog(
                                             )
                                         }
                                     }
-                                    
+
                                     if (isSelected) {
                                         Icon(
                                             imageVector = Icons.Default.Check,
@@ -128,9 +128,9 @@ fun AudioTrackSelectionDialog(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 OutlinedButton(onClick = onDismiss) {
                     Text("Cancel", color = Color.White)
                 }
@@ -151,11 +151,11 @@ fun ResumePositionDialog(
     onDismiss: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
-    
+
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
-    
+
     val formattedTime = remember(savedPosition) {
         val totalSeconds = savedPosition / 1000
         val hours = totalSeconds / 3600
@@ -167,7 +167,7 @@ fun ResumePositionDialog(
             String.format("%d:%02d", minutes, seconds)
         }
     }
-    
+
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -189,13 +189,13 @@ fun ResumePositionDialog(
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 Text(
                     text = "Continue from $formattedTime",
                     color = Color.Gray,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
-                
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -205,7 +205,7 @@ fun ResumePositionDialog(
                     }) {
                         Text("Start Over", color = Color.White)
                     }
-                    
+
                     Button(
                         onClick = {
                             onResume()

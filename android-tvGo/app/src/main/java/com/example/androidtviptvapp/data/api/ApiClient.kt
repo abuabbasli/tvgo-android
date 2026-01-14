@@ -128,12 +128,20 @@ data class CurrentProgramsResponse(
 )
 
 data class CurrentProgram(
+    val id: String = "",
     val title: String?,
     val start: String?,
     val end: String?,
     val description: String?,
     val category: String?
-)
+) {
+    // Computed properties for timestamps (OnTV-main pattern)
+    val startTime: Long
+        get() = try { start?.toLongOrNull() ?: 0L } catch (e: Exception) { 0L }
+
+    val stopTime: Long
+        get() = try { end?.toLongOrNull() ?: 0L } catch (e: Exception) { 0L }
+}
 
 // ===== MOVIES API =====
 // Simplified DTOs that match API response exactly

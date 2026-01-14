@@ -148,7 +148,7 @@ class ChannelPlaybackSource(
             currentProgram?.let { prog ->
                 ProgramInfo(
                     id = prog.id,
-                    name = prog.title,
+                    name = prog.title ?: "",
                     startTimeMS = prog.startTime,
                     stopTimeMS = prog.stopTime
                 )
