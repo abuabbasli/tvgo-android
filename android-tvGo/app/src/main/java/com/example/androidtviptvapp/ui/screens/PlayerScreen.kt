@@ -42,18 +42,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
 
-// Helper function to switch channel (used by continuous scroll loop)
-private fun doSwitchChannel(
-    direction: Int,
-    playerView: PlayerView?,
-    onSwitch: (ChannelPlaybackSource) -> Unit
-) {
-    val next = playerView?.jumpChannel(direction)
-    if (next != null) {
-        onSwitch(next)
-    }
-}
-
 /**
  * PlayerScreen with full OnTV-style controls
  */
@@ -100,9 +88,11 @@ fun PlayerScreen(
     // PlayerView reference
     var playerView by remember { mutableStateOf<PlayerView?>(null) }
 
-    // Channel scrolling state - tracks if up/down key is being held
-    var scrollDirection by remember { mutableStateOf(0) } // -1 = down, 0 = none, 1 = up
-    val scrollDelayMs = 400L // Delay between channel switches during long press
+    // Channel switching timing control (Android TV best practice)
+    // Uses timestamp-based throttling to handle key repeats properly
+    var lastChannelSwitchTime by remember { mutableStateOf(0L) }
+    val initialRepeatDelayMs = 400L  // Delay before first repeat triggers
+    val repeatIntervalMs = 350L      // Interval between repeated switches
 
     // Auto-hide overlay after 8 seconds (OnTV-main uses 8s)
     LaunchedEffect(showOverlay, showControls) {
@@ -127,37 +117,39 @@ fun PlayerScreen(
         }
     }
 
-    // Continuous scrolling loop - handles long press by scrolling one channel at a time
-    LaunchedEffect(scrollDirection) {
-        if (scrollDirection != 0 && !showControls) {
-            // First switch happens immediately
-            doSwitchChannel(scrollDirection, playerView) { newSource ->
-                currentSource = newSource
-                onChannelChanged(newSource.channel.id)
+    /**
+     * Switch channel with proper timing control for Android TV remotes.
+     *
+     * Best practice: Use repeatCount from native key event to determine behavior:
+     * - repeatCount == 0: First press, switch immediately
+     * - repeatCount > 0: Key is being held, throttle to controlled interval
+     *
+     * This ensures single press = one switch, long press = controlled continuous scroll
+     */
+    fun switchChannelWithRepeat(direction: Int, repeatCount: Int): Boolean {
+        val currentTime = System.currentTimeMillis()
+        val timeSinceLastSwitch = currentTime - lastChannelSwitchTime
+
+        val shouldSwitch = when {
+            // First press - always switch immediately
+            repeatCount == 0 -> true
+            // Repeated press - only switch if enough time has passed
+            repeatCount > 0 && timeSinceLastSwitch >= repeatIntervalMs -> true
+            // Too soon - ignore this repeat
+            else -> false
+        }
+
+        if (shouldSwitch) {
+            lastChannelSwitchTime = currentTime
+            val next = playerView?.jumpChannel(direction)
+            if (next != null) {
+                currentSource = next
+                onChannelChanged(next.channel.id)
                 showOverlay = true
             }
-            // Then continue scrolling while key is held
-            while (scrollDirection != 0) {
-                delay(scrollDelayMs)
-                if (scrollDirection != 0 && !showControls) {
-                    doSwitchChannel(scrollDirection, playerView) { newSource ->
-                        currentSource = newSource
-                        onChannelChanged(newSource.channel.id)
-                        showOverlay = true
-                    }
-                }
-            }
         }
-    }
 
-    // Switch channel helper function
-    fun switchChannel(direction: Int) {
-        val next = playerView?.jumpChannel(direction)
-        if (next != null) {
-            currentSource = next
-            onChannelChanged(next.channel.id)
-            showOverlay = true
-        }
+        return true // Always consume the event
     }
     
     // Toggle play/pause
@@ -191,82 +183,67 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(Color.Black)
             .onKeyEvent { event ->
-                when (event.type) {
-                    KeyEventType.KeyDown -> {
-                        when (event.key) {
-                            Key.DirectionUp -> {
-                                if (showControls) {
-                                    false // Let focus handle it
-                                } else {
-                                    // Start scrolling up (only if not already scrolling)
-                                    if (scrollDirection != 1) {
-                                        scrollDirection = 1
-                                    }
-                                    true
-                                }
+                // Only handle KeyDown events - use repeatCount for long press
+                if (event.type == KeyEventType.KeyDown) {
+                    // Get repeat count from native event (0 = first press, >0 = key held)
+                    val repeatCount = event.nativeKeyEvent.repeatCount
+
+                    when (event.key) {
+                        Key.DirectionUp -> {
+                            if (showControls) {
+                                false // Let focus handle it
+                            } else {
+                                switchChannelWithRepeat(1, repeatCount)
                             }
-                            Key.DirectionDown -> {
-                                if (showControls) {
-                                    false
-                                } else {
-                                    // Start scrolling down (only if not already scrolling)
-                                    if (scrollDirection != -1) {
-                                        scrollDirection = -1
-                                    }
-                                    true
-                                }
+                        }
+                        Key.DirectionDown -> {
+                            if (showControls) {
+                                false
+                            } else {
+                                switchChannelWithRepeat(-1, repeatCount)
                             }
-                            Key.DirectionCenter, Key.Enter -> {
-                                if (!showControls) {
-                                    showOverlay = true
-                                    showControls = true
-                                }
-                                true
-                            }
-                            Key.DirectionLeft, Key.DirectionRight -> {
-                                if (!showControls) {
-                                    showOverlay = true
-                                    showControls = true
-                                    true
-                                } else {
-                                    false
-                                }
-                            }
-                            Key.MediaPlayPause -> {
-                                togglePlayPause()
-                                true
-                            }
-                            Key.Back, Key.Escape -> {
-                                if (showControls) {
-                                    showControls = false
-                                    showOverlay = false
-                                    true
-                                } else {
-                                    // Mark that we're returning from fullscreen - skip debounce in preview
-                                    com.example.androidtviptvapp.player.SharedPlayerManager.markReturningFromFullscreen()
-                                    onBack()
-                                    true
-                                }
-                            }
-                            Key.Menu -> {
+                        }
+                        Key.DirectionCenter, Key.Enter -> {
+                            if (!showControls) {
                                 showOverlay = true
-                                showControls = !showControls
+                                showControls = true
+                            }
+                            true
+                        }
+                        Key.DirectionLeft, Key.DirectionRight -> {
+                            if (!showControls) {
+                                showOverlay = true
+                                showControls = true
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        Key.MediaPlayPause -> {
+                            togglePlayPause()
+                            true
+                        }
+                        Key.Back, Key.Escape -> {
+                            if (showControls) {
+                                showControls = false
+                                showOverlay = false
+                                true
+                            } else {
+                                // Mark that we're returning from fullscreen - skip debounce in preview
+                                com.example.androidtviptvapp.player.SharedPlayerManager.markReturningFromFullscreen()
+                                onBack()
                                 true
                             }
-                            else -> false
                         }
-                    }
-                    KeyEventType.KeyUp -> {
-                        when (event.key) {
-                            Key.DirectionUp, Key.DirectionDown -> {
-                                // Stop scrolling when key is released
-                                scrollDirection = 0
-                                true
-                            }
-                            else -> false
+                        Key.Menu -> {
+                            showOverlay = true
+                            showControls = !showControls
+                            true
                         }
+                        else -> false
                     }
-                    else -> false
+                } else {
+                    false
                 }
             }
             .focusRequester(focusRequester)
