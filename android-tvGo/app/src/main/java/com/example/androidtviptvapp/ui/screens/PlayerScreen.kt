@@ -89,10 +89,9 @@ fun PlayerScreen(
     var playerView by remember { mutableStateOf<PlayerView?>(null) }
 
     // Channel switching timing control (Android TV best practice)
-    // Uses timestamp-based throttling to handle key repeats properly
+    // Uses timestamp-based throttling to ensure one channel at a time during long press
     var lastChannelSwitchTime by remember { mutableStateOf(0L) }
-    val initialRepeatDelayMs = 400L  // Delay before first repeat triggers
-    val repeatIntervalMs = 350L      // Interval between repeated switches
+    val channelSwitchIntervalMs = 500L  // Minimum 500ms between channel switches
 
     // Number input for direct channel jump (remote number keys)
     var enteredNumber by remember { mutableStateOf("") }
@@ -141,25 +140,23 @@ fun PlayerScreen(
     }
 
     /**
-     * Switch channel with proper timing control for Android TV remotes.
+     * Switch channel with strict timing control for Android TV remotes.
      *
-     * Best practice: Use repeatCount from native key event to determine behavior:
-     * - repeatCount == 0: First press, switch immediately
-     * - repeatCount > 0: Key is being held, throttle to controlled interval
+     * - First press (repeatCount == 0): Switch immediately
+     * - Long press (repeatCount > 0): One channel per 500ms
      *
-     * This ensures single press = one switch, long press = controlled continuous scroll
+     * This ensures smooth one-at-a-time scrolling during long press.
      */
     fun switchChannelWithRepeat(direction: Int, repeatCount: Int): Boolean {
         val currentTime = System.currentTimeMillis()
         val timeSinceLastSwitch = currentTime - lastChannelSwitchTime
 
-        val shouldSwitch = when {
-            // First press - always switch immediately
-            repeatCount == 0 -> true
-            // Repeated press - only switch if enough time has passed
-            repeatCount > 0 && timeSinceLastSwitch >= repeatIntervalMs -> true
-            // Too soon - ignore this repeat
-            else -> false
+        // First press always switches immediately
+        // Repeated presses (long press) only switch every 500ms
+        val shouldSwitch = if (repeatCount == 0) {
+            true
+        } else {
+            timeSinceLastSwitch >= channelSwitchIntervalMs
         }
 
         if (shouldSwitch) {
@@ -172,7 +169,7 @@ fun PlayerScreen(
             }
         }
 
-        return true // Always consume the event
+        return true // Always consume the event to prevent bubbling
     }
     
     // Toggle play/pause
