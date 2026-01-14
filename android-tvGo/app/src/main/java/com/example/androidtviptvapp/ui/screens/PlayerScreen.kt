@@ -357,8 +357,8 @@ fun PlayerScreen(
             PlayerControlsBar(
                 isPlaying = isPlaying,
                 onPlayPause = { togglePlayPause() },
-                onPrev = { switchChannel(-1) },
-                onNext = { switchChannel(1) },
+                onPrev = { switchChannelWithRepeat(-1, 0) },
+                onNext = { switchChannelWithRepeat(1, 0) },
                 onBackward = { /* TODO: Seek backward for VOD */ },
                 onForward = { /* TODO: Seek forward for VOD */ },
                 isLiveStream = true, // For live channels
