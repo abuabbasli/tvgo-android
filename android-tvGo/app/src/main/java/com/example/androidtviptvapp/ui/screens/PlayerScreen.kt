@@ -7,7 +7,6 @@ import com.example.androidtviptvapp.player.PlayerView
 import com.example.androidtviptvapp.player.AdaptExoPlayerView
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import com.example.androidtviptvapp.player.SharedPlayerManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,15 +41,9 @@ import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 
 /**
  * PlayerScreen with full OnTV-style controls
- *
- * CRITICAL: Uses SharedPlayerManager's SINGLETON player!
- * This is the SAME player instance used by ChannelsScreen preview.
- * Do NOT create a new player - reuse the singleton.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -60,64 +53,40 @@ fun PlayerScreen(
     onChannelChanged: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isRetrying by remember { mutableStateOf(false) }
-
+    
     // Get channel from repository
     val channel = remember(channelId) {
         channelId?.let { id ->
             TvRepository.channels.find { it.id == id }
         }
     }
-
+    
     // Create PlaybackSource for the channel
     val initialSource = remember(channel) {
         channel?.let {
             ChannelPlaybackSource.create(it, TvRepository.channels.toList())
         }
     }
-
+    
     // Current source state
     var currentSource by remember { mutableStateOf(initialSource) }
-
+    
     // Overlay states (OnTV-main pattern: info, controls, hotbar)
     var showOverlay by remember { mutableStateOf(true) }
     var showControls by remember { mutableStateOf(false) }
-
+    
     // Player state
     var isPlaying by remember { mutableStateOf(true) }
     var isBuffering by remember { mutableStateOf(false) }
-
+    
     // Focus requester for key capture
     val focusRequester = remember { FocusRequester() }
     val controlsFocusRequester = remember { FocusRequester() }
-
-    // CRITICAL: Get the SINGLETON player from SharedPlayerManager!
-    val singletonPlayer = remember(context) {
-        SharedPlayerManager.getOrCreatePlayer(context)
-    }
-
-    // PlayerView reference (points to singleton)
+    
+    // PlayerView reference
     var playerView by remember { mutableStateOf<PlayerView?>(null) }
-
-    // CHANNEL SWITCH DEBOUNCE - prevents rapid-fire switching on long press
-    // Minimum 500ms between channel switches for smooth experience
-    var lastChannelSwitchTime by remember { mutableStateOf(0L) }
-    val channelSwitchDebounceMs = 500L
-
-    // Lifecycle - start/stop ticking (OnTV-main pattern)
-    DisposableEffect(Unit) {
-        SharedPlayerManager.startTicking(scope)
-        SharedPlayerManager.markAttached()
-        onDispose {
-            SharedPlayerManager.stopTicking()
-            SharedPlayerManager.markDetached()
-            // DO NOT destroy player - it's shared with ChannelsScreen!
-        }
-    }
 
     // Auto-hide overlay after 8 seconds (OnTV-main uses 8s)
     LaunchedEffect(showOverlay, showControls) {
@@ -128,36 +97,27 @@ fun PlayerScreen(
         }
     }
 
-    // Observe player state from SharedPlayerManager (tick is handled in DisposableEffect above)
-    val playerState by SharedPlayerManager.playerState.collectAsState()
-    LaunchedEffect(playerState) {
-        isPlaying = playerState.isPlaying
-        isBuffering = playerState.isBuffering
-        if (playerState.error != null && !playerState.isRetrying) {
-            errorMessage = playerState.error
-        } else if (playerState.isRetrying) {
-            errorMessage = "Reconnecting..."
-            isRetrying = true
-        } else {
-            errorMessage = null
-            isRetrying = false
+    // CRITICAL: Tick loop for health monitoring (OnTV-main pattern)
+    // This runs every 300ms and calls player.tick() to detect frozen streams
+    LaunchedEffect(playerView) {
+        playerView?.let { pv ->
+            while (true) {
+                delay(300) // OnTV-main TICK_DT = 300ms
+                pv.tick()
+                // Update UI state from player
+                isPlaying = !pv.pause && pv.isPlayReady
+                isBuffering = pv.isBuffering
+            }
         }
     }
 
-    // Switch channel with debounce (prevents rapid-fire on long press)
+    // Switch channel
     fun switchChannel(direction: Int) {
-        val now = System.currentTimeMillis()
-        if (now - lastChannelSwitchTime < channelSwitchDebounceMs) {
-            return // Too soon - ignore this event
-        }
-        lastChannelSwitchTime = now
-
         val next = playerView?.jumpChannel(direction)
         if (next != null) {
             currentSource = next
             onChannelChanged(next.channel.id)
             showOverlay = true
-            SharedPlayerManager.setCurrentChannel(next.channel.id, next.channel.streamUrl)
         }
     }
     
@@ -262,43 +222,36 @@ fun PlayerScreen(
             }
         }
 
-        // CRITICAL: Use SharedPlayerManager's SINGLETON player!
-        // This is the SAME player used by ChannelsScreen preview
+        // View-based PlayerView (OnTV-main pattern - dedicated player instance)
         AndroidView(
             factory = { ctx ->
-                // Use the singleton player - do NOT create new one!
-                singletonPlayer.apply {
+                PlayerView(ctx).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     resizeMode = AdaptExoPlayerView.RESIZE_MODE_FIT
+                    
+                    // Initialize the player
+                    init()
                     playerView = this
-
+                    
                     // Register with PlaybackManager
                     PlaybackManager.registerPlayerView(this)
-
-                    // Check if we need to start new playback or continue
+                    
+                    // Start playback
                     val source = initialSource
                     if (source != null) {
-                        // Check if same channel is already playing (from preview)
-                        if (!SharedPlayerManager.isChannelPlaying(source.channel.id)) {
-                            play(source)
-                            SharedPlayerManager.setCurrentChannel(source.channel.id, source.channel.streamUrl)
-                        }
-                        // If same channel, just continue (seamless transition from preview!)
-                    } else if (streamUrl != videoUrl) {
+                        play(source)
+                    } else {
                         playUrl(videoUrl)
                     }
-                    // Resume playback
-                    pause = false
                 }
             },
             onRelease = { view ->
-                // Just unregister - DO NOT destroy (shared player!)
+                // Cleanup
                 PlaybackManager.unregisterPlayerView(view)
-                // Remove from current parent if any
-                (view.parent as? android.view.ViewGroup)?.removeView(view)
+                view.destroy()
             },
             modifier = Modifier.fillMaxSize()
         )

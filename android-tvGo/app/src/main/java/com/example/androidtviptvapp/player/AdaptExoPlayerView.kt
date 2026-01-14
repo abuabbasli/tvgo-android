@@ -1,7 +1,6 @@
 package com.example.androidtviptvapp.player
 
 import android.content.Context
-import android.graphics.Rect
 import android.net.Uri
 import android.util.AttributeSet
 import android.util.Log
@@ -130,36 +129,6 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
             field = v
             aspectRatioFrameLayout?.resizeMode = v
         }
-
-    /**
-     * outputRect - OnTV-main pattern for preview window
-     * When set to a Rect, constrains the player to that specific area
-     * When null, player goes fullscreen (MATCH_PARENT)
-     */
-    var outputRect: Rect? = null
-        set(rect) {
-            field = rect?.let { Rect(it) }
-            aspectRatioFrameLayout?.let {
-                setRectLayoutParams(it.layoutParams as LayoutParams)
-                it.requestLayout()
-            }
-        }
-
-    private fun setRectLayoutParams(lp: LayoutParams): LayoutParams {
-        return lp.apply {
-            outputRect?.let { rect ->
-                width = rect.width()
-                height = rect.height()
-                setMargins(rect.left, rect.top, 0, 0)
-                gravity = Gravity.LEFT or Gravity.TOP
-            } ?: run {
-                width = ViewGroup.LayoutParams.MATCH_PARENT
-                height = ViewGroup.LayoutParams.MATCH_PARENT
-                gravity = Gravity.CENTER
-                setMargins(0, 0, 0, 0)
-            }
-        }
-    }
 
     // Audio tracks (OnTV-main pattern)
     private val _audioTracks = MutableStateFlow<List<AudioTrackInfo>>(emptyList())
