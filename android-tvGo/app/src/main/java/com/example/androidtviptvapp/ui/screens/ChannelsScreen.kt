@@ -4,8 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.zIndex
-import androidx.navigation.NavController
 import com.example.androidtviptvapp.data.PlaybackManager
+import com.example.androidtviptvapp.player.PlayerView as TvPlayerView
+import com.example.androidtviptvapp.player.SharedPlayerManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
@@ -20,9 +21,6 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
@@ -40,7 +38,6 @@ import com.example.androidtviptvapp.ui.components.ViewMode
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalTvMaterial3Api::class)
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun ChannelsScreen(
     viewMode: ViewMode = ViewMode.GRID,
@@ -526,48 +523,50 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun ChannelPreview(channel: Channel) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    // Use shared PlaybackManager
-    val exoPlayer = remember { PlaybackManager.getPlayer(context) }
-
-    LaunchedEffect(channel) {
-        // No debounce needed for explicit click
-        PlaybackManager.playUrl(context, channel.streamUrl)
+    // Get singleton player from SharedPlayerManager
+    val singletonPlayer = remember(context) {
+        SharedPlayerManager.getOrCreatePlayer(context)
     }
 
-    // Don't release player here, it's shared!
+    // Start ticking for health monitoring
+    DisposableEffect(Unit) {
+        SharedPlayerManager.startTicking(scope)
+        SharedPlayerManager.markAttached()
+        onDispose {
+            SharedPlayerManager.stopTicking()
+            SharedPlayerManager.markDetached()
+        }
+    }
+
+    LaunchedEffect(channel.id) {
+        // Play the channel URL
+        singletonPlayer.playUrl(channel.streamUrl)
+        SharedPlayerManager.setCurrentChannel(channel.id, channel.streamUrl)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .background(Color.Black, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp)) // Defines the clip shape for Compose
+            .clip(RoundedCornerShape(16.dp))
             .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
     ) {
         AndroidView(
             factory = { ctx ->
-                // Inflate layout with TextureView for proper rounded corner support
-                val view = android.view.LayoutInflater.from(ctx)
-                    .inflate(com.example.androidtviptvapp.R.layout.preview_player, null) as PlayerView
-
-                view.apply {
-                    setKeepScreenOn(true)
-                    // Ensure view itself is clipped to outline for rounded corners
-                    clipToOutline = true
-                    outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
-                    background = android.graphics.drawable.GradientDrawable().apply {
-                        cornerRadius = 16f * ctx.resources.displayMetrics.density
-                        setColor(android.graphics.Color.BLACK)
-                    }
+                singletonPlayer.apply {
+                    resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FILL
                 }
             },
-            update = { playerView ->
-                playerView.player = exoPlayer
+            update = { /* State managed by LaunchedEffect */ },
+            onRelease = { view ->
+                // Don't destroy - just detach from parent
+                (view.parent as? android.view.ViewGroup)?.removeView(view)
             },
             modifier = Modifier.fillMaxSize()
         )
