@@ -5,91 +5,90 @@ int attr ad_marker_width 0x7f020002
 int attr alpha 0x7f020003
 int attr animation_enabled 0x7f020004
 int attr argType 0x7f020005
-int attr artwork_display_mode 0x7f020006
-int attr auto_show 0x7f020007
-int attr backgroundTint 0x7f020008
-int attr bar_gravity 0x7f020009
-int attr bar_height 0x7f02000a
-int attr buffered_color 0x7f02000b
-int attr controller_layout_id 0x7f02000c
-int attr css 0x7f02000d
-int attr data 0x7f02000e
-int attr dataPattern 0x7f02000f
-int attr default_artwork 0x7f020010
-int attr destination 0x7f020011
-int attr enterAnim 0x7f020012
-int attr exitAnim 0x7f020013
-int attr fastScrollEnabled 0x7f020014
-int attr fastScrollHorizontalThumbDrawable 0x7f020015
-int attr fastScrollHorizontalTrackDrawable 0x7f020016
-int attr fastScrollVerticalThumbDrawable 0x7f020017
-int attr fastScrollVerticalTrackDrawable 0x7f020018
-int attr font 0x7f020019
-int attr fontProviderAuthority 0x7f02001a
-int attr fontProviderCerts 0x7f02001b
-int attr fontProviderFetchStrategy 0x7f02001c
-int attr fontProviderFetchTimeout 0x7f02001d
-int attr fontProviderPackage 0x7f02001e
-int attr fontProviderQuery 0x7f02001f
-int attr fontProviderSystemFontFamily 0x7f020020
-int attr fontStyle 0x7f020021
-int attr fontVariationSettings 0x7f020022
-int attr fontWeight 0x7f020023
-int attr graph 0x7f020024
-int attr hide_during_ads 0x7f020025
-int attr hide_on_touch 0x7f020026
-int attr keep_content_on_player_reset 0x7f020027
-int attr lStar 0x7f020028
-int attr launchSingleTop 0x7f020029
-int attr layoutManager 0x7f02002a
-int attr mimeType 0x7f02002b
-int attr navGraph 0x7f02002c
-int attr nestedScrollViewStyle 0x7f02002d
-int attr nullable 0x7f02002e
-int attr played_ad_marker_color 0x7f02002f
-int attr played_color 0x7f020030
-int attr player_layout_id 0x7f020031
-int attr popEnterAnim 0x7f020032
-int attr popExitAnim 0x7f020033
-int attr popUpTo 0x7f020034
-int attr popUpToInclusive 0x7f020035
-int attr popUpToSaveState 0x7f020036
-int attr queryPatterns 0x7f020037
-int attr recyclerViewStyle 0x7f020038
-int attr repeat_toggle_modes 0x7f020039
-int attr resize_mode 0x7f02003a
-int attr restoreState 0x7f02003b
-int attr reverseLayout 0x7f02003c
-int attr route 0x7f02003d
-int attr scrubber_color 0x7f02003e
-int attr scrubber_disabled_size 0x7f02003f
-int attr scrubber_dragged_size 0x7f020040
-int attr scrubber_drawable 0x7f020041
-int attr scrubber_enabled_size 0x7f020042
-int attr shortcutMatchRequired 0x7f020043
-int attr show_buffering 0x7f020044
-int attr show_fastforward_button 0x7f020045
-int attr show_next_button 0x7f020046
-int attr show_previous_button 0x7f020047
-int attr show_rewind_button 0x7f020048
-int attr show_shuffle_button 0x7f020049
-int attr show_subtitle_button 0x7f02004a
-int attr show_timeout 0x7f02004b
-int attr show_vr_button 0x7f02004c
-int attr shutter_background_color 0x7f02004d
-int attr spanCount 0x7f02004e
-int attr stackFromEnd 0x7f02004f
-int attr startDestination 0x7f020050
-int attr surface_type 0x7f020051
-int attr svg 0x7f020052
-int attr targetPackage 0x7f020053
-int attr time_bar_min_update_interval 0x7f020054
-int attr touch_target_height 0x7f020055
-int attr ttcIndex 0x7f020056
-int attr unplayed_color 0x7f020057
-int attr uri 0x7f020058
-int attr use_artwork 0x7f020059
-int attr use_controller 0x7f02005a
+int attr auto_show 0x7f020006
+int attr backgroundTint 0x7f020007
+int attr bar_gravity 0x7f020008
+int attr bar_height 0x7f020009
+int attr buffered_color 0x7f02000a
+int attr controller_layout_id 0x7f02000b
+int attr css 0x7f02000c
+int attr data 0x7f02000d
+int attr dataPattern 0x7f02000e
+int attr default_artwork 0x7f02000f
+int attr destination 0x7f020010
+int attr enterAnim 0x7f020011
+int attr exitAnim 0x7f020012
+int attr fastScrollEnabled 0x7f020013
+int attr fastScrollHorizontalThumbDrawable 0x7f020014
+int attr fastScrollHorizontalTrackDrawable 0x7f020015
+int attr fastScrollVerticalThumbDrawable 0x7f020016
+int attr fastScrollVerticalTrackDrawable 0x7f020017
+int attr font 0x7f020018
+int attr fontProviderAuthority 0x7f020019
+int attr fontProviderCerts 0x7f02001a
+int attr fontProviderFetchStrategy 0x7f02001b
+int attr fontProviderFetchTimeout 0x7f02001c
+int attr fontProviderPackage 0x7f02001d
+int attr fontProviderQuery 0x7f02001e
+int attr fontProviderSystemFontFamily 0x7f02001f
+int attr fontStyle 0x7f020020
+int attr fontVariationSettings 0x7f020021
+int attr fontWeight 0x7f020022
+int attr graph 0x7f020023
+int attr hide_during_ads 0x7f020024
+int attr hide_on_touch 0x7f020025
+int attr keep_content_on_player_reset 0x7f020026
+int attr lStar 0x7f020027
+int attr launchSingleTop 0x7f020028
+int attr layoutManager 0x7f020029
+int attr mimeType 0x7f02002a
+int attr navGraph 0x7f02002b
+int attr nestedScrollViewStyle 0x7f02002c
+int attr nullable 0x7f02002d
+int attr played_ad_marker_color 0x7f02002e
+int attr played_color 0x7f02002f
+int attr player_layout_id 0x7f020030
+int attr popEnterAnim 0x7f020031
+int attr popExitAnim 0x7f020032
+int attr popUpTo 0x7f020033
+int attr popUpToInclusive 0x7f020034
+int attr popUpToSaveState 0x7f020035
+int attr queryPatterns 0x7f020036
+int attr recyclerViewStyle 0x7f020037
+int attr repeat_toggle_modes 0x7f020038
+int attr resize_mode 0x7f020039
+int attr restoreState 0x7f02003a
+int attr reverseLayout 0x7f02003b
+int attr route 0x7f02003c
+int attr scrubber_color 0x7f02003d
+int attr scrubber_disabled_size 0x7f02003e
+int attr scrubber_dragged_size 0x7f02003f
+int attr scrubber_drawable 0x7f020040
+int attr scrubber_enabled_size 0x7f020041
+int attr shortcutMatchRequired 0x7f020042
+int attr show_buffering 0x7f020043
+int attr show_fastforward_button 0x7f020044
+int attr show_next_button 0x7f020045
+int attr show_previous_button 0x7f020046
+int attr show_rewind_button 0x7f020047
+int attr show_shuffle_button 0x7f020048
+int attr show_subtitle_button 0x7f020049
+int attr show_timeout 0x7f02004a
+int attr show_vr_button 0x7f02004b
+int attr shutter_background_color 0x7f02004c
+int attr spanCount 0x7f02004d
+int attr stackFromEnd 0x7f02004e
+int attr startDestination 0x7f02004f
+int attr surface_type 0x7f020050
+int attr svg 0x7f020051
+int attr targetPackage 0x7f020052
+int attr time_bar_min_update_interval 0x7f020053
+int attr touch_target_height 0x7f020054
+int attr ttcIndex 0x7f020055
+int attr unplayed_color 0x7f020056
+int attr uri 0x7f020057
+int attr use_artwork 0x7f020058
+int attr use_controller 0x7f020059
 int color androidx_core_ripple_material_light 0x7f030000
 int color androidx_core_secondary_text_default_material_light 0x7f030001
 int color call_notification_answer_color 0x7f030002
@@ -404,41 +403,40 @@ int id normal 0x7f07007c
 int id notification_background 0x7f07007d
 int id notification_main_column 0x7f07007e
 int id notification_main_column_container 0x7f07007f
-int id off 0x7f070080
-int id one 0x7f070081
-int id pooling_container_listener_holder_tag 0x7f070082
-int id report_drawn 0x7f070083
-int id right_icon 0x7f070084
-int id right_side 0x7f070085
-int id spherical_gl_surface_view 0x7f070086
-int id status_bar_latest_event_content 0x7f070087
-int id surface_view 0x7f070088
-int id tag_accessibility_actions 0x7f070089
-int id tag_accessibility_clickable_spans 0x7f07008a
-int id tag_accessibility_heading 0x7f07008b
-int id tag_accessibility_pane_title 0x7f07008c
-int id tag_on_apply_window_listener 0x7f07008d
-int id tag_on_receive_content_listener 0x7f07008e
-int id tag_on_receive_content_mime_types 0x7f07008f
-int id tag_screen_reader_focusable 0x7f070090
-int id tag_state_description 0x7f070091
-int id tag_transition_group 0x7f070092
-int id tag_unhandled_key_event_manager 0x7f070093
-int id tag_unhandled_key_listeners 0x7f070094
-int id tag_window_insets_animation_callback 0x7f070095
-int id text 0x7f070096
-int id text2 0x7f070097
-int id texture_view 0x7f070098
-int id time 0x7f070099
-int id title 0x7f07009a
-int id video_decoder_gl_surface_view 0x7f07009b
-int id view_tree_lifecycle_owner 0x7f07009c
-int id view_tree_on_back_pressed_dispatcher_owner 0x7f07009d
-int id view_tree_saved_state_registry_owner 0x7f07009e
-int id view_tree_view_model_store_owner 0x7f07009f
-int id when_playing 0x7f0700a0
-int id wrapped_composition_tag 0x7f0700a1
-int id zoom 0x7f0700a2
+int id one 0x7f070080
+int id pooling_container_listener_holder_tag 0x7f070081
+int id report_drawn 0x7f070082
+int id right_icon 0x7f070083
+int id right_side 0x7f070084
+int id spherical_gl_surface_view 0x7f070085
+int id status_bar_latest_event_content 0x7f070086
+int id surface_view 0x7f070087
+int id tag_accessibility_actions 0x7f070088
+int id tag_accessibility_clickable_spans 0x7f070089
+int id tag_accessibility_heading 0x7f07008a
+int id tag_accessibility_pane_title 0x7f07008b
+int id tag_on_apply_window_listener 0x7f07008c
+int id tag_on_receive_content_listener 0x7f07008d
+int id tag_on_receive_content_mime_types 0x7f07008e
+int id tag_screen_reader_focusable 0x7f07008f
+int id tag_state_description 0x7f070090
+int id tag_transition_group 0x7f070091
+int id tag_unhandled_key_event_manager 0x7f070092
+int id tag_unhandled_key_listeners 0x7f070093
+int id tag_window_insets_animation_callback 0x7f070094
+int id text 0x7f070095
+int id text2 0x7f070096
+int id texture_view 0x7f070097
+int id time 0x7f070098
+int id title 0x7f070099
+int id video_decoder_gl_surface_view 0x7f07009a
+int id view_tree_lifecycle_owner 0x7f07009b
+int id view_tree_on_back_pressed_dispatcher_owner 0x7f07009c
+int id view_tree_saved_state_registry_owner 0x7f07009d
+int id view_tree_view_model_store_owner 0x7f07009e
+int id when_playing 0x7f07009f
+int id wrapped_composition_tag 0x7f0700a0
+int id zoom 0x7f0700a1
 int integer cancel_button_image_alpha 0x7f080000
 int integer exo_media_button_opacity_percentage_disabled 0x7f080001
 int integer exo_media_button_opacity_percentage_enabled 0x7f080002
@@ -660,7 +658,7 @@ int style TextAppearance_Compat_Notification_Title_Media 0x7f0d002c
 int style Theme_AndroidTvIptvApp 0x7f0d002d
 int style Widget_Compat_NotificationActionContainer 0x7f0d002e
 int style Widget_Compat_NotificationActionText 0x7f0d002f
-int[] styleable ActivityNavigator { 0x01010003, 0x7f020000, 0x7f02000e, 0x7f02000f, 0x7f020053 }
+int[] styleable ActivityNavigator { 0x01010003, 0x7f020000, 0x7f02000d, 0x7f02000e, 0x7f020052 }
 int styleable ActivityNavigator_android_name 0
 int styleable ActivityNavigator_action 1
 int styleable ActivityNavigator_data 2
@@ -681,18 +679,18 @@ int styleable AnimatedStateListDrawableTransition_android_drawable 0
 int styleable AnimatedStateListDrawableTransition_android_toId 1
 int styleable AnimatedStateListDrawableTransition_android_fromId 2
 int styleable AnimatedStateListDrawableTransition_android_reversible 3
-int[] styleable AspectRatioFrameLayout { 0x7f02003a }
+int[] styleable AspectRatioFrameLayout { 0x7f020039 }
 int styleable AspectRatioFrameLayout_resize_mode 0
-int[] styleable Capability { 0x7f020037, 0x7f020043 }
+int[] styleable Capability { 0x7f020036, 0x7f020042 }
 int styleable Capability_queryPatterns 0
 int styleable Capability_shortcutMatchRequired 1
-int[] styleable ColorStateListItem { 0x010101a5, 0x0101031f, 0x01010647, 0x7f020003, 0x7f020028 }
+int[] styleable ColorStateListItem { 0x010101a5, 0x0101031f, 0x01010647, 0x7f020003, 0x7f020027 }
 int styleable ColorStateListItem_android_color 0
 int styleable ColorStateListItem_android_alpha 1
 int styleable ColorStateListItem_android_lStar 2
 int styleable ColorStateListItem_alpha 3
 int styleable ColorStateListItem_lStar 4
-int[] styleable DefaultTimeBar { 0x7f020001, 0x7f020002, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02002f, 0x7f020030, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020042, 0x7f020055, 0x7f020057 }
+int[] styleable DefaultTimeBar { 0x7f020001, 0x7f020002, 0x7f020008, 0x7f020009, 0x7f02000a, 0x7f02002e, 0x7f02002f, 0x7f02003d, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020054, 0x7f020056 }
 int styleable DefaultTimeBar_ad_marker_color 0
 int styleable DefaultTimeBar_ad_marker_width 1
 int styleable DefaultTimeBar_bar_gravity 2
@@ -707,7 +705,7 @@ int styleable DefaultTimeBar_scrubber_drawable 10
 int styleable DefaultTimeBar_scrubber_enabled_size 11
 int styleable DefaultTimeBar_touch_target_height 12
 int styleable DefaultTimeBar_unplayed_color 13
-int[] styleable FontFamily { 0x7f02001a, 0x7f02001b, 0x7f02001c, 0x7f02001d, 0x7f02001e, 0x7f02001f, 0x7f020020 }
+int[] styleable FontFamily { 0x7f020019, 0x7f02001a, 0x7f02001b, 0x7f02001c, 0x7f02001d, 0x7f02001e, 0x7f02001f }
 int styleable FontFamily_fontProviderAuthority 0
 int styleable FontFamily_fontProviderCerts 1
 int styleable FontFamily_fontProviderFetchStrategy 2
@@ -715,7 +713,7 @@ int styleable FontFamily_fontProviderFetchTimeout 3
 int styleable FontFamily_fontProviderPackage 4
 int styleable FontFamily_fontProviderQuery 5
 int styleable FontFamily_fontProviderSystemFontFamily 6
-int[] styleable FontFamilyFont { 0x01010532, 0x01010533, 0x0101053f, 0x0101056f, 0x01010570, 0x7f020019, 0x7f020021, 0x7f020022, 0x7f020023, 0x7f020056 }
+int[] styleable FontFamilyFont { 0x01010532, 0x01010533, 0x0101053f, 0x0101056f, 0x01010570, 0x7f020018, 0x7f020020, 0x7f020021, 0x7f020022, 0x7f020055 }
 int styleable FontFamilyFont_android_font 0
 int styleable FontFamilyFont_android_fontWeight 1
 int styleable FontFamilyFont_android_fontStyle 2
@@ -742,7 +740,7 @@ int styleable GradientColor_android_endY 11
 int[] styleable GradientColorItem { 0x010101a5, 0x01010514 }
 int styleable GradientColorItem_android_color 0
 int styleable GradientColorItem_android_offset 1
-int[] styleable NavAction { 0x010100d0, 0x7f020011, 0x7f020012, 0x7f020013, 0x7f020029, 0x7f020032, 0x7f020033, 0x7f020034, 0x7f020035, 0x7f020036, 0x7f02003b }
+int[] styleable NavAction { 0x010100d0, 0x7f020010, 0x7f020011, 0x7f020012, 0x7f020028, 0x7f020031, 0x7f020032, 0x7f020033, 0x7f020034, 0x7f020035, 0x7f02003a }
 int styleable NavAction_android_id 0
 int styleable NavAction_destination 1
 int styleable NavAction_enterAnim 2
@@ -754,27 +752,27 @@ int styleable NavAction_popUpTo 7
 int styleable NavAction_popUpToInclusive 8
 int styleable NavAction_popUpToSaveState 9
 int styleable NavAction_restoreState 10
-int[] styleable NavArgument { 0x01010003, 0x010101ed, 0x7f020005, 0x7f02002e }
+int[] styleable NavArgument { 0x01010003, 0x010101ed, 0x7f020005, 0x7f02002d }
 int styleable NavArgument_android_name 0
 int styleable NavArgument_android_defaultValue 1
 int styleable NavArgument_argType 2
 int styleable NavArgument_nullable 3
-int[] styleable NavDeepLink { 0x010104ee, 0x7f020000, 0x7f02002b, 0x7f020058 }
+int[] styleable NavDeepLink { 0x010104ee, 0x7f020000, 0x7f02002a, 0x7f020057 }
 int styleable NavDeepLink_android_autoVerify 0
 int styleable NavDeepLink_action 1
 int styleable NavDeepLink_mimeType 2
 int styleable NavDeepLink_uri 3
-int[] styleable NavGraphNavigator { 0x7f020050 }
+int[] styleable NavGraphNavigator { 0x7f02004f }
 int styleable NavGraphNavigator_startDestination 0
-int[] styleable NavHost { 0x7f02002c }
+int[] styleable NavHost { 0x7f02002b }
 int styleable NavHost_navGraph 0
-int[] styleable NavInclude { 0x7f020024 }
+int[] styleable NavInclude { 0x7f020023 }
 int styleable NavInclude_graph 0
-int[] styleable Navigator { 0x01010001, 0x010100d0, 0x7f02003d }
+int[] styleable Navigator { 0x01010001, 0x010100d0, 0x7f02003c }
 int styleable Navigator_android_label 0
 int styleable Navigator_android_id 1
 int styleable Navigator_route 2
-int[] styleable PlayerControlView { 0x7f020001, 0x7f020002, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02000c, 0x7f02002f, 0x7f020030, 0x7f020039, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020042, 0x7f020045, 0x7f020046, 0x7f020047, 0x7f020048, 0x7f020049, 0x7f02004b, 0x7f020054, 0x7f020055, 0x7f020057 }
+int[] styleable PlayerControlView { 0x7f020001, 0x7f020002, 0x7f020008, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02002e, 0x7f02002f, 0x7f020038, 0x7f02003d, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020044, 0x7f020045, 0x7f020046, 0x7f020047, 0x7f020048, 0x7f02004a, 0x7f020053, 0x7f020054, 0x7f020056 }
 int styleable PlayerControlView_ad_marker_color 0
 int styleable PlayerControlView_ad_marker_width 1
 int styleable PlayerControlView_bar_gravity 2
@@ -798,7 +796,7 @@ int styleable PlayerControlView_show_timeout 19
 int styleable PlayerControlView_time_bar_min_update_interval 20
 int styleable PlayerControlView_touch_target_height 21
 int styleable PlayerControlView_unplayed_color 22
-int[] styleable PlayerView { 0x7f020001, 0x7f020002, 0x7f020007, 0x7f02000a, 0x7f02000b, 0x7f02000c, 0x7f020010, 0x7f020025, 0x7f020026, 0x7f020027, 0x7f02002f, 0x7f020030, 0x7f020031, 0x7f020039, 0x7f02003a, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020042, 0x7f020044, 0x7f020049, 0x7f02004b, 0x7f02004d, 0x7f020051, 0x7f020054, 0x7f020055, 0x7f020057, 0x7f020059, 0x7f02005a }
+int[] styleable PlayerView { 0x7f020001, 0x7f020002, 0x7f020006, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02000f, 0x7f020024, 0x7f020025, 0x7f020026, 0x7f02002e, 0x7f02002f, 0x7f020030, 0x7f020038, 0x7f020039, 0x7f02003d, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020043, 0x7f020048, 0x7f02004a, 0x7f02004c, 0x7f020050, 0x7f020053, 0x7f020054, 0x7f020056, 0x7f020058, 0x7f020059 }
 int styleable PlayerView_ad_marker_color 0
 int styleable PlayerView_ad_marker_width 1
 int styleable PlayerView_auto_show 2
@@ -829,7 +827,7 @@ int styleable PlayerView_touch_target_height 26
 int styleable PlayerView_unplayed_color 27
 int styleable PlayerView_use_artwork 28
 int styleable PlayerView_use_controller 29
-int[] styleable RecyclerView { 0x010100c4, 0x010100eb, 0x010100f1, 0x7f020014, 0x7f020015, 0x7f020016, 0x7f020017, 0x7f020018, 0x7f02002a, 0x7f02003c, 0x7f02004e, 0x7f02004f }
+int[] styleable RecyclerView { 0x010100c4, 0x010100eb, 0x010100f1, 0x7f020013, 0x7f020014, 0x7f020015, 0x7f020016, 0x7f020017, 0x7f020029, 0x7f02003b, 0x7f02004d, 0x7f02004e }
 int styleable RecyclerView_android_orientation 0
 int styleable RecyclerView_android_clipToPadding 1
 int styleable RecyclerView_android_descendantFocusability 2
@@ -842,7 +840,7 @@ int styleable RecyclerView_layoutManager 8
 int styleable RecyclerView_reverseLayout 9
 int styleable RecyclerView_spanCount 10
 int styleable RecyclerView_stackFromEnd 11
-int[] styleable SVGImageView { 0x7f02000d, 0x7f020052 }
+int[] styleable SVGImageView { 0x7f02000c, 0x7f020051 }
 int styleable SVGImageView_css 0
 int styleable SVGImageView_svg 1
 int[] styleable StateListDrawable { 0x0101011c, 0x01010194, 0x01010195, 0x01010196, 0x0101030c, 0x0101030d }
@@ -854,7 +852,7 @@ int styleable StateListDrawable_android_enterFadeDuration 4
 int styleable StateListDrawable_android_exitFadeDuration 5
 int[] styleable StateListDrawableItem { 0x01010199 }
 int styleable StateListDrawableItem_android_drawable 0
-int[] styleable StyledPlayerControlView { 0x7f020001, 0x7f020002, 0x7f020004, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02000c, 0x7f02002f, 0x7f020030, 0x7f020039, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020042, 0x7f020045, 0x7f020046, 0x7f020047, 0x7f020048, 0x7f020049, 0x7f02004a, 0x7f02004b, 0x7f02004c, 0x7f020054, 0x7f020055, 0x7f020057 }
+int[] styleable StyledPlayerControlView { 0x7f020001, 0x7f020002, 0x7f020004, 0x7f020008, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02002e, 0x7f02002f, 0x7f020038, 0x7f02003d, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020044, 0x7f020045, 0x7f020046, 0x7f020047, 0x7f020048, 0x7f020049, 0x7f02004a, 0x7f02004b, 0x7f020053, 0x7f020054, 0x7f020056 }
 int styleable StyledPlayerControlView_ad_marker_color 0
 int styleable StyledPlayerControlView_ad_marker_width 1
 int styleable StyledPlayerControlView_animation_enabled 2
@@ -881,39 +879,38 @@ int styleable StyledPlayerControlView_show_vr_button 22
 int styleable StyledPlayerControlView_time_bar_min_update_interval 23
 int styleable StyledPlayerControlView_touch_target_height 24
 int styleable StyledPlayerControlView_unplayed_color 25
-int[] styleable StyledPlayerView { 0x7f020001, 0x7f020002, 0x7f020004, 0x7f020006, 0x7f020007, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02000c, 0x7f020010, 0x7f020025, 0x7f020026, 0x7f020027, 0x7f02002f, 0x7f020030, 0x7f020031, 0x7f020039, 0x7f02003a, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020042, 0x7f020044, 0x7f020049, 0x7f02004a, 0x7f02004b, 0x7f02004c, 0x7f02004d, 0x7f020051, 0x7f020054, 0x7f020055, 0x7f020057, 0x7f020059, 0x7f02005a }
+int[] styleable StyledPlayerView { 0x7f020001, 0x7f020002, 0x7f020004, 0x7f020006, 0x7f020008, 0x7f020009, 0x7f02000a, 0x7f02000b, 0x7f02000f, 0x7f020024, 0x7f020025, 0x7f020026, 0x7f02002e, 0x7f02002f, 0x7f020030, 0x7f020038, 0x7f020039, 0x7f02003d, 0x7f02003e, 0x7f02003f, 0x7f020040, 0x7f020041, 0x7f020043, 0x7f020048, 0x7f020049, 0x7f02004a, 0x7f02004b, 0x7f02004c, 0x7f020050, 0x7f020053, 0x7f020054, 0x7f020056, 0x7f020058, 0x7f020059 }
 int styleable StyledPlayerView_ad_marker_color 0
 int styleable StyledPlayerView_ad_marker_width 1
 int styleable StyledPlayerView_animation_enabled 2
-int styleable StyledPlayerView_artwork_display_mode 3
-int styleable StyledPlayerView_auto_show 4
-int styleable StyledPlayerView_bar_gravity 5
-int styleable StyledPlayerView_bar_height 6
-int styleable StyledPlayerView_buffered_color 7
-int styleable StyledPlayerView_controller_layout_id 8
-int styleable StyledPlayerView_default_artwork 9
-int styleable StyledPlayerView_hide_during_ads 10
-int styleable StyledPlayerView_hide_on_touch 11
-int styleable StyledPlayerView_keep_content_on_player_reset 12
-int styleable StyledPlayerView_played_ad_marker_color 13
-int styleable StyledPlayerView_played_color 14
-int styleable StyledPlayerView_player_layout_id 15
-int styleable StyledPlayerView_repeat_toggle_modes 16
-int styleable StyledPlayerView_resize_mode 17
-int styleable StyledPlayerView_scrubber_color 18
-int styleable StyledPlayerView_scrubber_disabled_size 19
-int styleable StyledPlayerView_scrubber_dragged_size 20
-int styleable StyledPlayerView_scrubber_drawable 21
-int styleable StyledPlayerView_scrubber_enabled_size 22
-int styleable StyledPlayerView_show_buffering 23
-int styleable StyledPlayerView_show_shuffle_button 24
-int styleable StyledPlayerView_show_subtitle_button 25
-int styleable StyledPlayerView_show_timeout 26
-int styleable StyledPlayerView_show_vr_button 27
-int styleable StyledPlayerView_shutter_background_color 28
-int styleable StyledPlayerView_surface_type 29
-int styleable StyledPlayerView_time_bar_min_update_interval 30
-int styleable StyledPlayerView_touch_target_height 31
-int styleable StyledPlayerView_unplayed_color 32
-int styleable StyledPlayerView_use_artwork 33
-int styleable StyledPlayerView_use_controller 34
+int styleable StyledPlayerView_auto_show 3
+int styleable StyledPlayerView_bar_gravity 4
+int styleable StyledPlayerView_bar_height 5
+int styleable StyledPlayerView_buffered_color 6
+int styleable StyledPlayerView_controller_layout_id 7
+int styleable StyledPlayerView_default_artwork 8
+int styleable StyledPlayerView_hide_during_ads 9
+int styleable StyledPlayerView_hide_on_touch 10
+int styleable StyledPlayerView_keep_content_on_player_reset 11
+int styleable StyledPlayerView_played_ad_marker_color 12
+int styleable StyledPlayerView_played_color 13
+int styleable StyledPlayerView_player_layout_id 14
+int styleable StyledPlayerView_repeat_toggle_modes 15
+int styleable StyledPlayerView_resize_mode 16
+int styleable StyledPlayerView_scrubber_color 17
+int styleable StyledPlayerView_scrubber_disabled_size 18
+int styleable StyledPlayerView_scrubber_dragged_size 19
+int styleable StyledPlayerView_scrubber_drawable 20
+int styleable StyledPlayerView_scrubber_enabled_size 21
+int styleable StyledPlayerView_show_buffering 22
+int styleable StyledPlayerView_show_shuffle_button 23
+int styleable StyledPlayerView_show_subtitle_button 24
+int styleable StyledPlayerView_show_timeout 25
+int styleable StyledPlayerView_show_vr_button 26
+int styleable StyledPlayerView_shutter_background_color 27
+int styleable StyledPlayerView_surface_type 28
+int styleable StyledPlayerView_time_bar_min_update_interval 29
+int styleable StyledPlayerView_touch_target_height 30
+int styleable StyledPlayerView_unplayed_color 31
+int styleable StyledPlayerView_use_artwork 32
+int styleable StyledPlayerView_use_controller 33

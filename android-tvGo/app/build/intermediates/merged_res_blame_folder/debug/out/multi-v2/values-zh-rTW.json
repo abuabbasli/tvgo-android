@@ -55,24 +55,7 @@
                     }
                 },
                 {
-                    "source": "/Users/abu/.gradle/caches/transforms-3/4f45b98e148b75ec04f2dda5f28d4175/transformed/core-1.12.0/res/values-zh-rTW/values-zh-rTW.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,147,246,340,434,527,620,716",
-                        "endColumns": "91,98,93,93,92,92,95,100",
-                        "endOffsets": "142,241,335,429,522,615,711,812"
-                    },
-                    "to": {
-                        "startLines": "23,24,25,26,27,28,29,131",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "1055,1147,1246,1340,1434,1527,1620,9442",
-                        "endColumns": "91,98,93,93,92,92,95,100",
-                        "endOffsets": "1142,1241,1335,1429,1522,1615,1711,9538"
-                    }
-                },
-                {
-                    "source": "/Users/abu/.gradle/caches/transforms-3/9f8fa6d7bc01e7bd53f0594817b06ebb/transformed/jetified-exoplayer-core-2.19.1/res/values-zh-rTW/values-zh-rTW.xml",
+                    "source": "/Users/abu/.gradle/caches/transforms-3/c4a6bd15d4f785a8a8a9fff68e060537/transformed/jetified-exoplayer-core-2.18.7/res/values-zh-rTW/values-zh-rTW.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10",
                         "startColumns": "4,4,4,4,4,4,4,4,4",
@@ -89,7 +72,7 @@
                     }
                 },
                 {
-                    "source": "/Users/abu/.gradle/caches/transforms-3/8137efacfe55b7397be736c932f0a152/transformed/jetified-exoplayer-ui-2.19.1/res/values-zh-rTW/values-zh-rTW.xml",
+                    "source": "/Users/abu/.gradle/caches/transforms-3/d4a21ac4df459706ba3971992e748979/transformed/jetified-exoplayer-ui-2.18.7/res/values-zh-rTW/values-zh-rTW.xml",
                     "from": {
                         "startLines": "2,11,15,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -105,6 +88,23 @@
                         "endLines": "10,14,18,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118",
                         "endColumns": "17,12,12,80,79,67,77,76,55,60,73,73,61,60,58,64,87,84,87,62,66,64,55,73,72,60,62,51,57,46,60,56,61,56,60,55,54,62,61,62,48,51,65,65,48",
                         "endOffsets": "332,495,653,5366,5446,5514,5592,5669,5725,5786,5860,5934,5996,6057,6116,6181,6269,6354,6442,6505,6572,6637,6693,6767,6840,6901,6964,7575,7633,7680,7741,7798,7860,7917,7978,8034,8089,8152,8214,8277,8326,8378,8444,8510,8559"
+                    }
+                },
+                {
+                    "source": "/Users/abu/.gradle/caches/transforms-3/4f45b98e148b75ec04f2dda5f28d4175/transformed/core-1.12.0/res/values-zh-rTW/values-zh-rTW.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,147,246,340,434,527,620,716",
+                        "endColumns": "91,98,93,93,92,92,95,100",
+                        "endOffsets": "142,241,335,429,522,615,711,812"
+                    },
+                    "to": {
+                        "startLines": "23,24,25,26,27,28,29,131",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "1055,1147,1246,1340,1434,1527,1620,9442",
+                        "endColumns": "91,98,93,93,92,92,95,100",
+                        "endOffsets": "1142,1241,1335,1429,1522,1615,1711,9538"
                     }
                 }
             ]
