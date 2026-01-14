@@ -1,8 +1,12 @@
 package com.example.androidtviptvapp.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import com.example.androidtviptvapp.data.PlaybackManager
 import com.example.androidtviptvapp.player.PlayerView as TvPlayerView
 import androidx.compose.foundation.layout.*
@@ -15,8 +19,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -76,6 +83,39 @@ fun ChannelsScreen(
             TvRepository.channels.filter { it.category == selectedCategory }
         }
     }
+
+    // Number input for direct channel jump (remote number keys)
+    var enteredNumber by remember { mutableStateOf("") }
+    val numberInputTimeoutMs = 1500L  // Auto-jump after 1.5 seconds
+
+    // Auto-jump to channel after number input timeout
+    LaunchedEffect(enteredNumber) {
+        if (enteredNumber.isNotEmpty()) {
+            kotlinx.coroutines.delay(numberInputTimeoutMs)
+            val orderNumber = enteredNumber.toIntOrNull()
+            if (orderNumber != null) {
+                val targetChannel = TvRepository.getChannelByOrder(orderNumber)
+                if (targetChannel != null) {
+                    // Update focus and preview
+                    focusedChannel = targetChannel
+                    previewChannel = targetChannel
+                    isClickTriggered = true
+
+                    // Find index and scroll to it
+                    val index = filteredChannels.indexOfFirst { it.id == targetChannel.id }
+                    if (index >= 0) {
+                        when (viewMode) {
+                            ViewMode.GRID -> gridState.scrollToItem(index)
+                            ViewMode.LIST -> listState.scrollToItem(index)
+                        }
+                        kotlinx.coroutines.delay(100)
+                        focusRequesters[targetChannel.id]?.requestFocus()
+                    }
+                }
+            }
+            enteredNumber = ""
+        }
+    }
     
     // Debounce focus updates - only update info area after 150ms of stability
     // This prevents recomposition during fast scrolling
@@ -130,11 +170,33 @@ fun ChannelsScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 24.dp, start = 24.dp) // Main padding
+            .onKeyEvent { event ->
+                // Handle number keys for direct channel jump
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.Zero, Key.NumPad0 -> { enteredNumber += "0"; true }
+                        Key.One, Key.NumPad1 -> { enteredNumber += "1"; true }
+                        Key.Two, Key.NumPad2 -> { enteredNumber += "2"; true }
+                        Key.Three, Key.NumPad3 -> { enteredNumber += "3"; true }
+                        Key.Four, Key.NumPad4 -> { enteredNumber += "4"; true }
+                        Key.Five, Key.NumPad5 -> { enteredNumber += "5"; true }
+                        Key.Six, Key.NumPad6 -> { enteredNumber += "6"; true }
+                        Key.Seven, Key.NumPad7 -> { enteredNumber += "7"; true }
+                        Key.Eight, Key.NumPad8 -> { enteredNumber += "8"; true }
+                        Key.Nine, Key.NumPad9 -> { enteredNumber += "9"; true }
+                        else -> false
+                    }
+                } else false
+            }
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 24.dp, start = 24.dp) // Main padding
+        ) {
         // 1. Categories on top - fixed height
         CategoryFilter(
             categories = TvRepository.channelCategories,
@@ -422,7 +484,53 @@ fun ChannelsScreen(
                 }
             }
         }
-    }
+        }  // End Column
+
+        // Number input display (for direct channel jump)
+        AnimatedVisibility(
+            visible = enteredNumber.isNotEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(24.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        Color.Black.copy(alpha = 0.85f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = enteredNumber,
+                        color = Color.White,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    // Show target channel name if found
+                    val targetChannel = enteredNumber.toIntOrNull()?.let { TvRepository.getChannelByOrder(it) }
+                    if (targetChannel != null) {
+                        Text(
+                            text = targetChannel.name,
+                            color = Color(0xFF60A5FA),
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    } else if (enteredNumber.isNotEmpty()) {
+                        Text(
+                            text = "Channel not found",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }  // End Box
 }
 
 @Composable
