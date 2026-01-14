@@ -51,7 +51,7 @@ fun ChannelListItem(
         onClick = { onClick(channel) },
         headlineContent = {
             Text(
-                text = channel.name,
+                text = channel.displayName,  // Shows "order  channelname"
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )

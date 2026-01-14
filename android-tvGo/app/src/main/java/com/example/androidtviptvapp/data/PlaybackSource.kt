@@ -114,7 +114,7 @@ class ChannelPlaybackSource(
 ) : PlaybackSource(), IJumpable {
 
     override val contentType = ContentType.CHANNEL
-    override val title: String = channel.name
+    override val title: String = channel.displayName
     override val logoUrl: String? = channel.logo.takeIf { it.isNotEmpty() }
     override val streamUrl: String = channel.streamUrl
 

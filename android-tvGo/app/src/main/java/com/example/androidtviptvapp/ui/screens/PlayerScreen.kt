@@ -94,6 +94,29 @@ fun PlayerScreen(
     val initialRepeatDelayMs = 400L  // Delay before first repeat triggers
     val repeatIntervalMs = 350L      // Interval between repeated switches
 
+    // Number input for direct channel jump (remote number keys)
+    var enteredNumber by remember { mutableStateOf("") }
+    val numberInputTimeoutMs = 1500L  // Auto-jump after 1.5 seconds
+
+    // Auto-jump to channel after number input timeout
+    LaunchedEffect(enteredNumber) {
+        if (enteredNumber.isNotEmpty()) {
+            delay(numberInputTimeoutMs)
+            val orderNumber = enteredNumber.toIntOrNull()
+            if (orderNumber != null) {
+                val targetChannel = TvRepository.getChannelByOrder(orderNumber)
+                if (targetChannel != null) {
+                    val newSource = ChannelPlaybackSource.create(targetChannel, TvRepository.channels.toList())
+                    playerView?.play(newSource)
+                    currentSource = newSource
+                    onChannelChanged(targetChannel.id)
+                    showOverlay = true
+                }
+            }
+            enteredNumber = ""
+        }
+    }
+
     // Auto-hide overlay after 8 seconds (OnTV-main uses 8s)
     LaunchedEffect(showOverlay, showControls) {
         if (showOverlay || showControls) {
@@ -240,6 +263,17 @@ fun PlayerScreen(
                             showControls = !showControls
                             true
                         }
+                        // Number keys for direct channel jump
+                        Key.Zero, Key.NumPad0 -> { enteredNumber += "0"; showOverlay = true; true }
+                        Key.One, Key.NumPad1 -> { enteredNumber += "1"; showOverlay = true; true }
+                        Key.Two, Key.NumPad2 -> { enteredNumber += "2"; showOverlay = true; true }
+                        Key.Three, Key.NumPad3 -> { enteredNumber += "3"; showOverlay = true; true }
+                        Key.Four, Key.NumPad4 -> { enteredNumber += "4"; showOverlay = true; true }
+                        Key.Five, Key.NumPad5 -> { enteredNumber += "5"; showOverlay = true; true }
+                        Key.Six, Key.NumPad6 -> { enteredNumber += "6"; showOverlay = true; true }
+                        Key.Seven, Key.NumPad7 -> { enteredNumber += "7"; showOverlay = true; true }
+                        Key.Eight, Key.NumPad8 -> { enteredNumber += "8"; showOverlay = true; true }
+                        Key.Nine, Key.NumPad9 -> { enteredNumber += "9"; showOverlay = true; true }
                         else -> false
                     }
                 } else {
@@ -395,6 +429,51 @@ fun PlayerScreen(
                     text = errorMessage!!,
                     color = if (isRetrying) Color(0xFFFFA500) else Color.Red
                 )
+            }
+        }
+
+        // Number input display (for direct channel jump)
+        AnimatedVisibility(
+            visible = enteredNumber.isNotEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(24.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        Color.Black.copy(alpha = 0.85f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = enteredNumber,
+                        color = Color.White,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    // Show target channel name if found
+                    val targetChannel = enteredNumber.toIntOrNull()?.let { TvRepository.getChannelByOrder(it) }
+                    if (targetChannel != null) {
+                        Text(
+                            text = targetChannel.name,
+                            color = Color(0xFF60A5FA),
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    } else if (enteredNumber.isNotEmpty()) {
+                        Text(
+                            text = "Channel not found",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -576,9 +655,9 @@ private fun ChannelInfoOverlay(
         }
         
         Column {
-            // Channel name
+            // Channel name with order number
             Text(
-                text = channel.name,
+                text = channel.displayName,
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold

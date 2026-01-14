@@ -176,7 +176,14 @@ object TvRepository {
     fun getChannel(channelId: String): Channel? {
         return channels.find { it.id == channelId }
     }
-    
+
+    /**
+     * Get channel by order number (for remote number input)
+     */
+    fun getChannelByOrder(order: Int): Channel? {
+        return channels.find { it.order == order }
+    }
+
     // =========================================================================
     // MEMORY-AWARE CLEANUP (TV Box Optimization)
     // =========================================================================
@@ -554,7 +561,7 @@ object TvRepository {
             val response = ApiClient.bigRetry { ApiClient.service.getChannels() }
             android.util.Log.d("TvRepository", "Got ${response.items.size} channels from API")
 
-            val domainChannels = response.items.map { dto ->
+            val domainChannels = response.items.mapIndexed { index, dto ->
                 Channel(
                     id = dto.id,
                     name = dto.name,
@@ -563,6 +570,7 @@ object TvRepository {
                     streamUrl = resolveStreamUrl(dto.streamUrl),
                     description = dto.description ?: "",
                     logoColor = dto.logoColor ?: "#000000",
+                    order = dto.order ?: (index + 1),  // Use backend order or fallback to index
                     schedule = emptyList()
                 )
             }

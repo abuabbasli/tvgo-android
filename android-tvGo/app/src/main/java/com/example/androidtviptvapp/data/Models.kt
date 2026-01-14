@@ -8,11 +8,15 @@ data class Channel(
     val streamUrl: String,
     val description: String,
     val logoColor: String,
+    val order: Int = 0,  // Channel order number for display and remote number input
     val schedule: List<ScheduleItem> = emptyList(),
     val isFavorite: Boolean = false,
     val hasArchive: Boolean = true,  // OnTV-main: isHaveArchive - whether channel supports timeshift/archive
     val isMulticast: Boolean = false  // OnTV-main: isMulticast - UDP multicast stream
-)
+) {
+    // Display name with order prefix: "1  Channel Name"
+    val displayName: String get() = if (order > 0) "$order  $name" else name
+}
 
 data class ScheduleItem(
     val time: String,

@@ -23,7 +23,8 @@ data class ChannelDto(
     val description: String?,
     val logoColor: String?,
     val logo: String?,
-    val streamUrl: String
+    val streamUrl: String,
+    val order: Int? = null  // Channel order number from backend
 )
 
 // Auth & Config Models
