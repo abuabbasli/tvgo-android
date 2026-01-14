@@ -147,36 +147,44 @@ fun MessagesScreen() {
     }
 }
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun MessageCard(
     message: MessageItem,
     isExpanded: Boolean,
     onExpandToggle: () -> Unit
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    
     Surface(
         onClick = onExpandToggle,
         modifier = Modifier
-            .fillMaxWidth()
-            .focusable()
-            .onFocusChanged { isFocused = it.isFocused },
+            .fillMaxWidth(),
         shape = ClickableSurfaceDefaults.shape(
             shape = RoundedCornerShape(12.dp)
         ),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (isFocused) 
-                androidx.compose.ui.graphics.Color(0xFF2A2A2A) 
-            else 
-                androidx.compose.ui.graphics.Color(0xFF1A1A1A),
-            contentColor = androidx.compose.ui.graphics.Color.White
+            containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A),
+            focusedContainerColor = androidx.compose.ui.graphics.Color(0xFF2D4A6F),
+            pressedContainerColor = androidx.compose.ui.graphics.Color(0xFF3B5998),
+            contentColor = androidx.compose.ui.graphics.Color.White,
+            focusedContentColor = androidx.compose.ui.graphics.Color.White,
+            pressedContentColor = androidx.compose.ui.graphics.Color.White
         ),
-        border = if (isFocused) ClickableSurfaceDefaults.border(
+        border = ClickableSurfaceDefaults.border(
+            border = Border.None,
             focusedBorder = Border(
-                border = BorderStroke(2.dp, androidx.compose.ui.graphics.Color(0xFF3B82F6)),
+                border = BorderStroke(3.dp, androidx.compose.ui.graphics.Color(0xFF60A5FA)),
+                shape = RoundedCornerShape(12.dp)
+            ),
+            pressedBorder = Border(
+                border = BorderStroke(3.dp, androidx.compose.ui.graphics.Color(0xFF3B82F6)),
                 shape = RoundedCornerShape(12.dp)
             )
-        ) else ClickableSurfaceDefaults.border()
+        ),
+        scale = ClickableSurfaceDefaults.scale(
+            scale = 1f,
+            focusedScale = 1.02f,
+            pressedScale = 0.98f
+        )
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
