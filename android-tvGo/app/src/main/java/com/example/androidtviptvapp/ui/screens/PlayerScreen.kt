@@ -84,9 +84,13 @@ fun PlayerScreen(
     // Focus requester for key capture
     val focusRequester = remember { FocusRequester() }
     val controlsFocusRequester = remember { FocusRequester() }
-    
+
     // PlayerView reference
     var playerView by remember { mutableStateOf<PlayerView?>(null) }
+
+    // Throttle channel switching to prevent rapid changes on long press
+    var lastChannelSwitchTime by remember { mutableStateOf(0L) }
+    val channelSwitchThrottleMs = 500L // Minimum time between channel switches
 
     // Auto-hide overlay after 8 seconds (OnTV-main uses 8s)
     LaunchedEffect(showOverlay, showControls) {
@@ -111,14 +115,21 @@ fun PlayerScreen(
         }
     }
 
-    // Switch channel
-    fun switchChannel(direction: Int) {
+    // Switch channel with throttling to prevent rapid switches on long press
+    fun switchChannel(direction: Int): Boolean {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastChannelSwitchTime < channelSwitchThrottleMs) {
+            return true // Consume event but don't switch (throttled)
+        }
+        lastChannelSwitchTime = currentTime
+
         val next = playerView?.jumpChannel(direction)
         if (next != null) {
             currentSource = next
             onChannelChanged(next.channel.id)
             showOverlay = true
         }
+        return true
     }
     
     // Toggle play/pause

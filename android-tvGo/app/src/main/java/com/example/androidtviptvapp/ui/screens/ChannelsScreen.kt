@@ -36,7 +36,7 @@ import com.example.androidtviptvapp.ui.components.ViewMode
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun ChannelsScreen(
-    viewMode: ViewMode = ViewMode.GRID,
+    viewMode: ViewMode = ViewMode.LIST,
     initialChannelId: String? = null,
     onChannelClick: (Channel) -> Unit
 ) {
