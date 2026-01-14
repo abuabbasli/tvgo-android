@@ -42,6 +42,18 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
 
+// Helper function to switch channel (used by continuous scroll loop)
+private fun doSwitchChannel(
+    direction: Int,
+    playerView: PlayerView?,
+    onSwitch: (ChannelPlaybackSource) -> Unit
+) {
+    val next = playerView?.jumpChannel(direction)
+    if (next != null) {
+        onSwitch(next)
+    }
+}
+
 /**
  * PlayerScreen with full OnTV-style controls
  */
@@ -88,9 +100,9 @@ fun PlayerScreen(
     // PlayerView reference
     var playerView by remember { mutableStateOf<PlayerView?>(null) }
 
-    // Throttle channel switching to prevent rapid changes on long press
-    var lastChannelSwitchTime by remember { mutableStateOf(0L) }
-    val channelSwitchThrottleMs = 500L // Minimum time between channel switches
+    // Channel scrolling state - tracks if up/down key is being held
+    var scrollDirection by remember { mutableStateOf(0) } // -1 = down, 0 = none, 1 = up
+    val scrollDelayMs = 400L // Delay between channel switches during long press
 
     // Auto-hide overlay after 8 seconds (OnTV-main uses 8s)
     LaunchedEffect(showOverlay, showControls) {
@@ -115,21 +127,37 @@ fun PlayerScreen(
         }
     }
 
-    // Switch channel with throttling to prevent rapid switches on long press
-    fun switchChannel(direction: Int): Boolean {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastChannelSwitchTime < channelSwitchThrottleMs) {
-            return true // Consume event but don't switch (throttled)
+    // Continuous scrolling loop - handles long press by scrolling one channel at a time
+    LaunchedEffect(scrollDirection) {
+        if (scrollDirection != 0 && !showControls) {
+            // First switch happens immediately
+            doSwitchChannel(scrollDirection, playerView) { newSource ->
+                currentSource = newSource
+                onChannelChanged(newSource.channel.id)
+                showOverlay = true
+            }
+            // Then continue scrolling while key is held
+            while (scrollDirection != 0) {
+                delay(scrollDelayMs)
+                if (scrollDirection != 0 && !showControls) {
+                    doSwitchChannel(scrollDirection, playerView) { newSource ->
+                        currentSource = newSource
+                        onChannelChanged(newSource.channel.id)
+                        showOverlay = true
+                    }
+                }
+            }
         }
-        lastChannelSwitchTime = currentTime
+    }
 
+    // Switch channel helper function
+    fun switchChannel(direction: Int) {
         val next = playerView?.jumpChannel(direction)
         if (next != null) {
             currentSource = next
             onChannelChanged(next.channel.id)
             showOverlay = true
         }
-        return true
     }
     
     // Toggle play/pause
@@ -163,65 +191,83 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(Color.Black)
             .onKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown) {
-                    when (event.key) {
-                        Key.DirectionUp -> {
-                            if (showControls) {
-                                // Already showing controls, let focus handle it
-                                false
-                            } else {
-                                switchChannel(1)
+                when (event.type) {
+                    KeyEventType.KeyDown -> {
+                        when (event.key) {
+                            Key.DirectionUp -> {
+                                if (showControls) {
+                                    false // Let focus handle it
+                                } else {
+                                    // Start scrolling up (only if not already scrolling)
+                                    if (scrollDirection != 1) {
+                                        scrollDirection = 1
+                                    }
+                                    true
+                                }
+                            }
+                            Key.DirectionDown -> {
+                                if (showControls) {
+                                    false
+                                } else {
+                                    // Start scrolling down (only if not already scrolling)
+                                    if (scrollDirection != -1) {
+                                        scrollDirection = -1
+                                    }
+                                    true
+                                }
+                            }
+                            Key.DirectionCenter, Key.Enter -> {
+                                if (!showControls) {
+                                    showOverlay = true
+                                    showControls = true
+                                }
                                 true
                             }
-                        }
-                        Key.DirectionDown -> {
-                            if (showControls) {
-                                false
-                            } else {
-                                switchChannel(-1)
+                            Key.DirectionLeft, Key.DirectionRight -> {
+                                if (!showControls) {
+                                    showOverlay = true
+                                    showControls = true
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            Key.MediaPlayPause -> {
+                                togglePlayPause()
                                 true
                             }
-                        }
-                        Key.DirectionCenter, Key.Enter -> {
-                            if (!showControls) {
+                            Key.Back, Key.Escape -> {
+                                if (showControls) {
+                                    showControls = false
+                                    showOverlay = false
+                                    true
+                                } else {
+                                    // Mark that we're returning from fullscreen - skip debounce in preview
+                                    com.example.androidtviptvapp.player.SharedPlayerManager.markReturningFromFullscreen()
+                                    onBack()
+                                    true
+                                }
+                            }
+                            Key.Menu -> {
                                 showOverlay = true
-                                showControls = true
-                            }
-                            true
-                        }
-                        Key.DirectionLeft, Key.DirectionRight -> {
-                            if (!showControls) {
-                                showOverlay = true
-                                showControls = true
-                                true
-                            } else {
-                                false
-                            }
-                        }
-                        Key.MediaPlayPause -> {
-                            togglePlayPause()
-                            true
-                        }
-                        Key.Back, Key.Escape -> {
-                            if (showControls) {
-                                showControls = false
-                                showOverlay = false
-                                true
-                            } else {
-                                // Mark that we're returning from fullscreen - skip debounce in preview
-                                com.example.androidtviptvapp.player.SharedPlayerManager.markReturningFromFullscreen()
-                                onBack()
+                                showControls = !showControls
                                 true
                             }
+                            else -> false
                         }
-                        Key.Menu -> {
-                            showOverlay = true
-                            showControls = !showControls
-                            true
-                        }
-                        else -> false
                     }
-                } else false
+                    KeyEventType.KeyUp -> {
+                        when (event.key) {
+                            Key.DirectionUp, Key.DirectionDown -> {
+                                // Stop scrolling when key is released
+                                scrollDirection = 0
+                                true
+                            }
+                            else -> false
+                        }
+                    }
+                    else -> false
+                }
             }
             .focusRequester(focusRequester)
             .focusable()

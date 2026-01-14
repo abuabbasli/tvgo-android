@@ -133,8 +133,8 @@ private fun MainContent() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: Routes.HOME
 
-    // Global view mode state for channels screen
-    var channelViewMode by remember { mutableStateOf(ViewMode.GRID) }
+    // Global view mode state for channels screen (default to LIST for better TV navigation)
+    var channelViewMode by remember { mutableStateOf(ViewMode.LIST) }
 
     val isPlayerScreen = currentRoute?.startsWith("player") == true
 
