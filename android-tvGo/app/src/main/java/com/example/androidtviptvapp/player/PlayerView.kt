@@ -2,28 +2,32 @@ package com.example.androidtviptvapp.player
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import com.example.androidtviptvapp.data.ChannelPlaybackSource
 import com.example.androidtviptvapp.data.MoviePlaybackSource
 import com.example.androidtviptvapp.data.PlaybackSource
 import com.example.androidtviptvapp.data.TvRepository
-import com.google.android.exoplayer2.ExoPlaybackException
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 /**
  * PlayerView - extends AdaptExoPlayerView with playback source management.
  * Following OnTV-main pattern EXACTLY with robust error recovery and proper job management.
  *
- * KEY FIXES from ontv-main:
+ * KEY FEATURES from ontv-main:
  * 1. loadAndPlayJob - cancels previous load before starting new one (prevents race conditions)
  * 2. playbackSourceFlow - reactive state for UI updates
  * 3. closeStreamPreparePlaybackSource / closePlaybackSource - proper lifecycle
- * 4. Proper error handling with retry and reinit
+ * 4. Proper error handling with retry and reinit (no MAX_RETRIES limit)
+ * 5. Smart retry delays based on lastUserSetAudioTrackTimestamp
+ * 6. Content age checking (>2 days jump to live)
  */
 class PlayerView @JvmOverloads constructor(
     context: Context,
@@ -32,11 +36,8 @@ class PlayerView @JvmOverloads constructor(
 ) : AdaptExoPlayerView(context, attrs, defStyle) {
 
     companion object {
-        private const val TAG = "PlayerView"
-        private const val DELAY_AFTER_ERROR = 2000L  // OnTV-main uses 2 seconds
-        private const val MAX_RETRIES = 5
-        private const val TICK_DT = 300L  // OnTV-main tick interval
-        private const val FREEZE_TICK_COUNT = 10  // 10 ticks = 3 seconds without position change
+        const val DEFAULT_VIDEO_RESIZE_MODE = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        const val DELAY_AFTER_ERROR = 2000L  // OnTV-main uses 2 seconds
     }
 
     // =========================================================================
@@ -60,11 +61,11 @@ class PlayerView @JvmOverloads constructor(
     // Reactive state management for proper UI updates
     // =========================================================================
 
-    private val _playbackSourceFlow = MutableStateFlow<PlaybackSource?>(null)
-    val playbackSourceFlow: StateFlow<PlaybackSource?> = _playbackSourceFlow.asStateFlow()
+    private val playbackSourceMutableFlow = MutableStateFlow<PlaybackSource?>(null)
+    val playbackSourceFlow = playbackSourceMutableFlow.asStateFlow()
 
     val playbackSource: PlaybackSource?
-        get() = _playbackSourceFlow.value
+        get() = playbackSourceFlow.value
 
     val channelPlaybackSource: ChannelPlaybackSource?
         get() = playbackSource as? ChannelPlaybackSource
@@ -76,16 +77,11 @@ class PlayerView @JvmOverloads constructor(
         get() = playbackSource != null || loadAndPlayJob?.isActive == true
 
     // =========================================================================
-    // Retry State (OnTV-main Pattern)
+    // Retry State (OnTV-main Pattern - NO MAX_RETRIES!)
     // =========================================================================
 
-    private var retryCount = 0
     var isRetryAfterError: Throwable? = null
         private set
-
-    // Health monitoring - OnTV-main uses tick-based monitoring, not separate job
-    private var lastTickPosition = 0L
-    private var frozenTickCount = 0
 
     // Play ready counter for history tracking (OnTV-main pattern)
     var playReadyCount = 0
@@ -98,27 +94,138 @@ class PlayerView @JvmOverloads constructor(
     private var isPauseAfterSeekProcess = false
     private var seekProcessLastPointTimestamp: Long = 0
     private var seekProcessLastPoint: Long = 0
-    var seekProcessSeed: Long = 60
+    private var seekProcessSeed: Long = 60
+
+    /**
+     * Override pause to handle live channel timeshift (OnTV-main pattern)
+     */
+    override var pause: Boolean
+        get() = if (seekProcessDirection == 0) super.pause else isPauseAfterSeekProcess
+        set(v) {
+            if (pause == v) return
+            if (currentError != null) {
+                discardSeekProcess()
+                super.pause = v
+                if (!v) {
+                    handleError(true)
+                }
+            } else {
+                seekProcessDirection = 0
+                val channelSource = channelPlaybackSource
+                if (channelSource?.isLive == true && !v) {
+                    // Resume from pause on live channel - jump to current live position
+                    super.pause = true
+                    val pos = System.currentTimeMillis() - (liveOffset ?: 20000)
+                    ChannelPlaybackSource(
+                        channel = channelSource.channel,
+                        currentProgram = channelSource.currentProgram,
+                        isLive = true,
+                        channelList = channelSource.getAllChannels(),
+                        startAbsTime = pos
+                    ).loadUrlAndPlay(this)
+                } else {
+                    super.pause = v
+                }
+            }
+        }
+
+    /**
+     * Position types for seek operations (OnTV-main pattern)
+     */
+    sealed class Position
+    data class SeekAndDuration(val seek: Long, val duration: Long) : Position() {
+        fun fix(): SeekAndDuration {
+            if (seek in 0..duration) return this
+            val d = duration.coerceAtLeast(0)
+            return SeekAndDuration(seek.coerceAtLeast(0).coerceAtMost(d), d)
+        }
+        val progress: Float
+            get() = seek.toFloat() / (if (duration > 0) duration else 1)
+    }
+    data class AbsPosition(val utcMS: Long) : Position()
+
+    // utc ms for live and livepvr
+    val targetSeek: Position
+        get() = if (seekProcessDirection != 0) {
+            val p = (System.currentTimeMillis() - seekProcessLastPointTimestamp) * seekProcessDirection * seekProcessSeed + seekProcessLastPoint
+            channelPlaybackSource?.takeIf { !it.isHaveStartAndDuration }?.let {
+                AbsPosition(p)
+            } ?: SeekAndDuration(p, duration).fix()
+        } else {
+            channelPlaybackSource?.takeIf { !it.isHaveStartAndDuration }?.let {
+                AbsPosition(System.currentTimeMillis() - (liveOffset ?: it.startLiveOffset ?: 0))
+            } ?: SeekAndDuration(seek, duration).fix()
+        }
+
+    val userReadableSeek: Position
+        get() {
+            val p = targetSeek
+            if (p is AbsPosition) {
+                channelPlaybackSource?.liveProgram?.let { liveProgram ->
+                    return SeekAndDuration(p.utcMS - liveProgram.startTimeMS, liveProgram.durationTimeMS)
+                }
+            }
+            return p
+        }
 
     private var seekProcessDirectionField: Int = 0
+
+    fun discardSeekProcess(seek_: Long? = null) {
+        if (seekProcessDirectionField == 0) return
+        seek_?.let { seek = it }
+        super.pause = isPauseAfterSeekProcess
+        seekProcessDirectionField = 0
+    }
 
     var seekProcessDirection: Int
         get() = seekProcessDirectionField
         set(v) {
             if (seekProcessDirectionField == v) return
-
+            val targetSeek = targetSeek
             if (v == 0) {
-                // Complete seek process
-                val targetSeek = calculateTargetSeek()
-                seek = targetSeek
-                super.pause = isPauseAfterSeekProcess
-                seekProcessDirectionField = 0
-            } else {
-                // Start seek process - don't seek forward on live channels
-                if (v > 0 && channelPlaybackSource?.isLive == true) {
-                    return
+                when (targetSeek) {
+                    is AbsPosition -> {
+                        val channelSource = channelPlaybackSource!!
+                        if (targetSeek.utcMS >= System.currentTimeMillis()) {
+                            ChannelPlaybackSource(
+                                channel = channelSource.channel,
+                                currentProgram = channelSource.currentProgram,
+                                isLive = true,
+                                channelList = channelSource.getAllChannels()
+                            )
+                        } else {
+                            ChannelPlaybackSource(
+                                channel = channelSource.channel,
+                                currentProgram = channelSource.currentProgram,
+                                isLive = false,
+                                channelList = channelSource.getAllChannels(),
+                                startAbsTime = channelSource.liveProgram?.takeIf { targetSeek.utcMS <= it.startTimeMS }?.let {
+                                    it.startTimeMS
+                                } ?: targetSeek.utcMS
+                            )
+                        }.loadUrlAndPlay(this, isPauseAfterSeekProcess)
+                    }
+                    is SeekAndDuration -> {
+                        seek = targetSeek.seek
+                        super.pause = isPauseAfterSeekProcess
+                    }
                 }
-                seekProcessLastPoint = seek
+                seekProcessDirectionField = v
+            } else {
+                if (v > 0) {
+                    if (channelPlaybackSource?.isLive == true) return
+                } else {
+                    (userReadableSeek as? SeekAndDuration)?.seek?.takeIf {
+                        it < if (channelPlaybackSource?.isHaveStartAndDuration == false) 15000 else 5000
+                    }?.let {
+                        // Could show go-to-live dialog here
+                        return
+                    }
+                }
+                seekProcessLastPoint = when (targetSeek) {
+                    is AbsPosition -> targetSeek.utcMS
+                    is SeekAndDuration -> targetSeek.seek
+                }
                 seekProcessLastPointTimestamp = System.currentTimeMillis()
                 isPauseAfterSeekProcess = pause
                 seekProcessDirectionField = v
@@ -126,28 +233,13 @@ class PlayerView @JvmOverloads constructor(
             }
         }
 
-    private fun calculateTargetSeek(): Long {
-        if (seekProcessDirection == 0) return seek
-        val elapsed = System.currentTimeMillis() - seekProcessLastPointTimestamp
-        val seekDelta = elapsed * seekProcessDirection * seekProcessSeed
-        val target = seekProcessLastPoint + seekDelta
-        return target.coerceIn(0, duration)
-    }
-
-    val targetSeek: Long
-        get() = if (seekProcessDirection != 0) calculateTargetSeek() else seek
-
-    fun discardSeekProcess(newSeek: Long? = null) {
-        if (seekProcessDirectionField == 0) return
-        newSeek?.let { seek = it }
-        super.pause = isPauseAfterSeekProcess
-        seekProcessDirectionField = 0
-    }
-
     // Callbacks for UI
     var onSourceChanged: ((PlaybackSource?) -> Unit)? = null
     var onPlaybackError: ((String, Boolean) -> Unit)? = null
     var onPlaybackReady: (() -> Unit)? = null
+
+    // Playback ended handling (OnTV-main pattern)
+    private var isPlaybackEndedHandled = false
 
     // =========================================================================
     // CRITICAL: Stream Lifecycle Methods (OnTV-main Pattern)
@@ -164,22 +256,12 @@ class PlayerView @JvmOverloads constructor(
         pos: Long? = null,
         pauseAfter: Boolean? = null
     ) {
-        Log.d(TAG, "openPlaybackSource: ${ps.title}")
-
-        // Clean up previous source if any
         if (playbackSource != null) {
             onPreStreamClose()
         }
-
         closeStream()
-        _playbackSourceFlow.value = ps
+        playbackSourceMutableFlow.value = ps
         onSourceChanged?.invoke(ps)
-
-        // Reset health monitoring state
-        lastTickPosition = 0L
-        frozenTickCount = 0
-        playReadyCount = 0
-
         openStream(url, vod, pos, pauseAfter)
     }
 
@@ -188,41 +270,26 @@ class PlayerView @JvmOverloads constructor(
      * Used when we want to show loading state before URL is resolved
      */
     fun closeStreamPreparePlaybackSource(ps: PlaybackSource) {
-        Log.d(TAG, "closeStreamPreparePlaybackSource: ${ps.title}")
-
         if (playbackSource != null) {
             onPreStreamClose()
         }
-
         closeStream()
-        _playbackSourceFlow.value = ps
+        playbackSourceMutableFlow.value = ps
         onSourceChanged?.invoke(ps)
-
-        // Reset health monitoring state
-        lastTickPosition = 0L
-        frozenTickCount = 0
     }
 
     /**
      * Close playback source completely - OnTV-main pattern
      */
     fun closePlaybackSource() {
-        Log.d(TAG, "closePlaybackSource")
-
         if (playbackSource != null) {
             onPreStreamClose()
         }
-
         loadAndPlayJob?.cancel()
         loadAndPlayJob = null
         closeStream()
-        _playbackSourceFlow.value = null
+        playbackSourceMutableFlow.value = null
         onSourceChanged?.invoke(null)
-
-        // Reset health monitoring state
-        lastTickPosition = 0L
-        frozenTickCount = 0
-        playReadyCount = 0
     }
 
     /**
@@ -230,11 +297,33 @@ class PlayerView @JvmOverloads constructor(
      * Used for saving state, analytics, history
      */
     private fun onPreStreamClose() {
+        addContentToHistory()
         // Save movie position for resume
-        moviePlaybackSource?.let { source ->
-            if (seek > 0 && !isPlaybackEnded) {
-                TvRepository.saveMoviePosition(source.movie.id, seek)
+        if (!isPlaybackEnded) {
+            moviePlaybackSource?.let { source ->
+                if (seek > 0) {
+                    TvRepository.saveMoviePosition(source.movie.id, seek)
+                }
             }
+        }
+    }
+
+    /**
+     * Add content to history (OnTV-main pattern)
+     */
+    fun addContentToHistory() {
+        val ps = playbackSource
+        when (ps) {
+            is ChannelPlaybackSource -> {
+                // Add channel to history if played long enough
+                if (playReadyCount * 300 > 5000) { // 5 seconds
+                    TvRepository.addChannelToHistory(ps.channel)
+                }
+            }
+            is MoviePlaybackSource -> {
+                TvRepository.saveMoviePosition(ps.movie.id, seek)
+            }
+            else -> {}
         }
     }
 
@@ -246,7 +335,7 @@ class PlayerView @JvmOverloads constructor(
      * Play a channel - creates source and plays
      */
     fun playChannel(source: ChannelPlaybackSource) {
-        Log.d(TAG, "playChannel: ${source.channel.name}")
+        Timber.d("playChannel: ${source.channel.name}")
         source.loadUrlAndPlay(this)
     }
 
@@ -254,7 +343,7 @@ class PlayerView @JvmOverloads constructor(
      * Play a movie - creates source and plays with resume
      */
     fun playMovie(source: MoviePlaybackSource) {
-        Log.d(TAG, "playMovie: ${source.movie.title}")
+        Timber.d("playMovie: ${source.movie.title}")
         source.loadUrlAndPlay(this)
     }
 
@@ -268,105 +357,76 @@ class PlayerView @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Play URL directly (for simple cases without PlaybackSource)
-     */
-    fun playUrl(url: String, vod: Boolean = false) {
-        Log.d(TAG, "playUrl: $url")
-        closePlaybackSource()
-        lastTickPosition = 0L
-        frozenTickCount = 0
-        openStream(url, vod)
-    }
-
     // =========================================================================
-    // TICK-BASED HEALTH MONITORING (OnTV-main pattern)
+    // TICK-BASED HEALTH MONITORING (OnTV-main pattern EXACTLY)
     // Called externally every 300ms by SharedPlayerManager
     // =========================================================================
 
     /**
-     * Main tick function - OnTV-main pattern
-     * Called every 300ms from SharedPlayerManager to monitor playback health.
-     * This is CRITICAL for detecting frozen streams and auto-recovering.
+     * Main tick function - OnTV-main pattern EXACTLY
      */
     fun tick() {
-        // Track playReadyCount for history (OnTV-main pattern)
-        if (isPlayReady) {
+        if (isPlayReady)
             playReadyCount += 1
-        } else if (!isBuffering) {
+        else if (!isBuffering)
             playReadyCount = 0
-        }
 
-        // Handle seek process
-        handleSeekProcessTick()
-
-        // CRITICAL: Check for frozen stream (OnTV-main pattern)
-        checkFrozenStream()
-    }
-
-    /**
-     * Check if stream is frozen and auto-recover - OnTV-main pattern
-     * A stream is frozen if position doesn't advance for FREEZE_TICK_COUNT ticks (~3 seconds)
-     */
-    private fun checkFrozenStream() {
-        // Only check when playing (not paused, not seeking, not buffering)
-        if (pause || seekProcessDirection != 0 || !isPlayReady) {
-            frozenTickCount = 0
-            return
-        }
-
-        // Only check for live streams and HLS
-        if (channelPlaybackSource == null && streamUrl?.contains(".m3u8") != true) {
-            return
-        }
-
-        val currentPosition = seek
-
-        // Check if position is advancing
-        if (currentPosition == lastTickPosition && currentPosition > 0) {
-            frozenTickCount++
-
-            if (frozenTickCount >= FREEZE_TICK_COUNT) {
-                Log.w(TAG, "Stream frozen for ${frozenTickCount * TICK_DT}ms - auto-recovering")
-                frozenTickCount = 0
-
-                // Try to recover - OnTV-main pattern
-                if (currentError != null) {
-                    // There's an error - let error handling deal with it
-                    handleError(immediate = true)
-                } else {
-                    // No error but frozen - restart stream
-                    Log.d(TAG, "No error but frozen - restarting stream")
-                    restartStream()
-                }
-            }
-        } else {
-            // Position is advancing - reset counter
-            frozenTickCount = 0
-        }
-
-        lastTickPosition = currentPosition
-    }
-
-    /**
-     * Handle seek process during tick - OnTV-main pattern
-     */
-    private fun handleSeekProcessTick() {
         if (seekProcessDirection != 0) {
-            val target = calculateTargetSeek()
-            when {
-                target <= 0 -> {
-                    discardSeekProcess(0)
+            val targetSeek = targetSeek
+            when (targetSeek) {
+                is AbsPosition -> {
+                    val channelSource = channelPlaybackSource!!
+                    if (targetSeek.utcMS >= System.currentTimeMillis()) {
+                        discardSeekProcess()
+                        ChannelPlaybackSource(
+                            channel = channelSource.channel,
+                            currentProgram = channelSource.currentProgram,
+                            isLive = true,
+                            channelList = channelSource.getAllChannels()
+                        ).loadUrlAndPlay(this, isPauseAfterSeekProcess)
+                    } else {
+                        channelSource.liveProgram?.takeIf { targetSeek.utcMS <= it.startTimeMS }?.let {
+                            discardSeekProcess()
+                            ChannelPlaybackSource(
+                                channel = channelSource.channel,
+                                currentProgram = channelSource.currentProgram,
+                                isLive = false,
+                                channelList = channelSource.getAllChannels(),
+                                startAbsTime = it.startTimeMS
+                            ).loadUrlAndPlay(this, isPauseAfterSeekProcess)
+                        } ?: run {
+                            if (isPlayReady && loadAndPlayJob?.isActive != true) {
+                                seekProcessLastPoint = targetSeek.utcMS
+                                seekProcessLastPointTimestamp = System.currentTimeMillis()
+                                ChannelPlaybackSource(
+                                    channel = channelSource.channel,
+                                    currentProgram = channelSource.currentProgram,
+                                    isLive = false,
+                                    channelList = channelSource.getAllChannels(),
+                                    startAbsTime = targetSeek.utcMS
+                                ).loadUrlAndPlay(this, null, true, false)
+                            }
+                        }
+                    }
                 }
-                target >= duration && duration > 0 -> {
-                    discardSeekProcess(duration)
-                }
-                isPlayReady && loadAndPlayJob?.isActive != true -> {
-                    seekProcessLastPoint = target
-                    seekProcessLastPointTimestamp = System.currentTimeMillis()
-                    seek = target
+                is SeekAndDuration -> {
+                    if (targetSeek.seek <= 0) {
+                        discardSeekProcess(0)
+                    } else if (targetSeek.seek >= targetSeek.duration) {
+                        discardSeekProcess(targetSeek.duration)
+                        // Could show go-to-live dialog here
+                    } else if (isPlayReady && loadAndPlayJob?.isActive != true) {
+                        seekProcessLastPoint = targetSeek.seek
+                        seekProcessLastPointTimestamp = System.currentTimeMillis()
+                        seek = targetSeek.seek
+                    }
                 }
             }
+        }
+
+        // Add to history after sufficient play time (OnTV-main pattern)
+        if (playReadyCount * 300 > 5000) { // 5 seconds = ADD_TO_HISTORY_AFTER_TIME
+            addContentToHistory()
         }
     }
 
@@ -375,17 +435,26 @@ class PlayerView @JvmOverloads constructor(
     // =========================================================================
 
     override fun onPlayerChange() {
-        // Reset retry state on successful playback
         if (isPlayReady) {
-            retryCount = 0
             isRetryAfterError = null
-            frozenTickCount = 0
             onPlaybackReady?.invoke()
             onPlaybackError?.invoke("", false)
         }
 
-        // Note: playReadyCount tracking is done in tick() now
-        // This ensures it's updated continuously, not just on state changes
+        // Handle playback ended (OnTV-main pattern)
+        if (isPlaybackEnded && !isPlaybackEndedHandled) {
+            isPlaybackEndedHandled = true
+            seekProcessDirection = 0
+            if (loadAndPlayJob?.isActive != true) {
+                channelPlaybackSource?.let {
+                    // Could show go-to-live dialog here
+                }
+            }
+        }
+        if (!isPlaybackEnded)
+            isPlaybackEndedHandled = false
+
+        tick()
     }
 
     override fun onError(error: Throwable) {
@@ -395,92 +464,62 @@ class PlayerView @JvmOverloads constructor(
     }
 
     // =========================================================================
-    // Error Handling (OnTV-main Pattern - CRITICAL)
+    // Error Handling (OnTV-main Pattern EXACTLY - NO MAX_RETRIES!)
     // =========================================================================
 
     /**
      * Handle playback error with retry logic - OnTV-main pattern EXACTLY
+     * NOTE: No MAX_RETRIES limit - retries indefinitely like OnTV-main
      */
     fun handleError(immediate: Boolean = false) {
         val error = currentError ?: return
+        if (pause) return
 
-        // Don't retry if paused
-        if (pause && seekProcessDirection == 0) return
-
-        // Check for "too old" content (OnTV-main pattern)
+        // Content age check - if content is >2 days old, jump to live (OnTV-main pattern)
         channelPlaybackSource?.let { src ->
-            // If content is too old (>2 days), jump to live
-            // This prevents endless retry loops on expired archive content
+            (src.currentProgram?.startTimeMS ?: src.startAbsTime)?.let { startTime ->
+                if (System.currentTimeMillis() - startTime > 2 * 24 * 60 * 60000) {
+                    Timber.d("Content too old (>2 days), jumping to live")
+                    ChannelPlaybackSource(
+                        channel = src.channel,
+                        currentProgram = src.currentProgram,
+                        isLive = true,
+                        channelList = src.getAllChannels()
+                    ).loadUrlAndPlay(this)
+                    return
+                }
+            }
         }
 
         // Immediate restart for BehindLiveWindow, AudioSink errors (OnTV-main pattern)
         if (isShouldRestartNowException(error)) {
-            Log.d(TAG, "isShouldRestartNowException - instant restart")
+            Timber.e("isShouldRestartNowException")
             if (channelPlaybackSource?.isLive == true) {
                 restartStream()
             } else {
-                playbackSource?.loadUrlAndPlay(this)
+                channelPlaybackSource?.loadUrlAndPlay(this)
             }
-            return
-        }
-
-        // Retry with delay (OnTV-main pattern)
-        scope?.launch {
-            if (!immediate) {
-                delay(DELAY_AFTER_ERROR)
-            }
-
-            if (currentError == null || (pause && seekProcessDirection == 0)) return@launch
-
-            if (retryCount < MAX_RETRIES) {
-                retryCount++
-                isRetryAfterError = currentError
-
-                val message = when {
-                    retryCount <= 2 -> ""
-                    retryCount <= 4 -> "Reconnecting..."
-                    else -> "Reconnecting (attempt $retryCount)..."
+        } else {
+            // Retry with smart delay (OnTV-main pattern)
+            scope?.launch {
+                // Skip delay if user just changed audio track (OnTV-main pattern)
+                if (!immediate && System.currentTimeMillis() - lastUserSetAudioTrackTimestamp > DELAY_AFTER_ERROR * 2) {
+                    delay(DELAY_AFTER_ERROR)
                 }
-                onPlaybackError?.invoke(message, true)
-
-                // OnTV-main pattern: reinit for non-source errors
-                if (!isSourceException(currentError)) {
-                    Log.d(TAG, "Non-source error (render/decoder) - reinitializing player")
-                    reinit()
-                    // After reinit, try to reload the source
-                    playbackSource?.loadUrlAndPlay(this@PlayerView)
-                } else {
-                    Log.d(TAG, "Source error - reloading stream")
-                    playbackSource?.loadUrlAndPlay(this@PlayerView)
+                if (currentError != null && !pause) {
+                    isRetryAfterError = currentError
+                    if (!isSourceException(currentError)) {
+                        // Non-source error (render/decoder) - full reinit (OnTV-main pattern)
+                        GlobalScope.launch(Dispatchers.Main) {
+                            reinit()
+                            playbackSource?.loadUrlAndPlay(this@PlayerView)
+                        }
+                    } else {
+                        // Source error - just reload
+                        playbackSource?.loadUrlAndPlay(this@PlayerView)
+                    }
                 }
-            } else {
-                // Max retries exceeded
-                retryCount = 0
-                isRetryAfterError = null
-                val message = getErrorMessage(error)
-                onPlaybackError?.invoke(message, false)
             }
-        }
-    }
-
-    private fun getErrorMessage(error: Throwable): String {
-        val exo = error as? ExoPlaybackException
-        if (exo != null) {
-            return when (exo.type) {
-                ExoPlaybackException.TYPE_SOURCE -> "Stream unavailable"
-                ExoPlaybackException.TYPE_RENDERER -> "Decoder error"
-                ExoPlaybackException.TYPE_UNEXPECTED -> "Unexpected error"
-                ExoPlaybackException.TYPE_REMOTE -> "Server error"
-                else -> "Playback error"
-            }
-        }
-
-        return when {
-            error.message?.contains("network", ignoreCase = true) == true -> "Network error"
-            error.message?.contains("timeout", ignoreCase = true) == true -> "Connection timeout"
-            error.message?.contains("decoder", ignoreCase = true) == true -> "Decoder error"
-            error.message?.contains("source", ignoreCase = true) == true -> "Stream unavailable"
-            else -> "Playback error"
         }
     }
 
@@ -503,22 +542,17 @@ class PlayerView @JvmOverloads constructor(
     // =========================================================================
 
     override fun destroy() {
-        Log.d(TAG, "destroy")
+        Timber.d("destroy")
         loadAndPlayJob?.cancel()
         loadAndPlayJob = null
         discardSeekProcess()
-        _playbackSourceFlow.value = null
-        lastTickPosition = 0L
-        frozenTickCount = 0
+        playbackSourceMutableFlow.value = null
         playReadyCount = 0
         super.destroy()
     }
 
     override fun reinit() {
-        Log.d(TAG, "reinit - preserving playback source")
-        // Reset tick state but preserve source
-        lastTickPosition = 0L
-        frozenTickCount = 0
+        Timber.d("reinit - preserving playback source")
         super.reinit()
     }
 }

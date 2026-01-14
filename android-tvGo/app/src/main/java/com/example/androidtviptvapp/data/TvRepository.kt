@@ -222,6 +222,35 @@ object TvRepository {
         return moviePositions[movieId] ?: 0L
     }
 
+    // =========================================================================
+    // CHANNEL HISTORY (OnTV-main Pattern)
+    // =========================================================================
+
+    private val channelHistory = mutableListOf<String>()
+    private const val MAX_HISTORY_SIZE = 50
+
+    /**
+     * Add channel to viewing history (OnTV-main pattern)
+     */
+    fun addChannelToHistory(channel: Channel) {
+        // Remove if already exists (to move to front)
+        channelHistory.remove(channel.id)
+        // Add to front
+        channelHistory.add(0, channel.id)
+        // Trim to max size
+        while (channelHistory.size > MAX_HISTORY_SIZE) {
+            channelHistory.removeAt(channelHistory.size - 1)
+        }
+        android.util.Log.d(TAG, "Added channel ${channel.name} to history")
+    }
+
+    /**
+     * Get recent channel history
+     */
+    fun getChannelHistory(): List<Channel> {
+        return channelHistory.mapNotNull { id -> channels.find { it.id == id } }
+    }
+
     // Dynamic Categories - populated from loaded channels
     val channelCategories = mutableStateListOf<Category>()
 

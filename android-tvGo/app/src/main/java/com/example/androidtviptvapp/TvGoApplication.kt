@@ -5,25 +5,28 @@ import android.content.ComponentCallbacks2
 import coil.Coil
 import com.example.androidtviptvapp.data.TvRepository
 import com.example.androidtviptvapp.player.SharedPlayerManager
+import timber.log.Timber
 
 /**
  * Custom Application class for TV app optimizations.
  * Enhanced with OnTV-main style memory management for TV boxes.
+ * Uses Timber for logging (OnTV-main pattern).
  */
 class TvGoApplication : Application() {
 
-    companion object {
-        private const val TAG = "TvGoApplication"
-    }
-
     override fun onCreate() {
         super.onCreate()
+
+        // Initialize Timber (OnTV-main pattern)
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
         // Initialize optimized Coil ImageLoader
         val imageLoader = TvRepository.getImageLoader(applicationContext)
         Coil.setImageLoader(imageLoader)
 
-        android.util.Log.d(TAG, "Application created - TV Go ready")
+        Timber.d("Application created - TV Go ready")
     }
 
     override fun onTrimMemory(level: Int) {
@@ -31,16 +34,16 @@ class TvGoApplication : Application() {
 
         when (level) {
             ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
-                android.util.Log.d(TAG, "UI hidden - trimming memory")
+                Timber.d("UI hidden - trimming memory")
                 // Just log, don't release player yet
             }
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
-                android.util.Log.w(TAG, "System running low on memory - clearing caches")
+                Timber.w("System running low on memory - clearing caches")
                 TvRepository.clearImageCache(applicationContext)
                 TvRepository.checkMemoryAndCleanup()
             }
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
-                android.util.Log.e(TAG, "CRITICAL: System very low on memory!")
+                Timber.e("CRITICAL: System very low on memory!")
                 TvRepository.clearImageCache(applicationContext)
                 TvRepository.checkMemoryAndCleanup()
                 // OnTV-main pattern: release player on critical memory
@@ -48,11 +51,11 @@ class TvGoApplication : Application() {
             }
             ComponentCallbacks2.TRIM_MEMORY_BACKGROUND,
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                android.util.Log.d(TAG, "Background memory pressure - clearing caches")
+                Timber.d("Background memory pressure - clearing caches")
                 TvRepository.clearImageCache(applicationContext)
             }
             ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
-                android.util.Log.w(TAG, "Complete memory pressure - clearing all")
+                Timber.w("Complete memory pressure - clearing all")
                 TvRepository.clearImageCache(applicationContext)
                 TvRepository.checkMemoryAndCleanup()
                 // Release player completely when system needs maximum memory
@@ -63,7 +66,7 @@ class TvGoApplication : Application() {
 
     override fun onLowMemory() {
         super.onLowMemory()
-        android.util.Log.e(TAG, "LOW MEMORY - releasing all resources!")
+        Timber.e("LOW MEMORY - releasing all resources!")
         TvRepository.clearImageCache(applicationContext)
         // OnTV-main pattern: release player on low memory
         SharedPlayerManager.releaseCompletely()
@@ -72,7 +75,7 @@ class TvGoApplication : Application() {
     }
 
     override fun onTerminate() {
-        android.util.Log.d(TAG, "Application terminating - cleanup")
+        Timber.d("Application terminating - cleanup")
         SharedPlayerManager.releaseCompletely()
         TvRepository.cleanup()
         super.onTerminate()

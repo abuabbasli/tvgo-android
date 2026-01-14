@@ -9,7 +9,9 @@ data class Channel(
     val description: String,
     val logoColor: String,
     val schedule: List<ScheduleItem> = emptyList(),
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val hasArchive: Boolean = true,  // OnTV-main: isHaveArchive - whether channel supports timeshift/archive
+    val isMulticast: Boolean = false  // OnTV-main: isMulticast - UDP multicast stream
 )
 
 data class ScheduleItem(

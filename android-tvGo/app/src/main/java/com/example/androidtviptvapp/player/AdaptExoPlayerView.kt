@@ -1,9 +1,10 @@
 package com.example.androidtviptvapp.player
 
 import android.content.Context
+import android.graphics.Rect
 import android.net.Uri
+import android.os.Handler
 import android.util.AttributeSet
-import android.util.Log
 import android.view.Gravity
 import android.view.SurfaceView
 import android.view.TextureView
@@ -21,6 +22,7 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SeekParameters
 import com.google.android.exoplayer2.Tracks
 import com.google.android.exoplayer2.analytics.AnalyticsListener
+import com.google.android.exoplayer2.audio.AudioSink
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.extractor.ts.DefaultTsPayloadReaderFactory
 import com.google.android.exoplayer2.source.BehindLiveWindowException
@@ -35,6 +37,7 @@ import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionOverride
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
+import com.google.android.exoplayer2.ui.DefaultTrackNameProvider
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
@@ -47,10 +50,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.Locale
 
 /**
- * AdaptExoPlayerView - View-based ExoPlayer following OnTV-main pattern exactly.
+ * AdaptExoPlayerView - View-based ExoPlayer following OnTV-main pattern EXACTLY.
  * Implements Player.Listener AND AnalyticsListener for full event handling.
  * Supports UDP, HLS, DASH, and Progressive streams.
  */
@@ -61,16 +65,16 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyle), Player.Listener, AnalyticsListener {
 
     companion object {
-        private const val TAG = "AdaptExoPlayerView"
         const val RESIZE_MODE_FIT = AspectRatioFrameLayout.RESIZE_MODE_FIT
         const val RESIZE_MODE_FILL = AspectRatioFrameLayout.RESIZE_MODE_FILL
         const val RESIZE_MODE_ZOOM = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        
-        // Setting to toggle TextureView vs SurfaceView
+        const val DEFAULT_VIDEO_RESIZE_MODE = AspectRatioFrameLayout.RESIZE_MODE_FILL
+
+        // Setting to toggle TextureView vs SurfaceView (OnTV-main: ISharedSettingsStorage.isUseTextureViewInPlayer)
         var useTextureView: Boolean = false
     }
 
-    // Player state properties (matching OnTV-main)
+    // Player state properties (matching OnTV-main exactly)
     open var pause: Boolean
         get() = player?.playWhenReady == false
         set(v) {
@@ -78,7 +82,7 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
         }
 
     var seek: Long
-        get() = player?.currentPosition ?: 0
+        get() = if (player != null) player!!.currentPosition else 0
         set(v) {
             player?.seekTo(v)
         }
@@ -87,7 +91,7 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
         get() = player?.currentLiveOffset?.takeIf { it != C.TIME_UNSET }
 
     val duration: Long
-        get() = player?.duration ?: 0
+        get() = if (player != null) player!!.duration else 0
 
     val isPlayReady: Boolean
         get() = mediaSource != null && player?.playbackState == Player.STATE_READY
@@ -101,147 +105,128 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
     val isInitialized: Boolean
         get() = player != null
 
+    var scope: CoroutineScope? = null
+        private set
+
+    private var videoSourceAspect: Float = 1.0f
+
     val totalBufferedDuration: Long
         get() = player?.totalBufferedDuration ?: 0
 
     var currentError: Throwable? = null
-        protected set
+        private set
 
-    // Video components
     private var aspectRatioFrameLayout: AspectRatioFrameLayout? = null
+    private var systemHandler: Handler? = null
     private var videoView: View? = null
     protected var player: ExoPlayer? = null
     private var mediaSource: MediaSource? = null
+    private var defaultBandwidthMeter: DefaultBandwidthMeter? = null
     private var trackSelector: DefaultTrackSelector? = null
-    private var bandwidthMeter: DefaultBandwidthMeter? = null
     private var loadControl: DefaultLoadControl? = null
 
-    var scope: CoroutineScope? = null
-        protected set
-
-    // Stream URL tracking
-    var streamUrl: String? = null
-        private set
-
-    // Resize mode
-    var resizeMode: Int = RESIZE_MODE_FILL
+    // RESIZE_MODE_FIT, RESIZE_MODE_FIXED_WIDTH, RESIZE_MODE_FIXED_HEIGHT, RESIZE_MODE_FILL, RESIZE_MODE_ZOOM
+    var resizeMode: Int = DEFAULT_VIDEO_RESIZE_MODE
         set(v) {
             field = v
             aspectRatioFrameLayout?.resizeMode = v
         }
 
-    // Audio tracks (OnTV-main pattern)
-    private val _audioTracks = MutableStateFlow<List<AudioTrackInfo>>(emptyList())
-    val audioTracks = _audioTracks.asStateFlow()
-
-    private val _selectedAudioTrack = MutableStateFlow<AudioTrackInfo?>(null)
-    val selectedAudioTrack = _selectedAudioTrack.asStateFlow()
-    
-    // Last used audio language preference
-    var lastUsedPrefLanguage: String? = null
-
-    data class AudioTrackInfo(
-        val groupIndex: Int,
-        val trackIndex: Int,
-        val trackGroup: TrackGroup,
-        val name: String,
-        val language: String?
-    )
-
     /**
-     * Initialize the player view - must call this before using
-     */
-    fun init() {
-        Log.d(TAG, "init")
-
-        // Create aspect ratio container
-        aspectRatioFrameLayout = AspectRatioFrameLayout(context).apply {
-            resizeMode = this@AdaptExoPlayerView.resizeMode
-        }
-        addView(aspectRatioFrameLayout, LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            Gravity.CENTER
-        ))
-
-        // Create video surface view (OnTV-main: can switch between SurfaceView/TextureView)
-        videoView = if (useTextureView) TextureView(context) else SurfaceView(context)
-        aspectRatioFrameLayout?.addView(videoView, LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        ))
-
-        scope = CoroutineScope(Dispatchers.Main)
-
-        // Track selector (OnTV-main default)
-        trackSelector = DefaultTrackSelector(context)
-
-        // Renderers with extension mode (OnTV-main pattern)
-        val renderersFactory = DefaultRenderersFactory(context).apply {
-            setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
-        }
-
-        // Bandwidth meter
-        bandwidthMeter = DefaultBandwidthMeter.Builder(context).build()
-
-        // Default load control (OnTV-main uses defaults)
-        loadControl = DefaultLoadControl()
-
-        // Build player (OnTV-main exact pattern)
-        player = ExoPlayer.Builder(context, renderersFactory)
-            .setTrackSelector(trackSelector!!)
-            .setLoadControl(loadControl!!)
-            .setBandwidthMeter(bandwidthMeter!!)
-            .build().apply {
-                addListener(this@AdaptExoPlayerView)
-                addAnalyticsListener(this@AdaptExoPlayerView)
-                // Add EventLogger for debugging (OnTV-main pattern)
-                addAnalyticsListener(EventLogger())
-                
-                // Set video surface
-                when (val view = videoView) {
-                    is SurfaceView -> setVideoSurfaceView(view)
-                    is TextureView -> setVideoTextureView(view)
-                }
-                
-                playWhenReady = true
-                setSeekParameters(SeekParameters.CLOSEST_SYNC)
-            }
-    }
-
-    /**
-     * Refresh output view - switch between SurfaceView and TextureView
+     * Refresh output view - switch between SurfaceView and TextureView (OnTV-main pattern)
      */
     fun refreshOutputView() {
         val aspectRatioFrameLayout = aspectRatioFrameLayout ?: return
-        val newVideoView: View = if (useTextureView) {
+        val newVideoView: View
+        if (useTextureView) {
             if (videoView is TextureView) return
-            TextureView(context)
+            newVideoView = TextureView(context)
         } else {
             if (videoView is SurfaceView) return
-            SurfaceView(context)
+            newVideoView = SurfaceView(context)
         }
-        
-        Log.d(TAG, "Switching output surface to ${newVideoView.javaClass.simpleName}")
-        aspectRatioFrameLayout.addView(newVideoView, LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        ))
-        
+        Timber.e("recreate player output surface to ${newVideoView.javaClass.simpleName}")
+        aspectRatioFrameLayout.addView(newVideoView, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT).also { setRectLayoutParams(it) })
         when (newVideoView) {
             is SurfaceView -> player?.setVideoSurfaceView(newVideoView)
             is TextureView -> player?.setVideoTextureView(newVideoView)
         }
-        
         aspectRatioFrameLayout.removeView(videoView)
         videoView = newVideoView
     }
 
     /**
-     * Destroy player and clean up resources
+     * Output rect for video positioning (OnTV-main pattern)
      */
-    open fun destroy() {
-        Log.d(TAG, "destroy")
+    var outputRect: Rect? = null
+        set(rect) {
+            field = rect?.let { Rect(it) }
+            aspectRatioFrameLayout?.let {
+                setRectLayoutParams(it.layoutParams as LayoutParams)
+                it.requestLayout()
+            }
+        }
+
+    private fun setRectLayoutParams(lp: LayoutParams): LayoutParams {
+        return lp.apply {
+            outputRect?.let { rect ->
+                width = rect.width()
+                height = rect.height()
+                setMargins(rect.left, rect.top, 0, 0)
+                gravity = Gravity.LEFT or Gravity.TOP
+            } ?: run {
+                width = ViewGroup.LayoutParams.MATCH_PARENT
+                height = ViewGroup.LayoutParams.MATCH_PARENT
+                gravity = Gravity.CENTER
+                setMargins(0, 0, 0, 0)
+            }
+        }
+    }
+
+    fun init() {
+        Timber.d("init")
+
+        aspectRatioFrameLayout = AspectRatioFrameLayout(context)
+        aspectRatioFrameLayout?.resizeMode = resizeMode
+        addView(aspectRatioFrameLayout, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER))
+
+        videoView = if (useTextureView) TextureView(context) else SurfaceView(context)
+        aspectRatioFrameLayout?.addView(videoView, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT).also { setRectLayoutParams(it) })
+
+        scope = CoroutineScope(Dispatchers.Main)
+
+        systemHandler = Handler()
+
+        trackSelector = DefaultTrackSelector(context)
+
+        val renderersFactory = DefaultRenderersFactory(context).apply {
+            setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+        }
+
+        defaultBandwidthMeter = DefaultBandwidthMeter.Builder(context).build()
+
+        loadControl = DefaultLoadControl()
+
+        player = ExoPlayer.Builder(context, renderersFactory)
+            .setTrackSelector(trackSelector!!)
+            .setLoadControl(loadControl!!)
+            .setBandwidthMeter(defaultBandwidthMeter!!)
+            .build().also {
+                it.addListener(this)
+                it.addAnalyticsListener(this)
+                val videoView = videoView
+                when (videoView) {
+                    is SurfaceView -> it.setVideoSurfaceView(videoView)
+                    is TextureView -> it.setVideoTextureView(videoView)
+                }
+                it.setPlayWhenReady(true)
+                it.setSeekParameters(SeekParameters.CLOSEST_SYNC)
+                it.addAnalyticsListener(EventLogger())
+            }
+    }
+
+    fun destroy() {
+        Timber.d("destroy")
 
         scope?.cancel()
         scope = null
@@ -250,34 +235,34 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
 
         player?.release()
         player = null
+        systemHandler = null
+        defaultBandwidthMeter = null
         trackSelector = null
         loadControl = null
-        bandwidthMeter = null
 
         removeAllViews()
         aspectRatioFrameLayout = null
         videoView = null
     }
 
-    /**
-     * Close current stream - OnTV-main pattern
-     */
+    var streamUrl: String? = null
+        private set
+
     protected fun closeStream() {
         currentError = null
         mediaSource = null
         streamUrl = null
-        isCurrentStreamVod = false
         player?.stop()
+        setSelectedAudioTrack(null, false)
         _audioTracks.value = emptyList()
-        _selectedAudioTrack.value = null
+        outputVideoSize = null
         postPlayerChange()
     }
 
-    /**
-     * Open and play a stream - OnTV-main exact pattern with UDP support
-     */
     protected fun openStream(url: String, vod: Boolean, startPosition: Long? = null, pauseAfter: Boolean? = null) {
-        if (url == streamUrl) return
+
+        if (url == streamUrl)
+            return
 
         val player = player ?: return
 
@@ -285,92 +270,108 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
         mediaSource = null
         streamUrl = null
         player.stop()
+        setSelectedAudioTrack(null, false)
         _audioTracks.value = emptyList()
-        _selectedAudioTrack.value = null
+        outputVideoSize = null
 
-        Log.d(TAG, "open stream $url")
+        Timber.i("open stream $url")
 
-        // Set preferred audio languages (OnTV-main pattern)
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().apply {
             val langs = ArrayList<String>()
-            lastUsedPrefLanguage?.let { langs += it }
-            Locale.getDefault().language.let { if (!langs.contains(it)) langs += it }
-            "en".let { if (!langs.contains(it)) langs += it }
-            
+            lastUsedPrefLanguage?.let {
+                langs += it
+            }
+            Locale.getDefault().language.let {
+                if (!langs.contains(it))
+                    langs += it
+            }
+            "ru".let {
+                if (!langs.contains(it))
+                    langs += it
+            }
             when (langs.size) {
                 0 -> setPreferredAudioLanguages()
                 1 -> setPreferredAudioLanguages(langs[0])
                 2 -> setPreferredAudioLanguages(langs[0], langs[1])
-                else -> setPreferredAudioLanguages(langs[0], langs[1], langs[2])
+                3 -> setPreferredAudioLanguages(langs[0], langs[1], langs[2])
             }
         }.build()
 
         try {
             val uri = Uri.parse(url) ?: return
-            val mediaItem = MediaItem.Builder().setUri(uri).build()
+            val mediaItem: MediaItem = MediaItem.Builder().setUri(uri).build()
 
-            // Data source factory - UDP support (OnTV-main pattern)
-            val dataSourceFactory: DataSource.Factory = if (uri.scheme == "udp") {
-                Log.d(TAG, "Using UDP DataSource for multicast stream")
-                DataSource.Factory { UdpDataSource(3000, 10000) }
-            } else {
-                DefaultHttpDataSource.Factory()
-            }
+            val dataSourceFactory = if (uri.scheme == "udp") {
+                DataSource.Factory {
+                    UdpDataSource(3000, 10000)
+                }
+            } else DefaultHttpDataSource.Factory()
 
-            // Create media source based on stream type (OnTV-main exact logic)
             val mediaSourceFactory = if (vod) {
                 ProgressiveMediaSource.Factory(dataSourceFactory)
             } else {
-                when {
-                    uri.lastPathSegment?.endsWith(".mpd") == true -> {
-                        DashMediaSource.Factory(dataSourceFactory)
-                    }
-                    uri.lastPathSegment?.endsWith(".m3u8") == true -> {
-                        // HLS with special TS flags (OnTV-main exact pattern)
-                        val hlsExtractorFactory = DefaultHlsExtractorFactory(
-                            DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or 
-                            DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS,
-                            true
-                        )
-                        HlsMediaSource.Factory(dataSourceFactory)
-                            .setExtractorFactory(hlsExtractorFactory)
-                            .setAllowChunklessPreparation(false)
-                    }
-                    else -> {
-                        val extractorsFactory = DefaultExtractorsFactory()
-                        ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
-                    }
+                if (uri.lastPathSegment?.endsWith(".mpd") == true) {
+                    DashMediaSource.Factory(dataSourceFactory)
+                } else if (uri.lastPathSegment?.endsWith(".m3u8") == true) {
+                    // https://github.com/google/ExoPlayer/issues/8560
+                    val defaultHlsExtractorFactory = DefaultHlsExtractorFactory(
+                        DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS, true)
+                    HlsMediaSource.Factory(dataSourceFactory)
+                        .setExtractorFactory(defaultHlsExtractorFactory)
+                        .setAllowChunklessPreparation(false)
+                } else {
+                    val extractorsFactory = DefaultExtractorsFactory()
+                    ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
                 }
             }
-
             mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
-            streamUrl = url
-            isCurrentStreamVod = vod
-
-            if (startPosition != null) {
-                player.setMediaSource(mediaSource!!, startPosition)
-            } else {
-                player.setMediaSource(mediaSource!!)
-            }
-
-            pauseAfter?.let {
-                player.playWhenReady = !it
-            }
-
-            player.prepare()
-            postPlayerChange()
 
         } catch (ex: RuntimeException) {
-            Log.e(TAG, "Error opening stream", ex)
             mediaSource = null
-            currentError = ex
-            onError(ex)
+            onError(ExoPlaybackException.createForUnexpected(ex))
+            return
+        }
+
+        streamUrl = url
+
+        startPosition?.let {
+            player.setMediaSource(mediaSource!!, it)
+        } ?: run {
+            player.setMediaSource(mediaSource!!)
+        }
+
+        pauseAfter?.let {
+            player.playWhenReady = !it
+        }
+
+        player.prepare()
+
+        postPlayerChange()
+    }
+
+    fun postPlayerChange() {
+        scope?.launch {
+            onPlayerChange()
         }
     }
 
-    // =========================================================================
-    // Player.Listener callbacks (OnTV-main pattern)
-    // =========================================================================
+    open fun onPlayerChange() {
+    }
+
+    /**
+     * Audio sink error handler (OnTV-main pattern EXACTLY)
+     */
+    override fun onAudioSinkError(
+        eventTime: AnalyticsListener.EventTime,
+        audioSinkError: java.lang.Exception
+    ) {
+        Timber.e("onAudioSinkError handled")
+        if (isShouldRestartNowException(audioSinkError)) {
+            scope?.launch {
+                onError(audioSinkError)
+            }
+        }
+    }
 
     override fun onPlayerError(error: PlaybackException) {
         scope?.launch {
@@ -380,59 +381,94 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
 
     open fun onError(error: Throwable) {
         currentError = error
-        Log.e(TAG, "PlayerError ${error.javaClass.simpleName}: ${error.message}")
+        Timber.e(error)
     }
 
-    override fun onPlaybackStateChanged(playbackState: Int) {
-        if (playbackState == Player.STATE_READY) {
+    override fun onPlayerStateChanged(eventTime: AnalyticsListener.EventTime, playWhenReady: Boolean, playbackState: Int) {
+        if (playbackState == ExoPlayer.STATE_READY) {
             currentError = null
         }
         postPlayerChange()
     }
 
-    /**
-     * Post player state change to UI thread - OnTV-main pattern
-     * This ensures UI updates happen correctly and avoids race conditions
-     */
-    fun postPlayerChange() {
-        scope?.launch {
-            onPlayerChange()
-        }
-    }
-
-    open fun onPlayerChange() {
-        // Override in subclass
-    }
+    var outputVideoSize: VideoSize? = null
+        private set
 
     override fun onVideoSizeChanged(videoSize: VideoSize) {
-        Log.d(TAG, "onVideoSizeChanged ${videoSize.width}x${videoSize.height}")
+        Timber.i("onVideoSizeChanged ${videoSize.width}x${videoSize.height}")
+        outputVideoSize = videoSize
         if (videoSize.width > 0 && videoSize.height > 0) {
-            val aspect = videoSize.pixelWidthHeightRatio * videoSize.width.toFloat() / videoSize.height.toFloat()
-            aspectRatioFrameLayout?.setAspectRatio(aspect)
+            videoSourceAspect = videoSize.pixelWidthHeightRatio * videoSize.width.toFloat() / videoSize.height.toFloat()
+            aspectRatioFrameLayout?.apply {
+                setAspectRatio(videoSourceAspect)
+                requestLayout()
+            }
         }
     }
 
-    override fun onTracksChanged(tracks: Tracks) {
-        updateAudioTracks(tracks)
+    /**
+     * TrackInfo - OnTV-main pattern EXACTLY
+     */
+    data class TrackInfo(val trackGroup: TrackGroup, val trackIndex: Int, val name: String, val language: String?) {
+        override fun equals(other: Any?): Boolean {
+            if (other is TrackInfo) {
+                return trackGroup.id == other.trackGroup.id && trackIndex == other.trackIndex
+            }
+            return super.equals(other)
+        }
+
+        override fun hashCode(): Int {
+            var result = trackGroup.id.hashCode()
+            result = 31 * result + trackIndex
+            return result
+        }
     }
 
-    private fun updateAudioTracks(tracks: Tracks) {
-        val list = mutableListOf<AudioTrackInfo>()
+    private val _audioTracks = MutableStateFlow(emptyList<TrackInfo>())
+    val audioTracks = _audioTracks.asStateFlow()
+
+    private val _userSelectedAudioTrack = MutableStateFlow<TrackInfo?>(null)
+    val userSelectedAudioTrack = _userSelectedAudioTrack.asStateFlow()
+
+    var lastUsedPrefLanguage: String? = null
+        private set
+
+    var lastUserSetAudioTrackTimestamp = 0L
+        private set
+
+    /**
+     * Set selected audio track (OnTV-main pattern EXACTLY)
+     */
+    fun setSelectedAudioTrack(track: TrackInfo?, isFromUser: Boolean) {
+        player?.trackSelectionParameters = player!!.trackSelectionParameters.buildUpon().apply {
+            if (track == null) {
+                clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+            } else {
+                Timber.e("audio track override ${track.name}")
+                setOverrideForType(TrackSelectionOverride(track.trackGroup, listOf(track.trackIndex)))
+            }
+        }.build()
+        if (isFromUser) {
+            lastUsedPrefLanguage = track?.language
+            lastUserSetAudioTrackTimestamp = System.currentTimeMillis()
+        }
+        _userSelectedAudioTrack.value = track
+    }
+
+    private val trackNameProvider = DefaultTrackNameProvider(context.resources)
+
+    override fun onTracksChanged(tracks: Tracks) {
+        val list = ArrayList<TrackInfo>()
         tracks.groups.forEachIndexed { groupIndex, trackGroup ->
             if (trackGroup.type == C.TRACK_TYPE_AUDIO) {
                 for (trackIndex in 0 until trackGroup.length) {
                     if (trackGroup.isTrackSupported(trackIndex)) {
-                        val format = trackGroup.getTrackFormat(trackIndex)
-                        if (format.selectionFlags and C.SELECTION_FLAG_FORCED == 0) {
-                            val trackInfo = AudioTrackInfo(
-                                groupIndex = groupIndex,
-                                trackIndex = trackIndex,
-                                trackGroup = trackGroup.mediaTrackGroup,
-                                name = format.label ?: "Track ${trackIndex + 1}",
-                                language = format.language
-                            )
+                        val trackFormat = trackGroup.getTrackFormat(trackIndex)
+                        if (trackFormat.selectionFlags and C.SELECTION_FLAG_FORCED == 0) {
+                            val trackName = trackNameProvider.getTrackName(trackFormat)
+                            val trackInfo = TrackInfo(trackGroup.mediaTrackGroup, trackIndex, trackName, trackFormat.language)
                             if (trackGroup.isTrackSelected(trackIndex)) {
-                                _selectedAudioTrack.value = trackInfo
+                                _userSelectedAudioTrack.value = trackInfo
                             }
                             list.add(trackInfo)
                         }
@@ -441,62 +477,17 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
             }
         }
         _audioTracks.value = list
-        Log.d(TAG, "Audio tracks: ${list.map { "[${it.name}]" }.joinToString("")}")
-    }
 
-    /**
-     * Select audio track (OnTV-main pattern)
-     */
-    fun selectAudioTrack(trackInfo: AudioTrackInfo) {
-        val player = player ?: return
-        
-        lastUsedPrefLanguage = trackInfo.language
-        _selectedAudioTrack.value = trackInfo
-        
-        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-            .setOverrideForType(TrackSelectionOverride(trackInfo.trackGroup, trackInfo.trackIndex))
-            .build()
-        
-        Log.d(TAG, "Selected audio track: ${trackInfo.name}")
-    }
-
-    // =========================================================================
-    // AnalyticsListener callbacks (OnTV-main pattern - for audio sink errors)
-    // =========================================================================
-
-    override fun onAudioSinkError(
-        eventTime: AnalyticsListener.EventTime,
-        audioSinkError: Exception
-    ) {
-        Log.e(TAG, "onAudioSinkError: ${audioSinkError.message}")
-        // Audio sink errors often need instant restart
-        if (isShouldRestartNowException(audioSinkError)) {
-            scope?.launch {
-                onError(audioSinkError)
-            }
+        var codecslist = ""
+        for (tr in audioTracks.value) {
+            codecslist += "[${tr.name}]"
         }
+        Timber.i("audio tracks $codecslist")
     }
-
-    override fun onLoadStarted(
-        eventTime: AnalyticsListener.EventTime,
-        loadEventInfo: LoadEventInfo,
-        mediaLoadData: MediaLoadData
-    ) {
-        Log.d(TAG, "onLoadStarted: ${loadEventInfo.uri}")
-    }
-
-    // =========================================================================
-    // Error recovery helpers (OnTV-main exact pattern with ExoPlaybackException)
-    // =========================================================================
 
     private fun isShouldRestartNowExceptionType(ex: Throwable?): Boolean {
-        if (ex == null) return false
-        // Direct type check like OnTV-main
-        if (ex is BehindLiveWindowException) return true
-        // Check class name for audio sink errors
-        val className = ex.javaClass.simpleName
-        return className.contains("UnexpectedDiscontinuityException") ||
-               className.contains("AudioSink")
+        return ex is AudioSink.UnexpectedDiscontinuityException ||
+                ex is BehindLiveWindowException
     }
 
     fun isShouldRestartNowException(ex: Throwable?): Boolean {
@@ -509,80 +500,37 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
             }
             cause = cause.cause
         }
+
         return false
     }
 
-    /**
-     * Check if error is a source/network error (OnTV-main uses ExoPlaybackException.type)
-     */
     fun isSourceException(ex: Throwable?): Boolean {
-        // First try ExoPlaybackException.type (more precise, OnTV-main style)
-        val exo = ex as? ExoPlaybackException
-        if (exo != null) {
-            return exo.type == ExoPlaybackException.TYPE_SOURCE || 
-                   exo.type == ExoPlaybackException.TYPE_REMOTE
-        }
-        
-        // Fallback to PlaybackException.errorCode
-        val e = ex as? PlaybackException ?: return false
-        return e.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
-               e.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
-               e.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
-               e.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ||
-               e.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED
+        val e = ex as? ExoPlaybackException ?: return false
+        return e.type in setOf(ExoPlaybackException.TYPE_SOURCE, ExoPlaybackException.TYPE_REMOTE)
     }
 
-    /**
-     * Check if error is a render/decoder error (OnTV-main uses ExoPlaybackException.type)
-     */
     fun isRenderError(ex: Throwable?): Boolean {
-        // First try ExoPlaybackException.type (more precise, OnTV-main style)
-        val exo = ex as? ExoPlaybackException
-        if (exo != null) {
-            return exo.type == ExoPlaybackException.TYPE_RENDERER
-        }
-        
-        // Fallback to PlaybackException.errorCode
-        val e = ex as? PlaybackException ?: return false
-        return e.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ||
-               e.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
-               e.errorCode == PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED ||
-               e.errorCode == PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED
+        val e = ex as? ExoPlaybackException ?: return false
+        return e.type == ExoPlaybackException.TYPE_RENDERER
     }
 
-    /**
-     * Restart stream at live position
-     */
+    override fun onLoadStarted(
+        eventTime: AnalyticsListener.EventTime,
+        loadEventInfo: LoadEventInfo,
+        mediaLoadData: MediaLoadData
+    ) {
+        val uri = loadEventInfo.uri.toString()
+        Timber.i("onLoadStarted $uri")
+        super.onLoadStarted(eventTime, loadEventInfo, mediaLoadData)
+    }
+
     fun restartStream() {
-        Log.d(TAG, "restartStream - seeking to default position and preparing")
-        currentError = null
         player?.seekToDefaultPosition()
         player?.prepare()
     }
 
-    /**
-     * Reinitialize player completely - OnTV-main pattern
-     * Saves current stream state, destroys player, reinits, and restores playback
-     */
-    open fun reinit() {
-        Log.d(TAG, "reinit - full player reinitialization")
-        val savedUrl = streamUrl
-        val savedVod = isCurrentStreamVod
-        val savedPosition = seek
+    fun reinit() {
         destroy()
         init()
-        savedUrl?.let { url ->
-            Log.d(TAG, "reinit - restoring stream: $url at position $savedPosition")
-            openStream(url, savedVod, if (savedVod && savedPosition > 0) savedPosition else null)
-        }
     }
-
-    // Track if current stream is VOD (for reinit restoration)
-    protected var isCurrentStreamVod: Boolean = false
-        private set
-
-    /**
-     * Get the player instance
-     */
-    fun exoPlayer(): ExoPlayer? = player
 }

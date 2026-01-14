@@ -1,28 +1,22 @@
 package com.example.androidtviptvapp.data
 
-import android.util.Log
 import com.example.androidtviptvapp.data.api.CurrentProgram as ApiCurrentProgram
 import com.example.androidtviptvapp.player.PlayerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 /**
- * PlaybackSource abstraction - separates content types from playback logic.
- * Based on OnTV-main's architecture for robust IPTV playback.
+ * PlaybackSource abstraction - OnTV-main pattern EXACTLY.
+ * Separates content types from playback logic with full EPG/timeshift support.
  *
- * KEY FEATURE: loadUrlAndPlay() method follows OnTV-main pattern for proper job management
- *
- * Key benefits:
- * - Content-type awareness (channel vs movie)
- * - EPG integration for channels
- * - Resume position for movies
- * - Navigation support (prev/next channel)
- * - Proper job cancellation to prevent race conditions
+ * KEY FEATURES:
+ * - loadUrlAndPlay() with proper job management
+ * - Timeshift support (startAbsTime, liveProgram)
+ * - Program/archive-aware playback
+ * - Looped channel navigation
  */
 sealed class PlaybackSource {
 
@@ -32,24 +26,6 @@ sealed class PlaybackSource {
         // Shared scope for loading operations - OnTV-main uses AuthorizedUser.scope
         val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
-
-    /**
-     * Position for seek operations - relative to start
-     */
-    data class SeekPosition(val seekMs: Long, val durationMs: Long) {
-        val progress: Float
-            get() = if (durationMs > 0) seekMs.toFloat() / durationMs else 0f
-
-        fun coerceIn(): SeekPosition {
-            val d = durationMs.coerceAtLeast(0)
-            return SeekPosition(seekMs.coerceIn(0, d), d)
-        }
-    }
-
-    /**
-     * Absolute position for timeshift - UTC timestamp
-     */
-    data class AbsolutePosition(val utcMs: Long)
 
     abstract val contentType: ContentType
     abstract val title: String
@@ -109,13 +85,32 @@ interface IJumpable {
 }
 
 /**
- * Channel playback source with EPG integration
+ * Program info for EPG - OnTV-main pattern
+ */
+data class ProgramInfo(
+    val id: String,
+    val name: String,
+    val startTimeMS: Long,
+    val stopTimeMS: Long,
+    val durationTimeMS: Long = stopTimeMS - startTimeMS
+) {
+    val isLive: Boolean
+        get() = System.currentTimeMillis() in startTimeMS until stopTimeMS
+
+    val isWasStarted: Boolean
+        get() = System.currentTimeMillis() >= startTimeMS
+}
+
+/**
+ * Channel playback source with EPG integration - OnTV-main pattern EXACTLY
  */
 class ChannelPlaybackSource(
     val channel: Channel,
     val currentProgram: ApiCurrentProgram? = null,
     val isLive: Boolean = true,
-    private val channelList: List<Channel> = emptyList()
+    private val channelList: List<Channel> = emptyList(),
+    val startAbsTime: Long? = null,  // UTC ms for timeshift
+    val program: ProgramInfo? = null  // Specific program for archive playback
 ) : PlaybackSource(), IJumpable {
 
     override val contentType = ContentType.CHANNEL
@@ -124,13 +119,47 @@ class ChannelPlaybackSource(
     override val streamUrl: String = channel.streamUrl
 
     // Live channels can only pause if they have archive support
-    override val canPause: Boolean = true // Assume all can pause for now
+    override val canPause: Boolean = channel.hasArchive
 
     // Can't seek forward on live
     override val canSeekForward: Boolean = !isLive
 
     // Can always seek back if archive is available
-    override val canSeekBackward: Boolean = true
+    override val canSeekBackward: Boolean = channel.hasArchive
+
+    /**
+     * Whether this source has a defined start and duration (archive program)
+     * OnTV-main pattern
+     */
+    val isHaveStartAndDuration: Boolean
+        get() = program != null
+
+    /**
+     * Start live offset for timeshift (OnTV-main pattern)
+     */
+    val startLiveOffset: Long?
+        get() = startAbsTime?.let { System.currentTimeMillis() - it }
+
+    /**
+     * Get the current live program from EPG (OnTV-main pattern)
+     */
+    val liveProgram: ProgramInfo?
+        get() = if (program == null) {
+            currentProgram?.let { prog ->
+                ProgramInfo(
+                    id = prog.id,
+                    name = prog.title,
+                    startTimeMS = prog.startTime,
+                    stopTimeMS = prog.stopTime
+                )
+            }
+        } else null
+
+    /**
+     * Get program or live program (OnTV-main pattern)
+     */
+    val programOrLiveProgram: ProgramInfo?
+        get() = program ?: liveProgram
 
     // Current position in channel list
     private val currentIndex: Int
@@ -141,6 +170,11 @@ class ChannelPlaybackSource(
 
     override val canJumpPrev: Boolean
         get() = channelList.isNotEmpty()
+
+    /**
+     * Get all channels for navigation (OnTV-main pattern)
+     */
+    fun getAllChannels(): List<Channel> = channelList
 
     override fun jumpNext(): ChannelPlaybackSource? {
         if (channelList.isEmpty()) return null
@@ -200,7 +234,7 @@ class ChannelPlaybackSource(
         player.loadAndPlayJob = null
         player.loadAndPlayJob = loadScope.launch {
             try {
-                Log.d(TAG, "loadUrlAndPlay: Starting channel ${channel.name}")
+                Timber.i("start play channel: ${channel.name} program: ${program?.name}")
 
                 // Show loading state before URL is resolved (OnTV-main pattern)
                 if (closeBeforeLoad) {
@@ -209,13 +243,21 @@ class ChannelPlaybackSource(
                     }
                 }
 
-                // Get the stream URL (already resolved in our case)
+                // Get the stream URL
                 val url = channel.streamUrl
                 if (url.isBlank()) {
                     throw Exception("Stream URL is empty for channel ${channel.name}")
                 }
 
-                Log.d(TAG, "loadUrlAndPlay: Got URL for ${channel.name}: $url")
+                // Calculate start offset for archive/timeshift
+                var startOffset = 0L
+                program?.let { pr ->
+                    startOffset = startAbsTime?.let { absT ->
+                        absT - pr.startTimeMS
+                    } ?: 0
+                }
+
+                Timber.i("loadUrlAndPlay: Got URL for ${channel.name}: $url, startOffset: $startOffset")
 
                 // Open the stream on main thread (OnTV-main pattern)
                 player.scope?.launch {
@@ -226,7 +268,7 @@ class ChannelPlaybackSource(
                         this@ChannelPlaybackSource,
                         url,
                         vod = false,
-                        pos = null,
+                        pos = if (startOffset > 0) startOffset else null,
                         pauseAfter = pauseAfter
                     )
                 }
@@ -235,15 +277,12 @@ class ChannelPlaybackSource(
                 TvRepository.triggerUpdatePrograms(channel.id)
 
             } catch (ex: Exception) {
-                Log.e(TAG, "loadUrlAndPlay failed for ${channel.name}: ${ex.message}", ex)
-                // Error will be handled by player's error handling
+                Timber.e(ex, "loadUrlAndPlay failed for ${channel.name}")
             }
         }
     }
 
     companion object {
-        private const val TAG = "ChannelPlaybackSource"
-
         /**
          * Create a channel source with full channel list for navigation
          */
@@ -290,7 +329,7 @@ class MoviePlaybackSource(
         player.loadAndPlayJob = null
         player.loadAndPlayJob = loadScope.launch {
             try {
-                Log.d(TAG, "loadUrlAndPlay: Starting movie ${movie.title}")
+                Timber.i("start play movie: ${movie.title} id: ${movie.id}")
 
                 // Show loading state before URL is resolved
                 if (closeBeforeLoad) {
@@ -308,7 +347,7 @@ class MoviePlaybackSource(
                 val savedPosition = TvRepository.getMoviePosition(movie.id)
                 val startPos = if (savedPosition > 0) savedPosition else resumePosition
 
-                Log.d(TAG, "loadUrlAndPlay: Got URL for ${movie.title}, resume at $startPos ms")
+                Timber.i("loadUrlAndPlay: Got URL for ${movie.title}, resume at $startPos ms")
 
                 // Open the stream on main thread
                 player.scope?.launch {
@@ -325,7 +364,7 @@ class MoviePlaybackSource(
                 }
 
             } catch (ex: Exception) {
-                Log.e(TAG, "loadUrlAndPlay failed for ${movie.title}: ${ex.message}", ex)
+                Timber.e(ex, "loadUrlAndPlay failed for ${movie.title}")
             }
         }
     }
@@ -337,14 +376,10 @@ class MoviePlaybackSource(
         resumePosition = positionMs
         TvRepository.saveMoviePosition(movie.id, positionMs)
     }
-
-    companion object {
-        private const val TAG = "MoviePlaybackSource"
-    }
 }
 
 /**
- * Audio track info for track selection
+ * Audio track info for track selection - kept for compatibility
  */
 data class AudioTrack(
     val id: String,

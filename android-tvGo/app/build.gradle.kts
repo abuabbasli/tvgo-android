@@ -70,8 +70,8 @@ android {
 
     buildFeatures {
         compose = true
-        // Disable unused build features
-        buildConfig = false
+        // Enable BuildConfig for DEBUG flag (Timber initialization)
+        buildConfig = true
         aidl = false
         renderScript = false
         shaders = false
@@ -111,8 +111,8 @@ dependencies {
     val composeVersion = "1.5.4"
     val composeMaterial3Version = "1.1.2"
     
-    // ExoPlayer 2 - Same as OnTV-main
-    val exoPlayerVersion = "2.19.1"
+    // ExoPlayer 2 - Same as OnTV-main (2.18.7)
+    val exoPlayerVersion = "2.18.7"
 
     // Core Android
     implementation("androidx.core:core-ktx:1.12.0")
@@ -152,6 +152,9 @@ dependencies {
 
     // QR Code
     implementation("com.google.zxing:core:3.5.2")
+
+    // Timber Logging (OnTV-main pattern)
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Debug only
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
