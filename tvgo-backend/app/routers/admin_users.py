@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import secrets
 import string
 import uuid
@@ -10,14 +10,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from pymongo.database import Database
 
 from .. import schemas
-from ..auth import get_current_active_admin, get_password_hash
+from ..auth import get_current_company_or_admin as get_current_company, get_password_hash
 from ..config import settings
 from ..database import get_db
 
 router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/users",
     tags=["admin-users"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
 
@@ -27,19 +26,15 @@ def _generate_credentials(length=8):
     return ''.join(secrets.choice(alphabet) for i in range(length))
 
 
-# Helper to convert DB document to schema
 def _subscriber_document_to_schema(doc: dict) -> schemas.SubscriberResponse:
-    # Determine status
     raw_status = doc.get("status")
-    status = raw_status # If explicit status exists
+    status = raw_status
     if not status:
-        # Fallback for legacy data
         if doc.get("is_active") is False:
             status = schemas.UserStatus.INACTIVE
         else:
             status = schemas.UserStatus.ACTIVE
 
-    # Determine is_active based on status
     is_active_status = status in [
         schemas.UserStatus.ACTIVE, 
         schemas.UserStatus.BONUS, 
@@ -49,7 +44,7 @@ def _subscriber_document_to_schema(doc: dict) -> schemas.SubscriberResponse:
     return schemas.SubscriberResponse(
         id=doc["_id"],
         username=doc.get("username"),
-        password=doc.get("password_plain"), # Show plain password if available (admin only)
+        password=doc.get("password_plain"),
         mac_address=doc.get("mac_address"),
         display_name=doc.get("display_name"),
         surname=doc.get("surname"),
@@ -71,11 +66,13 @@ def list_subscribers(
     skip: int = 0,
     limit: int = 50,
     search: Optional[str] = None,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    query = {}
+    # Base query filters by company
+    query = {"company_id": company["_id"]}
+    
     if search:
-        # Search by username, display name, mac address, or surname
         query["$or"] = [
             {"username": {"$regex": search, "$options": "i"}},
             {"display_name": {"$regex": search, "$options": "i"}},
@@ -94,14 +91,14 @@ def list_subscribers(
 @router.post("/mac", response_model=schemas.SubscriberResponse)
 def create_subscriber_by_mac(
     payload: schemas.SubscriberCreate,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    # Check if MAC already exists
-    if db["subscribers"].find_one({"mac_address": payload.mac_address}):
+    # Check if MAC already exists in this company
+    if db["subscribers"].find_one({"mac_address": payload.mac_address, "company_id": company["_id"]}):
         raise HTTPException(status_code=400, detail="Subscriber with this MAC address already exists")
     
-    # Check if Client No already exists (if provided)
-    if payload.client_no and db["subscribers"].find_one({"client_no": payload.client_no}):
+    if payload.client_no and db["subscribers"].find_one({"client_no": payload.client_no, "company_id": company["_id"]}):
         raise HTTPException(status_code=400, detail="Subscriber with this Client ID already exists")
 
     subscriber_id = uuid.uuid4().hex
@@ -109,6 +106,7 @@ def create_subscriber_by_mac(
     
     doc = {
         "_id": subscriber_id,
+        "company_id": company["_id"],  # Link to company
         "mac_address": payload.mac_address,
         "display_name": payload.display_name or f"User-{payload.mac_address[-6:]}",
         "surname": payload.surname,
@@ -132,16 +130,16 @@ def create_subscriber_by_mac(
 @router.post("/generate", response_model=schemas.SubscriberCreateResponse)
 def create_subscriber_generated(
     payload: schemas.SubscriberCreateCredentials,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    # Check if Client No already exists (if provided)
-    if payload.client_no and db["subscribers"].find_one({"client_no": payload.client_no}):
+    if payload.client_no and db["subscribers"].find_one({"client_no": payload.client_no, "company_id": company["_id"]}):
         raise HTTPException(status_code=400, detail="Subscriber with this Client ID already exists")
 
     subscriber_id = uuid.uuid4().hex
     now = datetime.utcnow()
     
-    # Generate unique username
+    # Generate unique username (globally unique for login purposes)
     while True:
         username = _generate_credentials(8)
         if not db["subscribers"].find_one({"username": username}):
@@ -152,9 +150,10 @@ def create_subscriber_generated(
     
     doc = {
         "_id": subscriber_id,
+        "company_id": company["_id"],  # Link to company
         "username": username,
         "password_hash": password_hash,
-        "password_plain": password, # Store plain text for admin visibility
+        "password_plain": password,
         "display_name": payload.display_name or f"User-{username}",
         "surname": payload.surname,
         "building": payload.building,
@@ -178,9 +177,10 @@ def create_subscriber_generated(
 @router.post("/import-mac", response_model=dict)
 async def import_mac_users(
     file: UploadFile = File(...),
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    """Import users from CSV file. Expected columns: mac_address, [display_name], [surname], [building], [address], [client_no]"""
+    """Import users from CSV file for this company."""
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
 
@@ -197,16 +197,14 @@ async def import_mac_users(
     now = datetime.utcnow()
 
     for row in csv_reader:
-        # Normalize keys (strip whitespace, lowercase) if needed, but assuming strict header for now or flexible
-        # Let's try to map common variations
         row_lower = {k.lower().strip(): v for k, v in row.items() if k}
         
         mac = row_lower.get("mac") or row_lower.get("mac_address") or row_lower.get("mac address")
         if not mac:
-            continue # specific row error?
+            continue
 
-        # Check existing
-        if db["subscribers"].find_one({"mac_address": mac}):
+        # Check existing in this company
+        if db["subscribers"].find_one({"mac_address": mac, "company_id": company["_id"]}):
             results["skipped"] += 1
             continue
 
@@ -214,13 +212,14 @@ async def import_mac_users(
         
         doc = {
             "_id": subscriber_id,
+            "company_id": company["_id"],  # Link to company
             "mac_address": mac,
             "display_name": row_lower.get("name") or row_lower.get("display_name") or f"User-{mac[-6:]}",
             "surname": row_lower.get("surname"),
             "building": row_lower.get("building"),
             "address": row_lower.get("address"),
             "client_no": row_lower.get("client_no") or row_lower.get("client no"),
-            "package_ids": [], # Default to no packages, or could parse
+            "package_ids": [],
             "max_devices": 1,
             "is_active": True,
             "devices": [],
@@ -242,24 +241,22 @@ async def import_mac_users(
 def update_subscriber(
     user_id: str,
     payload: schemas.SubscriberUpdate,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    existing = db["subscribers"].find_one({"_id": user_id})
+    existing = db["subscribers"].find_one({"_id": user_id, "company_id": company["_id"]})
     if not existing:
         raise HTTPException(status_code=404, detail="Subscriber not found")
 
     update_data = payload.dict(exclude_unset=True)
     if update_data:
-        # Check uniqueness if client_no is being updated
         if "client_no" in update_data and update_data["client_no"]:
-            conflict = db["subscribers"].find_one({"client_no": update_data["client_no"]})
+            conflict = db["subscribers"].find_one({"client_no": update_data["client_no"], "company_id": company["_id"]})
             if conflict and conflict["_id"] != user_id:
                 raise HTTPException(status_code=400, detail="Subscriber with this Client ID already exists")
         
-        # If status is updated, sync legacy is_active (optional, but good for consistency in DB)
         if "status" in update_data:
             update_data["status"] = update_data["status"].value if hasattr(update_data["status"], 'value') else update_data["status"]
-            # We don't necessarily need to write is_active to DB if we rely on status, but let's keep it consistent
             is_active_map = {
                 schemas.UserStatus.ACTIVE.value: True,
                 schemas.UserStatus.BONUS.value: True,
@@ -270,15 +267,19 @@ def update_subscriber(
             if update_data["status"] in is_active_map:
                 update_data["is_active"] = is_active_map[update_data["status"]]
 
-        db["subscribers"].update_one({"_id": user_id}, {"$set": update_data})
+        db["subscribers"].update_one({"_id": user_id, "company_id": company["_id"]}, {"$set": update_data})
         
-    updated = db["subscribers"].find_one({"_id": user_id})
+    updated = db["subscribers"].find_one({"_id": user_id, "company_id": company["_id"]})
     return _subscriber_document_to_schema(updated)
 
 
 @router.delete("/{user_id}")
-def delete_subscriber(user_id: str, db: Database = Depends(get_db)):
-    result = db["subscribers"].delete_one({"_id": user_id})
+def delete_subscriber(
+    user_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    result = db["subscribers"].delete_one({"_id": user_id, "company_id": company["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Subscriber not found")
     return {"status": "ok"}
@@ -288,11 +289,12 @@ def delete_subscriber(user_id: str, db: Database = Depends(get_db)):
 def remove_device(
     user_id: str,
     mac_address: str,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
     """Remove a specific device from a user"""
     result = db["subscribers"].update_one(
-        {"_id": user_id},
+        {"_id": user_id, "company_id": company["_id"]},
         {"$pull": {"devices": {"mac_address": mac_address}}}
     )
     if result.matched_count == 0:

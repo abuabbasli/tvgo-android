@@ -4,17 +4,15 @@ from typing import List, Optional
 import time
 
 from .. import schemas
-from ..auth import get_current_active_admin
+from ..auth import get_current_company_or_admin as get_current_company
 from ..config import settings
 from ..database import get_db
 
 router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/games",
     tags=["admin-games"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
-# Game categories
 GAME_CATEGORIES = [
     "Action",
     "Adventure", 
@@ -30,16 +28,15 @@ GAME_CATEGORIES = [
     "Other"
 ]
 
-# Simple in-memory cache for games
-_games_cache: Optional[List[schemas.Game]] = None
-_cache_timestamp: float = 0
-CACHE_TTL = 60  # Cache for 60 seconds
+# Per-company cache
+_games_cache: dict[str, tuple[List[schemas.Game], float]] = {}
+CACHE_TTL = 60
 
 
-def _invalidate_cache():
-    global _games_cache, _cache_timestamp
-    _games_cache = None
-    _cache_timestamp = 0
+def _invalidate_cache(company_id: str):
+    global _games_cache
+    if company_id in _games_cache:
+        del _games_cache[company_id]
 
 
 def _game_document_to_schema(document: dict) -> schemas.Game:
@@ -63,40 +60,49 @@ def get_game_categories():
 
 
 @router.get("", response_model=schemas.GamesListResponse)
-def admin_list_games(db: Database = Depends(get_db)):
-    global _games_cache, _cache_timestamp
+def admin_list_games(
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    global _games_cache
+    company_id = str(company["_id"])
     
-    # Return cached result if still valid
-    if _games_cache is not None and (time.time() - _cache_timestamp) < CACHE_TTL:
-        categories = list(set(g.category for g in _games_cache if g.category))
-        return schemas.GamesListResponse(
-            total=len(_games_cache),
-            items=_games_cache,
-            categories=sorted(categories)
-        )
+    if company_id in _games_cache:
+        cached, timestamp = _games_cache[company_id]
+        if (time.time() - timestamp) < CACHE_TTL:
+            categories = list(set(g.category for g in cached if g.category))
+            return schemas.GamesListResponse(
+                total=len(cached),
+                items=cached,
+                categories=sorted(categories)
+            )
     
-    # Fetch from database and cache
-    games = list(db["games"].find().sort([("order", 1), ("name", 1)]))
-    _games_cache = [_game_document_to_schema(g) for g in games]
-    _cache_timestamp = time.time()
+    games = list(db["games"].find({"company_id": company["_id"]}).sort([("order", 1), ("name", 1)]))
+    games_list = [_game_document_to_schema(g) for g in games]
+    _games_cache[company_id] = (games_list, time.time())
     
-    categories = list(set(g.category for g in _games_cache if g.category))
+    categories = list(set(g.category for g in games_list if g.category))
     return schemas.GamesListResponse(
-        total=len(_games_cache),
-        items=_games_cache,
+        total=len(games_list),
+        items=games_list,
         categories=sorted(categories)
     )
 
 
 @router.post("", response_model=schemas.Game)
-def admin_create_game(payload: schemas.GameCreate, db: Database = Depends(get_db)):
-    existing = db["games"].find_one({"_id": payload.id})
+def admin_create_game(
+    payload: schemas.GameCreate,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    existing = db["games"].find_one({"_id": payload.id, "company_id": company["_id"]})
     if existing:
         raise HTTPException(status_code=400, detail="Game with this id already exists")
 
     document = {
         "_id": payload.id,
         "id": payload.id,
+        "company_id": company["_id"],  # Link to company
         "name": payload.name,
         "description": payload.description,
         "image_url": payload.image_url,
@@ -106,54 +112,77 @@ def admin_create_game(payload: schemas.GameCreate, db: Database = Depends(get_db
         "order": payload.order,
     }
     db["games"].insert_one(document)
-    _invalidate_cache()
+    _invalidate_cache(str(company["_id"]))
     return _game_document_to_schema(document)
 
 
 @router.put("/reorder")
-def admin_reorder_games(payload: schemas.GameReorderRequest, db: Database = Depends(get_db)):
+def admin_reorder_games(
+    payload: schemas.GameReorderRequest,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Batch reorder games"""
     from pymongo import UpdateOne
     
     operations = []
     for item in payload.items:
-        operations.append(UpdateOne({"_id": item.id}, {"$set": {"order": item.order}}))
+        operations.append(UpdateOne(
+            {"_id": item.id, "company_id": company["_id"]},
+            {"$set": {"order": item.order}}
+        ))
     
     if operations:
         db["games"].bulk_write(operations)
         
-    _invalidate_cache()
+    _invalidate_cache(str(company["_id"]))
     return {"status": "ok"}
 
 
 @router.get("/{game_id}", response_model=schemas.Game)
-def admin_get_game(game_id: str, db: Database = Depends(get_db)):
-    document = db["games"].find_one({"_id": game_id})
+def admin_get_game(
+    game_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    document = db["games"].find_one({"_id": game_id, "company_id": company["_id"]})
     if not document:
         raise HTTPException(status_code=404, detail="Game not found")
     return _game_document_to_schema(document)
 
 
 @router.put("/{game_id}", response_model=schemas.Game)
-def admin_update_game(game_id: str, payload: schemas.GameUpdate, db: Database = Depends(get_db)):
+def admin_update_game(
+    game_id: str,
+    payload: schemas.GameUpdate,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     update_data = payload.dict(exclude_unset=True)
     if update_data:
-        result = db["games"].update_one({"_id": game_id}, {"$set": update_data})
+        result = db["games"].update_one(
+            {"_id": game_id, "company_id": company["_id"]},
+            {"$set": update_data}
+        )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Game not found")
     else:
-        if not db["games"].find_one({"_id": game_id}):
+        if not db["games"].find_one({"_id": game_id, "company_id": company["_id"]}):
             raise HTTPException(status_code=404, detail="Game not found")
 
-    document = db["games"].find_one({"_id": game_id})
-    _invalidate_cache()
+    document = db["games"].find_one({"_id": game_id, "company_id": company["_id"]})
+    _invalidate_cache(str(company["_id"]))
     return _game_document_to_schema(document)
 
 
 @router.delete("/{game_id}")
-def admin_delete_game(game_id: str, db: Database = Depends(get_db)):
-    result = db["games"].delete_one({"_id": game_id})
+def admin_delete_game(
+    game_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    result = db["games"].delete_one({"_id": game_id, "company_id": company["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Game not found")
-    _invalidate_cache()
+    _invalidate_cache(str(company["_id"]))
     return {"status": "ok"}

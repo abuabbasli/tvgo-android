@@ -163,3 +163,183 @@ async def get_current_subscriber(
         raise forbidden("Account is inactive")
     
     return subscriber
+
+
+async def get_optional_subscriber(
+    token: Optional[str] = Depends(optional_oauth2_scheme),
+    db: Database = Depends(get_db),
+) -> Optional[dict]:
+    """Get the current subscriber if token is valid, otherwise return None."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        role = payload.get("role")
+        subscriber_id = payload.get("id")
+        
+        if role != "subscriber" or not subscriber_id:
+            return None
+            
+    except JWTError:
+        return None
+    
+    subscriber = db["subscribers"].find_one({"_id": subscriber_id})
+    return subscriber
+
+
+# ---- Company (Multi-Tenant) Authentication ----
+
+def get_company(db: Database, username: str) -> Optional[dict]:
+    """Get a company by username."""
+    return db["companies"].find_one({"username": username})
+
+
+def get_company_by_id(db: Database, company_id: str) -> Optional[dict]:
+    """Get a company by ID."""
+    return db["companies"].find_one({"_id": company_id})
+
+
+def authenticate_company(db: Database, username: str, password: str) -> Optional[dict]:
+    """Authenticate a company by username and password."""
+    company = get_company(db, username)
+    if not company:
+        return None
+    if not verify_password(password, company.get("password_hash", "")):
+        return None
+    if not company.get("is_active", True):
+        return None
+    return company
+
+
+def create_company_access_token(company: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create JWT token for company authentication."""
+    data = {
+        "sub": company["username"],
+        "id": company["_id"],
+        "role": "company",
+    }
+    return create_access_token(data, expires_delta)
+
+
+def create_company_refresh_token(db: Database, company_id: str) -> tuple[str, datetime]:
+    """Create a refresh token for a company."""
+    token = secrets.token_urlsafe(48)
+    expires_at = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    document = {
+        "_id": str(uuid4()),
+        "token": token,
+        "company_id": company_id,
+        "expires_at": expires_at,
+        "created_at": datetime.utcnow(),
+    }
+    db["company_refresh_tokens"].insert_one(document)
+    return token, expires_at
+
+
+async def get_current_company(
+    token: str = Depends(oauth2_scheme),
+    db: Database = Depends(get_db),
+) -> dict:
+    """Get the current company from JWT token.
+    
+    Returns the raw MongoDB document for the company.
+    """
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        
+        # Check if this is a company token
+        role = payload.get("role")
+        company_id = payload.get("id")
+        
+        if role != "company" or not company_id:
+            raise unauthorized("Not a valid company token")
+        
+    except JWTError:
+        raise unauthorized("Could not validate credentials")
+    
+    company = get_company_by_id(db, company_id)
+    if not company:
+        raise unauthorized("Company not found")
+    
+    if not company.get("is_active", True):
+        raise forbidden("Company account is inactive")
+    
+    return company
+
+
+async def get_super_admin(
+    current_user: schemas.UserInDB = Depends(get_current_user),
+) -> schemas.UserInDB:
+    """Validate that the current user is a super-admin.
+    
+    For now, any active admin user is considered a super-admin.
+    This can be extended later to have a separate super_admin flag.
+    """
+    if not current_user.is_active or not current_user.is_admin:
+        raise forbidden("Super admin privileges required")
+    return current_user
+
+
+async def get_current_company_or_admin(
+    token: str = Depends(oauth2_scheme),
+    db: Database = Depends(get_db),
+) -> dict:
+    """Get the current company from JWT token, or allow super admins to impersonate.
+    
+    This allows:
+    1. Company tokens (role="company") - works normally
+    2. Admin tokens (regular admin users) - creates a virtual "admin" company context
+       that can access all data (for backwards compatibility with middleware)
+    
+    Returns the company dict (or a pseudo-company for admins).
+    """
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        role = payload.get("role")
+        
+        # Check if this is a company token
+        if role == "company":
+            company_id = payload.get("id")
+            if not company_id:
+                raise unauthorized("Not a valid company token")
+            
+            company = get_company_by_id(db, company_id)
+            if not company:
+                raise unauthorized("Company not found")
+            
+            if not company.get("is_active", True):
+                raise forbidden("Company account is inactive")
+            
+            return company
+        
+        # Check if this is a regular admin user token (fallback for backwards compatibility)
+        username = payload.get("sub")
+        if username:
+            user = get_user(db, username)
+            if user and user.is_active and user.is_admin:
+                # Admin user - they can access all data
+                # Return a special "admin" company context
+                # First, try to find the first active company for them to work with
+                first_company = db["companies"].find_one({"is_active": True})
+                if first_company:
+                    return first_company
+                
+                # No companies exist - return a pseudo company for admin
+                return {
+                    "_id": "admin_context",
+                    "name": "Admin",
+                    "slug": "admin",
+                    "username": username,
+                    "is_active": True,
+                    "services": {
+                        "enable_vod": True,
+                        "enable_channels": True,
+                        "enable_games": True,
+                        "enable_messaging": True,
+                    }
+                }
+        
+        raise unauthorized("Not a valid company token")
+        
+    except JWTError:
+        raise unauthorized("Could not validate credentials")

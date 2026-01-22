@@ -34,8 +34,8 @@ fun AppNavigation(
     onPlayUrl: (String) -> Unit,
     onPlayChannel: (String) -> Unit
 ) {
-    // DEV MODE: Skip login, go straight to home
-    val startDest = Routes.HOME // if (TvRepository.isAuthenticated) Routes.HOME else Routes.LOGIN
+    // Check authentication state to determine start destination
+    val startDest = if (TvRepository.isAuthenticated) Routes.HOME else Routes.LOGIN
     
     NavHost(navController = navController, startDestination = startDest) {
         composable(Routes.LOGIN) {
@@ -106,7 +106,13 @@ fun AppNavigation(
             }
         }
         composable(Routes.SETTINGS) {
-            SettingsScreen()
+            SettingsScreen(
+                onLogout = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(Routes.MESSAGES) {
             MessagesScreen()

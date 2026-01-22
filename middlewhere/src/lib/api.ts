@@ -119,6 +119,35 @@ export interface LoginResponse {
     user: User;
 }
 
+// Company (Multi-Tenant) Types
+export interface CompanyServices {
+    enable_vod: boolean;
+    enable_channels: boolean;
+    enable_games: boolean;
+    enable_messaging: boolean;
+}
+
+export interface Company {
+    id: string;
+    name: string;
+    slug: string;
+    username: string;
+    is_active: boolean;
+    services: CompanyServices;
+    created_at?: string;
+    user_count: number;
+    channel_count: number;
+    movie_count: number;
+}
+
+export interface CompanyLoginResponse {
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;
+    expiresIn: number;
+    company: Company;
+}
+
 export interface Channel {
     id: string;
     name: string;
@@ -287,6 +316,16 @@ export const api = {
     auth: {
         login: async (username: string, password: string): Promise<LoginResponse> => {
             const response = await apiRequest<LoginResponse>('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ username, password }),
+            });
+            setTokens(response.accessToken, response.refreshToken);
+            return response;
+        },
+
+        // Company login for multi-tenant middleware
+        companyLogin: async (username: string, password: string): Promise<CompanyLoginResponse> => {
+            const response = await apiRequest<CompanyLoginResponse>('/api/auth/company/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });

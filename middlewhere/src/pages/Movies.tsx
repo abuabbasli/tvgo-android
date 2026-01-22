@@ -211,19 +211,16 @@ export default function Movies() {
 
         setIsSaving(true);
         try {
+            // Send data with snake_case field names matching backend schema
             const movieData = {
                 id: formData.id,
                 title: formData.title,
-                synopsis: formData.synopsis,
+                synopsis: formData.synopsis || undefined,
                 year: formData.year,
-                rating: formData.rating,
-                images: {
-                    poster: formData.posterUrl,
-                    landscape: formData.landscapeUrl,
-                },
-                media: {
-                    streamUrl: formData.streamUrl,
-                },
+                rating: formData.rating || undefined,
+                poster_url: formData.posterUrl || undefined,
+                landscape_url: formData.landscapeUrl || undefined,
+                stream_url: formData.streamUrl,
                 order: formData.order ? parseInt(formData.order) : undefined,
             };
 

@@ -6,8 +6,11 @@ from pymongo.database import Database
 from .. import schemas
 from ..auth import (
     authenticate_user,
+    authenticate_company,
     create_access_token,
     create_refresh_token,
+    create_company_access_token,
+    create_company_refresh_token,
     get_current_user,
     get_password_hash,
     get_refresh_token,
@@ -234,4 +237,60 @@ async def get_me(current_user=Depends(get_current_user)):
         username=current_user.username,
         displayName=current_user.display_name or current_user.username,
         avatarUrl=current_user.avatar_url,
+    )
+
+
+# ---- Company (Middleware) Authentication ----
+
+def _company_document_to_response(doc: dict, db) -> schemas.CompanyResponse:
+    """Convert company document to response schema."""
+    company_id = doc.get("_id") or doc.get("id")
+    
+    # Get counts
+    user_count = db["subscribers"].count_documents({"company_id": company_id})
+    channel_count = db["channels"].count_documents({"company_id": company_id})
+    movie_count = db["movies"].count_documents({"company_id": company_id})
+    
+    # Parse services
+    services_data = doc.get("services", {})
+    services = schemas.CompanyServices(
+        enable_vod=services_data.get("enable_vod", True),
+        enable_channels=services_data.get("enable_channels", True),
+        enable_games=services_data.get("enable_games", False),
+        enable_messaging=services_data.get("enable_messaging", False),
+    )
+    
+    return schemas.CompanyResponse(
+        id=str(company_id),
+        name=doc.get("name", ""),
+        slug=doc.get("slug", ""),
+        username=doc.get("username", ""),
+        is_active=doc.get("is_active", True),
+        services=services,
+        created_at=doc.get("created_at"),
+        user_count=user_count,
+        channel_count=channel_count,
+        movie_count=movie_count,
+    )
+
+
+@router.post("/company/login", response_model=schemas.CompanyLoginResponse)
+def login_company(
+    payload: schemas.CompanyLogin,
+    db=Depends(get_db),
+):
+    """Login as a company (for middleware access)."""
+    company = authenticate_company(db, payload.username, payload.password)
+    if not company:
+        raise unauthorized("Invalid username or password", code="INVALID_CREDENTIALS")
+    
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    access_token = create_company_access_token(company, access_token_expires)
+    refresh_token, _ = create_company_refresh_token(db, company["_id"])
+    
+    return schemas.CompanyLoginResponse(
+        accessToken=access_token,
+        refreshToken=refresh_token,
+        expiresIn=int(access_token_expires.total_seconds()),
+        company=_company_document_to_response(company, db),
     )

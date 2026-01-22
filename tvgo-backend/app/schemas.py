@@ -606,3 +606,62 @@ class GamesListResponse(BaseModel):
     total: int
     items: List[Game]
     categories: List[str] = []
+
+
+# ---- Companies (Multi-Tenant) ----
+
+class CompanyServices(BaseModel):
+    """Service activation flags for a company"""
+    enable_vod: bool = True
+    enable_channels: bool = True
+    enable_games: bool = False
+    enable_messaging: bool = False
+
+
+class CompanyBase(BaseModel):
+    name: str
+    slug: str  # URL-friendly identifier
+
+
+class CompanyCreate(CompanyBase):
+    username: str
+    password: str
+    services: CompanyServices = CompanyServices()
+
+
+class CompanyUpdate(BaseModel):
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+    services: Optional[CompanyServices] = None
+
+
+class CompanyResponse(CompanyBase):
+    id: str
+    username: str
+    is_active: bool = True
+    services: CompanyServices
+    created_at: Optional[datetime] = None
+    user_count: int = 0
+    channel_count: int = 0
+    movie_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CompanyListResponse(BaseModel):
+    items: List[CompanyResponse]
+    total: int
+
+
+class CompanyLogin(BaseModel):
+    """Company login for middleware access"""
+    username: str
+    password: str
+
+
+class CompanyLoginResponse(BaseModel):
+    accessToken: str
+    refreshToken: str
+    tokenType: str = "Bearer"
+    expiresIn: int
+    company: CompanyResponse

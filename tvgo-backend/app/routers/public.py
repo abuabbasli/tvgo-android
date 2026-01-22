@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from pymongo.database import Database
 
 from .. import schemas
-from ..auth import get_current_user, get_optional_user
+from ..auth import get_current_subscriber, get_optional_subscriber
 from ..config import settings
 from ..database import get_db
 from ..errors import not_found, unauthorized
@@ -83,7 +83,15 @@ def _default_programs_window() -> List[schemas.ProgramScheduleItem]:
     return items
 
 
-def _ensure_brand_document(db: Database) -> dict:
+def _ensure_brand_document(db: Database, company_id=None) -> dict:
+    """Get brand config. If company_id provided, look for company-specific config first."""
+    if company_id:
+        # Check for company-specific brand config
+        document = db["brand_config"].find_one({"company_id": company_id})
+        if document:
+            return document
+    
+    # Fallback to global brand config
     document = db["brand_config"].find_one({"_id": "brand"})
     if document:
         return document
@@ -131,8 +139,6 @@ def _channel_document_to_schema(document: dict, schedule: Optional[List[schemas.
 
 def _movie_document_to_schema(document: dict) -> schemas.Movie:
     movie_id = document.get("id") or document.get("_id")
-    
-    # Support both naming conventions: poster_url OR thumbnail
     poster = document.get("poster_url") or document.get("thumbnail")
     
     images = {
@@ -144,7 +150,6 @@ def _movie_document_to_schema(document: dict) -> schemas.Movie:
     if document.get("drm_type") and document.get("drm_license_url"):
         drm = {"type": document["drm_type"], "licenseUrl": document["drm_license_url"]}
     
-    # Support both stream_url OR videoUrl
     stream_url = document.get("stream_url") or document.get("videoUrl")
     
     media = {
@@ -161,10 +166,7 @@ def _movie_document_to_schema(document: dict) -> schemas.Movie:
         "end": document.get("availability_end"),
     }
     
-    # Support both genres (list) OR genre (list)
     genres = document.get("genres") or document.get("genre")
-    
-    # Support both synopsis OR description
     synopsis = document.get("synopsis") or document.get("description")
     
     return schemas.Movie(
@@ -184,8 +186,8 @@ def _movie_document_to_schema(document: dict) -> schemas.Movie:
     )
 
 
-def build_config_response(db: Database) -> schemas.ConfigResponse:
-    brand_doc = _ensure_brand_document(db)
+def build_config_response(db: Database, company_id=None) -> schemas.ConfigResponse:
+    brand_doc = _ensure_brand_document(db, company_id)
 
     brand = schemas.Brand(
         appName=brand_doc.get("app_name", DEFAULT_BRAND_DOCUMENT["app_name"]),
@@ -211,8 +213,12 @@ def build_config_response(db: Database) -> schemas.ConfigResponse:
 
 
 @router.get("/config", response_model=schemas.ConfigResponse)
-def get_config(db: Database = Depends(get_db)):
-    return build_config_response(db)
+def get_config(
+    db: Database = Depends(get_db),
+    current_user=Depends(get_optional_subscriber)
+):
+    company_id = current_user.get("company_id") if current_user else None
+    return build_config_response(db, company_id)
 
 
 @router.get("/channels", response_model=schemas.ChannelsListResponse)
@@ -223,18 +229,19 @@ def list_channels(
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     favorite: Optional[bool] = Query(None, alias="favorite"),
-    current_user=Depends(get_optional_user),
+    current_user=Depends(get_current_subscriber),
 ):
-    filters: dict[str, object] = {}
+    """List channels for the subscriber's company"""
+    company_id = current_user.get("company_id")
+    
+    filters: dict[str, object] = {"company_id": company_id}
     if group:
         filters["group"] = group
     if search:
         filters["name"] = {"$regex": search, "$options": "i"}
 
     if favorite:
-        if not current_user:
-            raise unauthorized("Authentication required", code="UNAUTHORIZED")
-        favorites_doc = db["favorites"].find_one({"_id": current_user.username}) or {}
+        favorites_doc = db["favorites"].find_one({"_id": current_user["_id"]}) or {}
         favorite_channels = favorites_doc.get("channels") or []
         filters["_id"] = {"$in": favorite_channels or ["__none__"]}
 
@@ -251,27 +258,38 @@ def list_channels(
 
 
 @router.get("/channels/{channel_id}", response_model=schemas.Channel)
-def get_channel(channel_id: str, db: Database = Depends(get_db)):
-    document = db["channels"].find_one({"_id": channel_id})
+def get_channel(
+    channel_id: str,
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
+):
+    company_id = current_user.get("company_id")
+    document = db["channels"].find_one({"_id": channel_id, "company_id": company_id})
     if not document:
         raise not_found("Channel not found")
     return _channel_document_to_schema(document)
 
 
 @router.get("/epg/now")
-def get_current_programs(db: Database = Depends(get_db)):
+def get_current_programs(
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
+):
     """Get current program for all channels based on current time"""
+    company_id = current_user.get("company_id")
     now = datetime.utcnow()
     
-    # Get all channels with epg_id
-    channels = list(db["channels"].find({"epg_id": {"$exists": True, "$ne": None}}, {"_id": 1, "epg_id": 1}))
+    channels = list(db["channels"].find({
+        "company_id": company_id,
+        "epg_id": {"$exists": True, "$ne": None}
+    }, {"_id": 1, "epg_id": 1}))
+    
     epg_ids = [ch.get("epg_id") for ch in channels if ch.get("epg_id")]
     channel_epg_map = {ch.get("epg_id"): ch["_id"] for ch in channels if ch.get("epg_id")}
     
     if not epg_ids:
         return {"programs": {}}
     
-    # Find programs where start <= now < end for all mapped EPG channels
     pipeline = [
         {
             "$match": {
@@ -280,20 +298,12 @@ def get_current_programs(db: Database = Depends(get_db)):
                 "end": {"$gt": now}
             }
         },
-        {
-            "$sort": {"start": 1}
-        },
-        {
-            "$group": {
-                "_id": "$channel_id",
-                "program": {"$first": "$$ROOT"}
-            }
-        }
+        {"$sort": {"start": 1}},
+        {"$group": {"_id": "$channel_id", "program": {"$first": "$$ROOT"}}}
     ]
     
     results = list(db["epg_programs"].aggregate(pipeline))
     
-    # Map EPG channel ID to our channel ID
     programs = {}
     for r in results:
         epg_ch_id = r["_id"]
@@ -315,14 +325,15 @@ def get_current_programs(db: Database = Depends(get_db)):
 def get_channel_schedule(
     channel_id: str,
     hours: int = Query(12, ge=1, le=48),
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
 ):
     """Get upcoming programs for a channel for the next N hours"""
+    company_id = current_user.get("company_id")
     now = datetime.utcnow()
     end_time = now + timedelta(hours=hours)
     
-    # Get channel's EPG ID
-    channel = db["channels"].find_one({"_id": channel_id}, {"epg_id": 1})
+    channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"epg_id": 1})
     if not channel:
         raise not_found("Channel not found")
     
@@ -330,18 +341,14 @@ def get_channel_schedule(
     if not epg_id:
         return {"channel_id": channel_id, "programs": []}
     
-    # Find programs for this channel in the time range
     programs = list(db["epg_programs"].find({
         "channel_id": epg_id,
         "$or": [
-            # Programs that start during this window
             {"start": {"$gte": now, "$lt": end_time}},
-            # Programs currently running (started before now, ends after now)
             {"start": {"$lt": now}, "end": {"$gt": now}}
         ]
     }).sort("start", 1).limit(50))
     
-    # Format programs
     items = []
     for p in programs:
         start = p.get("start")
@@ -359,6 +366,7 @@ def get_channel_schedule(
     
     return {"channel_id": channel_id, "programs": items}
 
+
 @router.get("/channels/{channel_id}/epg", response_model=schemas.EpgResponse)
 def get_epg(
     channel_id: str,
@@ -368,8 +376,10 @@ def get_epg(
     to_param: Optional[datetime] = Query(None, alias="to"),
     limit: int = Query(200, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    current_user=Depends(get_current_subscriber)
 ):
-    channel_exists = db["channels"].count_documents({"_id": channel_id}, limit=1)
+    company_id = current_user.get("company_id")
+    channel_exists = db["channels"].count_documents({"_id": channel_id, "company_id": company_id}, limit=1)
     if channel_exists == 0:
         raise not_found("Channel not found")
 
@@ -432,8 +442,12 @@ def list_movies(
     sort: Optional[str] = None,
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
+    current_user=Depends(get_current_subscriber)
 ):
-    filters: dict[str, object] = {}
+    """List movies for the subscriber's company"""
+    company_id = current_user.get("company_id")
+    
+    filters: dict[str, object] = {"company_id": company_id}
     if genre and genre.lower() != "all":
         filters["genres"] = genre
     if search:
@@ -456,16 +470,25 @@ def list_movies(
 
 
 @router.get("/movies/{movie_id}", response_model=schemas.Movie)
-def get_movie(movie_id: str, db: Database = Depends(get_db)):
-    document = db["movies"].find_one({"_id": movie_id})
+def get_movie(
+    movie_id: str,
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
+):
+    company_id = current_user.get("company_id")
+    document = db["movies"].find_one({"_id": movie_id, "company_id": company_id})
     if not document:
         raise not_found("Movie not found")
     return _movie_document_to_schema(document)
 
 
 @router.get("/rails", response_model=list[schemas.RailPublic])
-def get_rails(db: Database = Depends(get_db)):
-    rails = list(db["rails"].find().sort("sort_order", 1))
+def get_rails(
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
+):
+    company_id = current_user.get("company_id")
+    rails = list(db["rails"].find({"company_id": company_id}).sort("sort_order", 1))
     return [
         schemas.RailPublic(
             id=r.get("id") or r.get("_id"),
@@ -479,9 +502,11 @@ def get_rails(db: Database = Depends(get_db)):
 
 @router.get("/profile/favorites", response_model=schemas.FavoritesResponse)
 async def get_favorites(
-    current_user=Depends(get_current_user), db: Database = Depends(get_db)
+    current_user=Depends(get_current_subscriber), 
+    db: Database = Depends(get_db)
 ):
-    document = db["favorites"].find_one({"_id": current_user.username}) or {}
+    subscriber_id = current_user["_id"]
+    document = db["favorites"].find_one({"_id": subscriber_id}) or {}
     return schemas.FavoritesResponse(
         channels=document.get("channels", []),
         movies=document.get("movies", []),
@@ -491,11 +516,12 @@ async def get_favorites(
 @router.put("/profile/favorites", response_model=schemas.FavoritesResponse)
 async def update_favorites(
     payload: schemas.FavoritesResponse,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_current_subscriber),
     db: Database = Depends(get_db),
 ):
+    subscriber_id = current_user["_id"]
     db["favorites"].update_one(
-        {"_id": current_user.username},
+        {"_id": subscriber_id},
         {
             "$set": {
                 "channels": payload.channels,
@@ -530,9 +556,12 @@ def list_games(
     category: Optional[str] = None,
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    current_user=Depends(get_current_subscriber)
 ):
-    """Public games list for Android app"""
-    filters: dict[str, object] = {"is_active": True}
+    """Public games list for Android app - filtered by company"""
+    company_id = current_user.get("company_id")
+    
+    filters: dict[str, object] = {"is_active": True, "company_id": company_id}
     if category and category.lower() != "all":
         filters["category"] = category
 
@@ -542,8 +571,7 @@ def list_games(
     
     games_schema = [_game_document_to_schema(g) for g in items]
     
-    # Get all unique categories
-    all_games = list(db["games"].find({"is_active": True}))
+    all_games = list(db["games"].find({"is_active": True, "company_id": company_id}))
     categories = list(set(g.get("category") for g in all_games if g.get("category")))
     
     return schemas.GamesListResponse(
@@ -554,8 +582,13 @@ def list_games(
 
 
 @router.get("/games/{game_id}", response_model=schemas.Game)
-def get_game(game_id: str, db: Database = Depends(get_db)):
-    document = db["games"].find_one({"_id": game_id, "is_active": True})
+def get_game(
+    game_id: str,
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
+):
+    company_id = current_user.get("company_id")
+    document = db["games"].find_one({"_id": game_id, "is_active": True, "company_id": company_id})
     if not document:
         raise not_found("Game not found")
     return _game_document_to_schema(document)

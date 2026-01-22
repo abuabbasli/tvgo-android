@@ -6,14 +6,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pymongo.database import Database
 
 from .. import schemas
-from ..auth import get_current_active_admin
+from ..auth import get_current_company_or_admin
 from ..config import settings
 from ..database import get_db
 
 router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/ingest",
     tags=["admin-ingest"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
 
@@ -134,7 +133,10 @@ async def ingest_m3u(file: UploadFile = File(...), db: Database = Depends(get_db
 
 
 @router.post("/m3u-url/preview", response_model=schemas.M3UParseResponse)
-async def preview_m3u_from_url(request: schemas.M3UUrlIngestRequest):
+async def preview_m3u_from_url(
+    request: schemas.M3UUrlIngestRequest,
+    company: dict = Depends(get_current_company_or_admin),
+):
     """
     Fetch M3U from URL and return parsed channels for preview.
     This allows the frontend to show channels before importing.
@@ -164,12 +166,15 @@ async def preview_m3u_file(file: UploadFile = File(...), db: Database = Depends(
 @router.post("/m3u-url")
 async def ingest_m3u_from_url(
     request: schemas.M3UIngestRequest,
+    company: dict = Depends(get_current_company_or_admin),
     db: Database = Depends(get_db),
 ):
     """
     Fetch M3U from URL and ingest channels into the database.
     Optionally filter by channel_ids to only import selected channels.
     """
+    company_id = company["_id"]
+    
     try:
         content = await fetch_m3u_from_url(request.url)
     except httpx.HTTPStatusError as e:
@@ -186,8 +191,11 @@ async def ingest_m3u_from_url(
     created = 0
     updated = 0
     for ch in channels:
+        # Create company-scoped channel ID
+        channel_id = f"{company_id}_{ch.id}"
         update = {
             "id": ch.id,
+            "company_id": company_id,  # Multi-tenant support
             "name": ch.name,
             "group": ch.group,
             "logo_url": ch.logo_url,
@@ -204,8 +212,8 @@ async def ingest_m3u_from_url(
             },
         }
         result = db["channels"].update_one(
-            {"_id": ch.id},
-            {"$set": update, "$setOnInsert": {"_id": ch.id}},
+            {"_id": channel_id, "company_id": company_id},
+            {"$set": update, "$setOnInsert": {"_id": channel_id}},
             upsert=True,
         )
         if result.upserted_id is not None:
@@ -215,7 +223,7 @@ async def ingest_m3u_from_url(
 
     try:
         from . import admin_channels
-        admin_channels._invalidate_cache()
+        admin_channels._invalidate_cache(str(company_id))
     except ImportError:
         pass
 

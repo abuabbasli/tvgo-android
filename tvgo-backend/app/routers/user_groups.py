@@ -6,14 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
 
 from .. import schemas
-from ..auth import get_current_active_admin
+from ..auth import get_current_company_or_admin as get_current_company
 from ..config import settings
 from ..database import get_db
 
 router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/user-groups",
     tags=["admin-user-groups"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
 
@@ -35,10 +34,11 @@ def list_user_groups(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    """List all user groups"""
-    query = {}
+    """List all user groups for this company"""
+    query = {"company_id": company["_id"]}
     if search:
         query["name"] = {"$regex": search, "$options": "i"}
 
@@ -50,9 +50,13 @@ def list_user_groups(
 
 
 @router.get("/{group_id}", response_model=schemas.UserGroupResponse)
-def get_user_group(group_id: str, db: Database = Depends(get_db)):
+def get_user_group(
+    group_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Get a single user group by ID"""
-    doc = db["user_groups"].find_one({"_id": group_id})
+    doc = db["user_groups"].find_one({"_id": group_id, "company_id": company["_id"]})
     if not doc:
         raise HTTPException(status_code=404, detail="User group not found")
     return _group_doc_to_response(doc)
@@ -61,11 +65,11 @@ def get_user_group(group_id: str, db: Database = Depends(get_db)):
 @router.post("", response_model=schemas.UserGroupResponse)
 def create_user_group(
     payload: schemas.UserGroupCreate,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
     """Create a new user group"""
-    # Check for duplicate name
-    if db["user_groups"].find_one({"name": payload.name}):
+    if db["user_groups"].find_one({"name": payload.name, "company_id": company["_id"]}):
         raise HTTPException(status_code=400, detail="A group with this name already exists")
 
     group_id = uuid.uuid4().hex
@@ -73,6 +77,7 @@ def create_user_group(
     
     doc = {
         "_id": group_id,
+        "company_id": company["_id"],  # Link to company
         "name": payload.name,
         "description": payload.description,
         "user_ids": payload.user_ids,
@@ -88,33 +93,37 @@ def create_user_group(
 def update_user_group(
     group_id: str,
     payload: schemas.UserGroupUpdate,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
     """Update a user group"""
-    existing = db["user_groups"].find_one({"_id": group_id})
+    existing = db["user_groups"].find_one({"_id": group_id, "company_id": company["_id"]})
     if not existing:
         raise HTTPException(status_code=404, detail="User group not found")
 
     update_data = payload.dict(exclude_unset=True)
     
     if "name" in update_data:
-        # Check name uniqueness (excluding current group)
-        conflict = db["user_groups"].find_one({"name": update_data["name"]})
+        conflict = db["user_groups"].find_one({"name": update_data["name"], "company_id": company["_id"]})
         if conflict and conflict["_id"] != group_id:
             raise HTTPException(status_code=400, detail="A group with this name already exists")
 
     if update_data:
         update_data["updated_at"] = datetime.utcnow()
-        db["user_groups"].update_one({"_id": group_id}, {"$set": update_data})
+        db["user_groups"].update_one({"_id": group_id, "company_id": company["_id"]}, {"$set": update_data})
 
-    updated = db["user_groups"].find_one({"_id": group_id})
+    updated = db["user_groups"].find_one({"_id": group_id, "company_id": company["_id"]})
     return _group_doc_to_response(updated)
 
 
 @router.delete("/{group_id}")
-def delete_user_group(group_id: str, db: Database = Depends(get_db)):
+def delete_user_group(
+    group_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Delete a user group"""
-    result = db["user_groups"].delete_one({"_id": group_id})
+    result = db["user_groups"].delete_one({"_id": group_id, "company_id": company["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User group not found")
     return {"status": "ok", "message": "Group deleted"}
@@ -125,10 +134,11 @@ def get_group_users(
     group_id: str,
     skip: int = 0,
     limit: int = 50,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
     """Get all users (subscribers) in a group"""
-    group = db["user_groups"].find_one({"_id": group_id})
+    group = db["user_groups"].find_one({"_id": group_id, "company_id": company["_id"]})
     if not group:
         raise HTTPException(status_code=404, detail="User group not found")
 
@@ -136,13 +146,11 @@ def get_group_users(
     if not user_ids:
         return {"items": [], "total": 0}
 
-    # Fetch subscribers
-    cursor = db["subscribers"].find({"_id": {"$in": user_ids}}).skip(skip).limit(limit)
+    cursor = db["subscribers"].find({"_id": {"$in": user_ids}, "company_id": company["_id"]}).skip(skip).limit(limit)
     
-    # Import the helper from admin_users
     from .admin_users import _subscriber_document_to_schema
     
     items = [_subscriber_document_to_schema(doc) for doc in cursor]
-    total = db["subscribers"].count_documents({"_id": {"$in": user_ids}})
+    total = db["subscribers"].count_documents({"_id": {"$in": user_ids}, "company_id": company["_id"]})
     
     return {"items": items, "total": total}

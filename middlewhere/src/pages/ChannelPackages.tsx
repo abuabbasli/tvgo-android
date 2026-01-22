@@ -36,6 +36,7 @@ export default function ChannelPackages() {
     // Form state
     const [packageName, setPackageName] = useState("");
     const [packageDescription, setPackageDescription] = useState("");
+    const [packagePrice, setPackagePrice] = useState("");
     const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
 
     // Channels are loaded lazily when dialog opens
@@ -131,6 +132,7 @@ export default function ChannelPackages() {
         setEditingPackage(null);
         setPackageName("");
         setPackageDescription("");
+        setPackagePrice("");
         setSelectedChannels([]);
         setChannelSearch("");
         setStreamerFilter("all");
@@ -142,6 +144,7 @@ export default function ChannelPackages() {
         setEditingPackage(pkg);
         setPackageName(pkg.name);
         setPackageDescription(pkg.description || "");
+        setPackagePrice(pkg.price || "");
         setSelectedChannels(pkg.channel_ids || []);
         setChannelSearch("");
         setStreamerFilter("all");
@@ -178,6 +181,7 @@ export default function ChannelPackages() {
             const data = {
                 name: packageName,
                 description: packageDescription,
+                price: packagePrice || undefined,
                 channel_ids: selectedChannels,
             };
 
@@ -251,9 +255,16 @@ export default function ChannelPackages() {
                                             </CardTitle>
                                             <CardDescription>{pkg.description || "No description"}</CardDescription>
                                         </div>
-                                        <Badge variant="secondary">
-                                            {pkg.channel_ids?.length || 0} channels
-                                        </Badge>
+                                        <div className="flex flex-col items-end gap-1">
+                                            {pkg.price && (
+                                                <Badge variant="default" className="bg-green-600">
+                                                    {pkg.price}
+                                                </Badge>
+                                            )}
+                                            <Badge variant="secondary">
+                                                {pkg.channel_ids?.length || 0} channels
+                                            </Badge>
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -334,6 +345,15 @@ export default function ChannelPackages() {
                                         onChange={(e) => setPackageDescription(e.target.value)}
                                     />
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="pkg-price">Price (optional)</Label>
+                                    <Input
+                                        id="pkg-price"
+                                        placeholder="e.g., $9.99/month or 10 AZN"
+                                        value={packagePrice}
+                                        onChange={(e) => setPackagePrice(e.target.value)}
+                                    />
+                                </div>
                             </div>
 
                             {/* Channel Selection */}
@@ -398,8 +418,8 @@ export default function ChannelPackages() {
                                                 <div
                                                     key={channel.id}
                                                     className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${selectedChannels.includes(channel.id)
-                                                            ? "bg-primary/10 border border-primary"
-                                                            : "bg-muted/50 hover:bg-muted"
+                                                        ? "bg-primary/10 border border-primary"
+                                                        : "bg-muted/50 hover:bg-muted"
                                                         }`}
                                                     onClick={() => toggleChannel(channel.id)}
                                                 >

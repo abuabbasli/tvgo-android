@@ -377,9 +377,8 @@ object TvRepository {
      * Runs entirely in background, doesn't block UI
      */
     
-    // EMBEDDED CREDENTIALS - Auto-login (disable login screen)
-    // TODO: Re-enable login screen later by setting this to false
-    private const val AUTO_LOGIN_ENABLED = true
+    // EMBEDDED CREDENTIALS - Auto-login (DISABLED for proper login flow)
+    private const val AUTO_LOGIN_ENABLED = false
     private const val EMBEDDED_USERNAME = "EBzN7ibs"
     private const val EMBEDDED_PASSWORD = "PBCOIIPM"
     
@@ -446,6 +445,7 @@ object TvRepository {
     /**
      * Login with subscriber credentials
      * @param context Android context to get device ID
+     * Note: Data loading happens separately via loadData() after navigation
      */
     suspend fun login(username: String, pass: String, context: Context? = null): Boolean {
         return withContext(Dispatchers.IO) {
@@ -485,9 +485,7 @@ object TvRepository {
                     }
                 }
 
-                android.util.Log.d("TvRepository", "Login successful, loading channels...")
-                loadChannelsAsync()
-                loadMoviesAsync()
+                android.util.Log.d("TvRepository", "Login successful - token saved, data will load via loadData()")
                 true
             } catch (e: Exception) {
                 android.util.Log.e("TvRepository", "Login failed: ${e.message}", e)
@@ -720,6 +718,34 @@ object TvRepository {
         imageLoader = null
         scheduleCache.clear()
         channelProgramsMap.clear()
+    }
+
+    /**
+     * Logout - clear authentication and all user data
+     */
+    fun logout() {
+        android.util.Log.d("TvRepository", "Logging out...")
+        
+        // Clear auth state
+        authToken = null
+        isAuthenticated = false
+        
+        // Clear all data
+        channels.clear()
+        movies.clear()
+        currentPrograms.clear()
+        channelCategories.clear()
+        scheduleCache.clear()
+        channelProgramsMap.clear()
+        moviesByCategoryCache.clear()
+        channelHistory.clear()
+        moviePositions.clear()
+        
+        // Reset loading state
+        _isDataReady.value = false
+        _loadingProgress.value = ""
+        
+        android.util.Log.d("TvRepository", "Logout complete")
     }
 
     // Pre-computed filtered lists for better performance

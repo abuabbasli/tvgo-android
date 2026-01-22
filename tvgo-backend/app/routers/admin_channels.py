@@ -1,29 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pymongo.database import Database
 from typing import List, Optional
+from bson import ObjectId
 import time
 
 from .. import schemas
-from ..auth import get_current_active_admin
+from ..auth import get_current_company_or_admin as get_current_company
 from ..config import settings
 from ..database import get_db
 
 router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/channels",
     tags=["admin-channels"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
-# Simple in-memory cache for channels
-_channels_cache: Optional[List[schemas.Channel]] = None
-_cache_timestamp: float = 0
+# Per-company cache: Dict[company_id, (channels_list, timestamp)]
+_channels_cache: dict[str, tuple[List[schemas.Channel], float]] = {}
 CACHE_TTL = 60  # Cache for 60 seconds
 
 
-def _invalidate_cache():
-    global _channels_cache, _cache_timestamp
-    _channels_cache = None
-    _cache_timestamp = 0
+def _invalidate_cache(company_id: str):
+    global _channels_cache
+    if company_id in _channels_cache:
+        del _channels_cache[company_id]
 
 
 def _channel_document_to_schema(document: dict) -> schemas.Channel:
@@ -49,30 +48,41 @@ def _channel_document_to_schema(document: dict) -> schemas.Channel:
 
 
 @router.get("", response_model=list[schemas.Channel])
-def admin_list_channels(db: Database = Depends(get_db)):
-    global _channels_cache, _cache_timestamp
+def admin_list_channels(
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    global _channels_cache
+    company_id = str(company["_id"])
     
     # Return cached result if still valid
-    if _channels_cache is not None and (time.time() - _cache_timestamp) < CACHE_TTL:
-        return _channels_cache
+    if company_id in _channels_cache:
+        cached, timestamp = _channels_cache[company_id]
+        if (time.time() - timestamp) < CACHE_TTL:
+            return cached
     
-    # Fetch from database and cache
-    # Sort by order (asc) then name (asc)
-    channels = list(db["channels"].find().sort([("order", 1), ("name", 1)]))
-    _channels_cache = [_channel_document_to_schema(ch) for ch in channels]
-    _cache_timestamp = time.time()
-    return _channels_cache
+    # Fetch from database filtered by company_id
+    channels = list(db["channels"].find({"company_id": company["_id"]}).sort([("order", 1), ("name", 1)]))
+    result = [_channel_document_to_schema(ch) for ch in channels]
+    _channels_cache[company_id] = (result, time.time())
+    return result
 
 
 @router.post("", response_model=schemas.Channel)
-def admin_create_channel(payload: schemas.ChannelCreate, db: Database = Depends(get_db)):
-    existing = db["channels"].find_one({"_id": payload.id})
+def admin_create_channel(
+    payload: schemas.ChannelCreate,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    # Check for existing channel with same id in this company
+    existing = db["channels"].find_one({"_id": payload.id, "company_id": company["_id"]})
     if existing:
         raise HTTPException(status_code=400, detail="Channel with this id already exists")
 
     document = {
         "_id": payload.id,
         "id": payload.id,
+        "company_id": company["_id"],  # Link to company
         "name": payload.name,
         "group": payload.group,
         "logo_url": str(payload.logo_url) if payload.logo_url else None,
@@ -87,28 +97,41 @@ def admin_create_channel(payload: schemas.ChannelCreate, db: Database = Depends(
         "order": payload.order,
     }
     db["channels"].insert_one(document)
-    _invalidate_cache()
+    _invalidate_cache(str(company["_id"]))
     return _channel_document_to_schema(document)
 
 
 @router.put("/reorder")
-def admin_reorder_channels(payload: schemas.ChannelReorderRequest, db: Database = Depends(get_db)):
+def admin_reorder_channels(
+    payload: schemas.ChannelReorderRequest,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Batch reorder channels"""
     from pymongo import UpdateOne
     
     operations = []
     for item in payload.items:
-        operations.append(UpdateOne({"_id": item.id}, {"$set": {"order": item.order}}))
+        # Only update channels belonging to this company
+        operations.append(UpdateOne(
+            {"_id": item.id, "company_id": company["_id"]},
+            {"$set": {"order": item.order}}
+        ))
     
     if operations:
         db["channels"].bulk_write(operations)
         
-    _invalidate_cache()
+    _invalidate_cache(str(company["_id"]))
     return {"status": "ok"}
 
 
 @router.put("/{channel_id}", response_model=schemas.Channel)
-def admin_update_channel(channel_id: str, payload: schemas.ChannelUpdate, db: Database = Depends(get_db)):
+def admin_update_channel(
+    channel_id: str,
+    payload: schemas.ChannelUpdate,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     update_data = payload.dict(exclude_unset=True)
     if update_data:
         update_fields: dict[str, object] = {}
@@ -118,22 +141,31 @@ def admin_update_channel(channel_id: str, payload: schemas.ChannelUpdate, db: Da
             else:
                 update_fields[field] = value
 
-        result = db["channels"].update_one({"_id": channel_id}, {"$set": update_fields})
+        # Only update if channel belongs to this company
+        result = db["channels"].update_one(
+            {"_id": channel_id, "company_id": company["_id"]},
+            {"$set": update_fields}
+        )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Channel not found")
     else:
-        if not db["channels"].find_one({"_id": channel_id}):
+        if not db["channels"].find_one({"_id": channel_id, "company_id": company["_id"]}):
             raise HTTPException(status_code=404, detail="Channel not found")
 
-    document = db["channels"].find_one({"_id": channel_id})
-    _invalidate_cache()
+    document = db["channels"].find_one({"_id": channel_id, "company_id": company["_id"]})
+    _invalidate_cache(str(company["_id"]))
     return _channel_document_to_schema(document)
 
 
 @router.delete("/{channel_id}")
-def admin_delete_channel(channel_id: str, db: Database = Depends(get_db)):
-    result = db["channels"].delete_one({"_id": channel_id})
+def admin_delete_channel(
+    channel_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    # Only delete if channel belongs to this company
+    result = db["channels"].delete_one({"_id": channel_id, "company_id": company["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Channel not found")
-    _invalidate_cache()
+    _invalidate_cache(str(company["_id"]))
     return {"status": "ok"}

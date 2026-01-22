@@ -254,8 +254,29 @@ object ApiClient {
     // Base URL - uses AppConfig
     private val BASE_URL = AppConfig.BASE_URL
 
+    // Auth token provider - gets token from TvRepository
+    private var authTokenProvider: (() -> String?)? = null
+    
+    fun setAuthTokenProvider(provider: () -> String?) {
+        authTokenProvider = provider
+    }
+
+    // Auth Interceptor - adds Bearer token to all requests
+    private val authInterceptor = okhttp3.Interceptor { chain ->
+        val token = authTokenProvider?.invoke()
+        val request = if (token != null) {
+            chain.request().newBuilder()
+                .addHeader("Authorization", "Bearer $token")
+                .build()
+        } else {
+            chain.request()
+        }
+        chain.proceed(request)
+    }
+
     // Optimized OkHttp client with timeouts and connection pooling
     private val okHttpClient = okhttp3.OkHttpClient.Builder()
+        .addInterceptor(authInterceptor)
         .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(15, java.util.concurrent.TimeUnit.SECONDS)

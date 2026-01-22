@@ -58,7 +58,8 @@ class MainActivity : ComponentActivity() {
                             // Show login screen if not authenticated
                             LoginScreen(
                                 onLoginSuccess = {
-                                    // Data is already loaded after successful login
+                                    // Trigger data loading after successful login
+                                    TvRepository.loadData(this@MainActivity)
                                 }
                             )
                         } else {

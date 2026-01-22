@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ComponentCallbacks2
 import coil.Coil
 import com.example.androidtviptvapp.data.TvRepository
+import com.example.androidtviptvapp.data.api.ApiClient
 import com.example.androidtviptvapp.player.SharedPlayerManager
 import timber.log.Timber
 
@@ -21,6 +22,9 @@ class TvGoApplication : Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+
+        // Set up auth token provider for API requests
+        ApiClient.setAuthTokenProvider { TvRepository.authToken }
 
         // Initialize optimized Coil ImageLoader
         val imageLoader = TvRepository.getImageLoader(applicationContext)

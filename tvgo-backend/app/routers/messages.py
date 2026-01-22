@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
 
 from .. import schemas
-from ..auth import get_current_active_admin, get_current_subscriber
+from ..auth import get_current_company_or_admin as get_current_company, get_current_subscriber
 from ..config import settings
 from ..database import get_db
 
@@ -14,7 +14,6 @@ from ..database import get_db
 admin_router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/messages",
     tags=["admin-messages"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
 # Public router for subscribers to fetch their messages
@@ -59,10 +58,11 @@ def list_messages(
     skip: int = 0,
     limit: int = 50,
     active_only: bool = False,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
-    """List all messages (admin view)"""
-    query = {}
+    """List all messages for this company (admin view)"""
+    query = {"company_id": company["_id"]}
     if active_only:
         query["is_active"] = True
 
@@ -74,9 +74,13 @@ def list_messages(
 
 
 @admin_router.get("/{message_id}", response_model=schemas.MessageResponse)
-def get_message(message_id: str, db: Database = Depends(get_db)):
+def get_message(
+    message_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Get a single message by ID"""
-    doc = db["messages"].find_one({"_id": message_id})
+    doc = db["messages"].find_one({"_id": message_id, "company_id": company["_id"]})
     if not doc:
         raise HTTPException(status_code=404, detail="Message not found")
     return _message_doc_to_response(doc)
@@ -85,36 +89,38 @@ def get_message(message_id: str, db: Database = Depends(get_db)):
 @admin_router.post("", response_model=schemas.MessageResponse)
 def send_message(
     payload: schemas.MessageCreate,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
     """Send a new message to users/groups"""
     message_id = uuid.uuid4().hex
     now = datetime.utcnow()
     
-    # Resolve target user IDs based on target_type
     resolved_user_ids = []
     
     if payload.target_type == schemas.MessageTargetType.ALL:
-        # Will be resolved at query time for subscribers
         pass
     elif payload.target_type == schemas.MessageTargetType.GROUPS:
-        # Fetch all users from the specified groups
         if payload.target_ids:
-            groups = db["user_groups"].find({"_id": {"$in": payload.target_ids}})
+            groups = db["user_groups"].find({
+                "_id": {"$in": payload.target_ids},
+                "company_id": company["_id"]
+            })
             for group in groups:
                 resolved_user_ids.extend(group.get("user_ids", []))
-            resolved_user_ids = list(set(resolved_user_ids))  # Deduplicate
+            resolved_user_ids = list(set(resolved_user_ids))
     elif payload.target_type == schemas.MessageTargetType.USERS:
         resolved_user_ids = payload.target_ids
     
     doc = {
         "_id": message_id,
+        "company_id": company["_id"],  # Link to company
         "title": payload.title,
         "body": payload.body,
         "url": payload.url,
         "target_type": payload.target_type.value,
-        "target_ids": payload.target_ids,  # Original IDs (group or user)
-        "resolved_user_ids": resolved_user_ids,  # Resolved user IDs for quick lookup
+        "target_ids": payload.target_ids,
+        "resolved_user_ids": resolved_user_ids,
         "is_active": True,
         "created_at": now,
         "read_by": [],
@@ -128,18 +134,22 @@ def send_message(
 def delete_message(
     message_id: str,
     hard_delete: bool = False,
+    company: dict = Depends(get_current_company),
     db: Database = Depends(get_db)
 ):
     """Delete or deactivate a message"""
-    existing = db["messages"].find_one({"_id": message_id})
+    existing = db["messages"].find_one({"_id": message_id, "company_id": company["_id"]})
     if not existing:
         raise HTTPException(status_code=404, detail="Message not found")
 
     if hard_delete:
-        db["messages"].delete_one({"_id": message_id})
+        db["messages"].delete_one({"_id": message_id, "company_id": company["_id"]})
         return {"status": "ok", "message": "Message permanently deleted"}
     else:
-        db["messages"].update_one({"_id": message_id}, {"$set": {"is_active": False}})
+        db["messages"].update_one(
+            {"_id": message_id, "company_id": company["_id"]},
+            {"$set": {"is_active": False}}
+        )
         return {"status": "ok", "message": "Message deactivated"}
 
 
@@ -152,19 +162,16 @@ def get_subscriber_messages(
     db: Database = Depends(get_db),
     current_user: dict = Depends(get_current_subscriber)
 ):
-    """Get messages for the current subscriber"""
+    """Get messages for the current subscriber (filtered by their company)"""
     subscriber_id = current_user["_id"]
+    company_id = current_user.get("company_id")
     
-    # Get user's groups
-    user_groups = db["user_groups"].find({"user_ids": subscriber_id})
+    user_groups = db["user_groups"].find({"user_ids": subscriber_id, "company_id": company_id})
     user_group_ids = [g["_id"] for g in user_groups]
     
-    # Build query: messages that target this user
-    # 1. target_type == "all" (broadcast to everyone)
-    # 2. target_type == "users" and subscriber_id in resolved_user_ids
-    # 3. target_type == "groups" and any of user's groups in target_ids
     query = {
         "is_active": True,
+        "company_id": company_id,  # Only messages for subscriber's company
         "$or": [
             {"target_type": "all"},
             {"target_type": "users", "resolved_user_ids": subscriber_id},
@@ -190,12 +197,16 @@ def get_subscriber_messages(
 def get_broadcast_messages(
     skip: int = 0,
     limit: int = 50,
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
+    current_user: dict = Depends(get_current_subscriber)
 ):
-    """Get broadcast messages (target_type=all) - no auth required for TV apps"""
+    """Get broadcast messages for subscriber's company"""
+    company_id = current_user.get("company_id")
+    
     query = {
         "is_active": True,
-        "target_type": "all"
+        "target_type": "all",
+        "company_id": company_id
     }
     
     total = db["messages"].count_documents(query)
@@ -223,9 +234,10 @@ def mark_message_read(
 ):
     """Mark a message as read for the current subscriber"""
     subscriber_id = current_user["_id"]
+    company_id = current_user.get("company_id")
     
     result = db["messages"].update_one(
-        {"_id": message_id},
+        {"_id": message_id, "company_id": company_id},
         {"$addToSet": {"read_by": subscriber_id}}
     )
     
@@ -233,4 +245,3 @@ def mark_message_read(
         raise HTTPException(status_code=404, detail="Message not found")
     
     return {"status": "ok", "message": "Message marked as read"}
-

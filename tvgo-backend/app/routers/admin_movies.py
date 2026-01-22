@@ -2,14 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pymongo.database import Database
 
 from .. import schemas
-from ..auth import get_current_active_admin
+from ..auth import get_current_company_or_admin as get_current_company
 from ..config import settings
 from ..database import get_db
 
 router = APIRouter(
     prefix=f"{settings.api_v1_prefix}/admin/movies",
     tags=["admin-movies"],
-    dependencies=[Depends(get_current_active_admin)],
 )
 
 
@@ -54,15 +53,21 @@ def _movie_document_to_schema(document: dict) -> schemas.Movie:
 
 
 @router.post("/reorder")
-def admin_reorder_movies(payload: schemas.MovieReorderRequest, db: Database = Depends(get_db)):
+def admin_reorder_movies(
+    payload: schemas.MovieReorderRequest,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Batch update order for movies."""
-    # Use bulk write for performance
     from pymongo import UpdateOne
     
     operations = []
     for item in payload.items:
         operations.append(
-            UpdateOne({"_id": item.id}, {"$set": {"order": item.order}})
+            UpdateOne(
+                {"_id": item.id, "company_id": company["_id"]},
+                {"$set": {"order": item.order}}
+            )
         )
     
     if operations:
@@ -72,15 +77,19 @@ def admin_reorder_movies(payload: schemas.MovieReorderRequest, db: Database = De
 
 
 @router.post("/batch", response_model=dict)
-def admin_batch_create_movies(payload: list[schemas.MovieCreate], db: Database = Depends(get_db)):
+def admin_batch_create_movies(
+    payload: list[schemas.MovieCreate],
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     """Batch create movies for fast import. Skips existing IDs."""
     from pymongo.errors import BulkWriteError
     
     if not payload:
         return {"status": "ok", "created": 0, "skipped": 0}
     
-    # Get existing IDs to skip
-    existing_ids = set(doc["_id"] for doc in db["movies"].find({}, {"_id": 1}))
+    # Get existing IDs for this company
+    existing_ids = set(doc["_id"] for doc in db["movies"].find({"company_id": company["_id"]}, {"_id": 1}))
     
     documents = []
     skipped = 0
@@ -92,6 +101,7 @@ def admin_batch_create_movies(payload: list[schemas.MovieCreate], db: Database =
         documents.append({
             "_id": movie.id,
             "id": movie.id,
+            "company_id": company["_id"],  # Link to company
             "title": movie.title,
             "year": movie.year,
             "genres": movie.genres,
@@ -125,20 +135,28 @@ def admin_batch_create_movies(payload: list[schemas.MovieCreate], db: Database =
 
 
 @router.get("", response_model=list[schemas.Movie])
-def admin_list_movies(db: Database = Depends(get_db)):
-    movies = list(db["movies"].find().sort("order", 1))
+def admin_list_movies(
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    movies = list(db["movies"].find({"company_id": company["_id"]}).sort("order", 1))
     return [_movie_document_to_schema(m) for m in movies]
 
 
 @router.post("", response_model=schemas.Movie)
-def admin_create_movie(payload: schemas.MovieCreate, db: Database = Depends(get_db)):
-    existing = db["movies"].find_one({"_id": payload.id})
+def admin_create_movie(
+    payload: schemas.MovieCreate,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    existing = db["movies"].find_one({"_id": payload.id, "company_id": company["_id"]})
     if existing:
         raise HTTPException(status_code=400, detail="Movie with this id already exists")
 
     document = {
         "_id": payload.id,
         "id": payload.id,
+        "company_id": company["_id"],  # Link to company
         "title": payload.title,
         "year": payload.year,
         "genres": payload.genres,
@@ -164,7 +182,12 @@ def admin_create_movie(payload: schemas.MovieCreate, db: Database = Depends(get_
 
 
 @router.put("/{movie_id}", response_model=schemas.Movie)
-def admin_update_movie(movie_id: str, payload: schemas.MovieUpdate, db: Database = Depends(get_db)):
+def admin_update_movie(
+    movie_id: str,
+    payload: schemas.MovieUpdate,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
     update_data = payload.dict(exclude_unset=True)
     if update_data:
         update_fields: dict[str, object] = {}
@@ -174,35 +197,42 @@ def admin_update_movie(movie_id: str, payload: schemas.MovieUpdate, db: Database
             else:
                 update_fields[field] = value
 
-        result = db["movies"].update_one({"_id": movie_id}, {"$set": update_fields})
+        result = db["movies"].update_one(
+            {"_id": movie_id, "company_id": company["_id"]},
+            {"$set": update_fields}
+        )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Movie not found")
     else:
-        if not db["movies"].find_one({"_id": movie_id}):
+        if not db["movies"].find_one({"_id": movie_id, "company_id": company["_id"]}):
             raise HTTPException(status_code=404, detail="Movie not found")
 
-    document = db["movies"].find_one({"_id": movie_id})
+    document = db["movies"].find_one({"_id": movie_id, "company_id": company["_id"]})
     return _movie_document_to_schema(document)
 
 
 @router.delete("/{movie_id}")
-def admin_delete_movie(movie_id: str, db: Database = Depends(get_db)):
-    result = db["movies"].delete_one({"_id": movie_id})
+def admin_delete_movie(
+    movie_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    result = db["movies"].delete_one({"_id": movie_id, "company_id": company["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Movie not found")
     return {"status": "ok"}
 
 
 @router.post("/{movie_id}/enrich")
-async def admin_enrich_movie(movie_id: str, db: Database = Depends(get_db)):
-    """
-    Fetch metadata from TMDB for this movie and update the database.
-    Searches by movie title and optionally year.
-    """
+async def admin_enrich_movie(
+    movie_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    """Fetch metadata from TMDB for this movie and update the database."""
     from ..tmdb import enrich_movie
     
-    # Get existing movie
-    movie = db["movies"].find_one({"_id": movie_id})
+    movie = db["movies"].find_one({"_id": movie_id, "company_id": company["_id"]})
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
     
@@ -222,7 +252,6 @@ async def admin_enrich_movie(movie_id: str, db: Database = Depends(get_db)):
     if not enriched:
         raise HTTPException(status_code=404, detail=f"No TMDB results for '{title}'")
     
-    # Update movie with enriched data
     update_fields = {
         "tmdb_id": enriched.tmdb_id,
         "synopsis": enriched.synopsis,
@@ -233,7 +262,6 @@ async def admin_enrich_movie(movie_id: str, db: Database = Depends(get_db)):
         "cast": enriched.cast,
     }
     
-    # Only update image URLs if we got them and movie doesn't have them
     if enriched.poster_url and not movie.get("poster_url"):
         update_fields["poster_url"] = enriched.poster_url
     if enriched.landscape_url and not movie.get("landscape_url"):
@@ -243,23 +271,22 @@ async def admin_enrich_movie(movie_id: str, db: Database = Depends(get_db)):
     if enriched.trailer_url and not movie.get("trailer_url"):
         update_fields["trailer_url"] = enriched.trailer_url
     
-    db["movies"].update_one({"_id": movie_id}, {"$set": update_fields})
+    db["movies"].update_one({"_id": movie_id, "company_id": company["_id"]}, {"$set": update_fields})
     
-    # Return updated movie
-    updated = db["movies"].find_one({"_id": movie_id})
+    updated = db["movies"].find_one({"_id": movie_id, "company_id": company["_id"]})
     return _movie_document_to_schema(updated)
 
 
 @router.post("/enrich-all")
-async def admin_enrich_all_movies(db: Database = Depends(get_db)):
-    """
-    Fetch metadata from TMDB for ALL movies and update the database.
-    This may take a while for large collections.
-    """
+async def admin_enrich_all_movies(
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    """Fetch metadata from TMDB for ALL movies of this company."""
     from ..tmdb import enrich_movie
     import asyncio
     
-    movies = list(db["movies"].find())
+    movies = list(db["movies"].find({"company_id": company["_id"]}))
     enriched_count = 0
     failed_count = 0
     
@@ -279,7 +306,6 @@ async def admin_enrich_all_movies(db: Database = Depends(get_db)):
                 failed_count += 1
                 continue
             
-            # Update movie with enriched data
             update_fields = {
                 "tmdb_id": enriched.tmdb_id,
                 "synopsis": enriched.synopsis,
@@ -290,7 +316,6 @@ async def admin_enrich_all_movies(db: Database = Depends(get_db)):
                 "cast": enriched.cast,
             }
             
-            # Only update image URLs if we got them and movie doesn't have them
             if enriched.poster_url and not movie.get("poster_url"):
                 update_fields["poster_url"] = enriched.poster_url
             if enriched.landscape_url and not movie.get("landscape_url"):
@@ -300,10 +325,9 @@ async def admin_enrich_all_movies(db: Database = Depends(get_db)):
             if enriched.trailer_url and not movie.get("trailer_url"):
                 update_fields["trailer_url"] = enriched.trailer_url
             
-            db["movies"].update_one({"_id": movie_id}, {"$set": update_fields})
+            db["movies"].update_one({"_id": movie_id, "company_id": company["_id"]}, {"$set": update_fields})
             enriched_count += 1
             
-            # Small delay to avoid rate limiting
             await asyncio.sleep(0.3)
             
         except Exception as e:
@@ -316,5 +340,3 @@ async def admin_enrich_all_movies(db: Database = Depends(get_db)):
         "failed": failed_count,
         "total": len(movies)
     }
-
-
