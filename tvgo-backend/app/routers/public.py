@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, date
-from typing import List, Optional
+from typing import List, Optional, Set
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, Query
 from pymongo.database import Database
 
@@ -45,6 +46,35 @@ DEFAULT_BRAND_DOCUMENT = {
         "Romance",
     ],
 }
+
+
+def _get_user_allowed_channels(db: Database, user: dict) -> Optional[Set[str]]:
+    """
+    Get the set of channel IDs that a user is allowed to access based on their packages.
+    Returns None if user has no packages (meaning all channels are allowed).
+    Returns empty set if user has packages but no channels in them.
+    """
+    user_package_ids = user.get("package_ids") or []
+    if not user_package_ids:
+        return None  # No package restriction
+
+    package_oids = []
+    for pid in user_package_ids:
+        try:
+            package_oids.append(ObjectId(pid))
+        except Exception:
+            pass
+
+    if not package_oids:
+        return None
+
+    packages = list(db["packages"].find({"_id": {"$in": package_oids}}))
+    allowed_channel_ids: Set[str] = set()
+    for pkg in packages:
+        channel_ids = pkg.get("channel_ids") or []
+        allowed_channel_ids.update(channel_ids)
+
+    return allowed_channel_ids
 
 
 def _default_programs_window() -> List[schemas.ProgramScheduleItem]:
@@ -233,10 +263,19 @@ def list_channels(
     favorite: Optional[bool] = Query(None, alias="favorite"),
     current_user=Depends(get_current_subscriber),
 ):
-    """List channels for the subscriber's company"""
+    """List channels for the subscriber's company, filtered by user's packages"""
     company_id = current_user.get("company_id")
-    
+
     filters: dict[str, object] = {"company_id": company_id}
+
+    # Package-based channel filtering
+    allowed_channels = _get_user_allowed_channels(db, current_user)
+    if allowed_channels is not None:
+        if not allowed_channels:
+            # User has packages but no channels in them - return empty
+            return schemas.ChannelsListResponse(total=0, items=[], nextOffset=None)
+        filters["_id"] = {"$in": list(allowed_channels)}
+
     if group:
         filters["group"] = group
     if search:
@@ -245,7 +284,15 @@ def list_channels(
     if favorite:
         favorites_doc = db["favorites"].find_one({"_id": current_user["_id"]}) or {}
         favorite_channels = favorites_doc.get("channels") or []
-        filters["_id"] = {"$in": favorite_channels or ["__none__"]}
+        # Combine with package filter if exists
+        if "_id" in filters and "$in" in filters["_id"]:
+            # Intersect allowed channels with favorites
+            allowed = set(filters["_id"]["$in"])
+            favorite_set = set(favorite_channels) if favorite_channels else set()
+            intersection = allowed & favorite_set
+            filters["_id"] = {"$in": list(intersection) or ["__none__"]}
+        else:
+            filters["_id"] = {"$in": favorite_channels or ["__none__"]}
 
     total = db["channels"].count_documents(filters)
     cursor = db["channels"].find(filters).sort("order", 1).skip(offset).limit(limit)
@@ -273,6 +320,14 @@ def get_channel(
         document = db["channels"].find_one({"id": channel_id, "company_id": company_id})
     if not document:
         raise not_found("Channel not found")
+
+    # Package-based access control
+    allowed_channels = _get_user_allowed_channels(db, current_user)
+    if allowed_channels is not None:
+        actual_channel_id = document.get("_id")
+        if actual_channel_id not in allowed_channels:
+            raise not_found("Channel not found")
+
     return _channel_document_to_schema(document)
 
 
@@ -284,11 +339,19 @@ def get_current_programs(
     """Get current program for all channels based on current time"""
     company_id = current_user.get("company_id")
     now = datetime.utcnow()
-    
-    channels = list(db["channels"].find({
+
+    # Build channel filter with package restrictions
+    channel_filter: dict[str, object] = {
         "company_id": company_id,
         "epg_id": {"$exists": True, "$ne": None}
-    }, {"_id": 1, "epg_id": 1}))
+    }
+    allowed_channels = _get_user_allowed_channels(db, current_user)
+    if allowed_channels is not None:
+        if not allowed_channels:
+            return {"programs": {}}
+        channel_filter["_id"] = {"$in": list(allowed_channels)}
+
+    channels = list(db["channels"].find(channel_filter, {"_id": 1, "epg_id": 1}))
     
     epg_ids = [ch.get("epg_id") for ch in channels if ch.get("epg_id")]
     channel_epg_map = {ch.get("epg_id"): ch["_id"] for ch in channels if ch.get("epg_id")}
@@ -340,12 +403,18 @@ def get_channel_schedule(
     end_time = now + timedelta(hours=hours)
 
     # Try to find channel by _id first, then by id field (for M3U imported channels)
-    channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"epg_id": 1})
+    channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"_id": 1, "epg_id": 1})
     if not channel:
         # Fallback: try finding by the 'id' field (M3U ID without company prefix)
-        channel = db["channels"].find_one({"id": channel_id, "company_id": company_id}, {"epg_id": 1})
+        channel = db["channels"].find_one({"id": channel_id, "company_id": company_id}, {"_id": 1, "epg_id": 1})
     if not channel:
         raise not_found("Channel not found")
+
+    # Package-based access control
+    allowed_channels = _get_user_allowed_channels(db, current_user)
+    if allowed_channels is not None:
+        if channel.get("_id") not in allowed_channels:
+            raise not_found("Channel not found")
     
     epg_id = channel.get("epg_id")
     if not epg_id:
@@ -390,12 +459,18 @@ def get_epg(
 ):
     company_id = current_user.get("company_id")
     # Try to find channel by _id first, then by id field (for M3U imported channels)
-    channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"epg_id": 1})
+    channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"_id": 1, "epg_id": 1})
     if not channel:
         # Fallback: try finding by the 'id' field (M3U ID without company prefix)
-        channel = db["channels"].find_one({"id": channel_id, "company_id": company_id}, {"epg_id": 1})
+        channel = db["channels"].find_one({"id": channel_id, "company_id": company_id}, {"_id": 1, "epg_id": 1})
     if not channel:
         raise not_found("Channel not found")
+
+    # Package-based access control
+    allowed_channels = _get_user_allowed_channels(db, current_user)
+    if allowed_channels is not None:
+        if channel.get("_id") not in allowed_channels:
+            raise not_found("Channel not found")
 
     # Use epg_id to query programs, fall back to channel_id if no mapping
     epg_id = channel.get("epg_id") or channel_id
