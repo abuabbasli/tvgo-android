@@ -185,7 +185,7 @@ class PlayerView @JvmOverloads constructor(
             if (v == 0) {
                 when (targetSeek) {
                     is AbsPosition -> {
-                        val channelSource = channelPlaybackSource!!
+                        val channelSource = channelPlaybackSource ?: return
                         if (targetSeek.utcMS >= System.currentTimeMillis()) {
                             ChannelPlaybackSource(
                                 channel = channelSource.channel,
@@ -384,7 +384,10 @@ class PlayerView @JvmOverloads constructor(
             val targetSeek = targetSeek
             when (targetSeek) {
                 is AbsPosition -> {
-                    val channelSource = channelPlaybackSource!!
+                    val channelSource = channelPlaybackSource ?: run {
+                        discardSeekProcess()
+                        return
+                    }
                     if (targetSeek.utcMS >= System.currentTimeMillis()) {
                         discardSeekProcess()
                         ChannelPlaybackSource(
