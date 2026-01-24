@@ -39,6 +39,7 @@ import com.example.androidtviptvapp.ui.components.CategoryFilter
 import com.example.androidtviptvapp.ui.components.ChannelCard
 import com.example.androidtviptvapp.ui.components.ChannelListItem
 import com.example.androidtviptvapp.ui.components.ViewMode
+import com.example.androidtviptvapp.ui.screens.BabyLockManager
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -47,7 +48,16 @@ fun ChannelsScreen(
     initialChannelId: String? = null,
     onChannelClick: (Channel) -> Unit
 ) {
-    var selectedCategory by remember { mutableStateOf("all") }
+    // Check if baby mode is active - filter to kids content only
+    val isBabyModeActive = BabyLockManager.isBabyModeActive
+
+    // When baby mode is active, force "Uşaq" (Kids) category
+    var selectedCategory by remember { mutableStateOf(if (isBabyModeActive) "Uşaq" else "all") }
+
+    // Update selected category when baby mode changes
+    LaunchedEffect(isBabyModeActive) {
+        selectedCategory = if (isBabyModeActive) "Uşaq" else "all"
+    }
     // Initialize focus/preview with initialChannelId if provided
     var focusedChannel by remember { 
         mutableStateOf(
@@ -76,11 +86,25 @@ fun ChannelsScreen(
     val gridState = androidx.tv.foundation.lazy.grid.rememberTvLazyGridState()
     val listState = androidx.tv.foundation.lazy.list.rememberTvLazyListState()
     
-    val filteredChannels = remember(selectedCategory) {
-        if (selectedCategory == "all") {
+    val filteredChannels = remember(selectedCategory, isBabyModeActive) {
+        val baseChannels = if (isBabyModeActive) {
+            // Baby mode: only kids channels (Uşaq category)
+            TvRepository.channels.filter { it.category.equals("Uşaq", ignoreCase = true) }
+        } else if (selectedCategory == "all") {
             TvRepository.channels
         } else {
             TvRepository.channels.filter { it.category == selectedCategory }
+        }
+        baseChannels
+    }
+
+    // Available categories - limited in baby mode
+    val availableCategories = remember(isBabyModeActive) {
+        if (isBabyModeActive) {
+            // Only show Kids category in baby mode
+            TvRepository.channelCategories.filter { it.id.equals("Uşaq", ignoreCase = true) }
+        } else {
+            TvRepository.channelCategories
         }
     }
 
@@ -197,11 +221,11 @@ fun ChannelsScreen(
                 .fillMaxSize()
                 .padding(top = 24.dp, start = 24.dp) // Main padding
         ) {
-        // 1. Categories on top - fixed height
+        // 1. Categories on top - fixed height (limited in baby mode)
         CategoryFilter(
-            categories = TvRepository.channelCategories,
+            categories = availableCategories,
             selectedCategory = selectedCategory,
-            onCategorySelected = { selectedCategory = it },
+            onCategorySelected = { if (!isBabyModeActive) selectedCategory = it },
             modifier = Modifier.padding(bottom = 16.dp)
         )
 

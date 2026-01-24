@@ -26,7 +26,8 @@ def _invalidate_cache(company_id: str):
 
 
 def _channel_document_to_schema(document: dict) -> schemas.Channel:
-    channel_id = document.get("id") or document.get("_id")
+    # Use _id (the actual database key) for updates to work correctly
+    channel_id = document.get("_id")
     drm = None
     if document.get("drm_type") and document.get("drm_license_url"):
         drm = {"type": document["drm_type"], "licenseUrl": document["drm_license_url"]}

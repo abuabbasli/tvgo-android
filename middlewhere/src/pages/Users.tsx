@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Trash2, Loader2, Monitor, Copy, Eye, EyeOff, Upload, FileUp, Edit } from "lucide-react";
+import { Search, Plus, Trash2, Loader2, Monitor, Copy, Eye, EyeOff, Upload, FileUp, Edit, Baby } from "lucide-react";
 import { toast } from "sonner";
 import api, { SubscriberResponse, SubscriberCreateResponse, Package, UserStatus } from "@/lib/api";
 
@@ -187,6 +187,17 @@ export default function Users() {
     } catch (error) {
       console.error("Failed to delete:", error);
       toast.error("Failed to delete user");
+    }
+  };
+
+  const handleResetBabyLock = async (id: string, displayName?: string) => {
+    if (!confirm(`Reset baby lock for ${displayName || "this user"}? This will reset their PIN to default (1234) and disable baby mode on their next login.`)) return;
+    try {
+      await api.users.resetBabyLock(id);
+      toast.success("Baby lock reset scheduled. User will see the reset on next app launch.");
+    } catch (error) {
+      console.error("Failed to reset baby lock:", error);
+      toast.error("Failed to reset baby lock");
     }
   };
 
@@ -370,14 +381,25 @@ export default function Users() {
                           size="sm"
                           className="h-8 w-8 p-0"
                           onClick={() => openEditDialog(user)}
+                          title="Edit user"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-8 w-8 p-0 text-pink-500 hover:text-pink-600"
+                          onClick={() => handleResetBabyLock(user.id, user.display_name)}
+                          title="Reset Baby Lock"
+                        >
+                          <Baby className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-destructive h-8 w-8 p-0"
                           onClick={() => handleDelete(user.id)}
+                          title="Delete user"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

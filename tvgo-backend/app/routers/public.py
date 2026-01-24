@@ -100,7 +100,9 @@ def _ensure_brand_document(db: Database, company_id=None) -> dict:
 
 
 def _channel_document_to_schema(document: dict, schedule: Optional[List[schemas.ProgramScheduleItem]] = None) -> schemas.Channel:
-    channel_id = document.get("id") or document.get("_id")
+    # Use _id as the channel identifier (unique document key with company prefix)
+    # This ensures consistency with schedule/EPG lookups
+    channel_id = document.get("_id")
     drm = None
     if document.get("drm_type") and document.get("drm_license_url"):
         drm = {"type": document["drm_type"], "licenseUrl": document["drm_license_url"]}
@@ -264,7 +266,11 @@ def get_channel(
     current_user=Depends(get_current_subscriber)
 ):
     company_id = current_user.get("company_id")
+    # Try to find channel by _id first, then by id field (for M3U imported channels)
     document = db["channels"].find_one({"_id": channel_id, "company_id": company_id})
+    if not document:
+        # Fallback: try finding by the 'id' field (M3U ID without company prefix)
+        document = db["channels"].find_one({"id": channel_id, "company_id": company_id})
     if not document:
         raise not_found("Channel not found")
     return _channel_document_to_schema(document)
@@ -332,8 +338,12 @@ def get_channel_schedule(
     company_id = current_user.get("company_id")
     now = datetime.utcnow()
     end_time = now + timedelta(hours=hours)
-    
+
+    # Try to find channel by _id first, then by id field (for M3U imported channels)
     channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"epg_id": 1})
+    if not channel:
+        # Fallback: try finding by the 'id' field (M3U ID without company prefix)
+        channel = db["channels"].find_one({"id": channel_id, "company_id": company_id}, {"epg_id": 1})
     if not channel:
         raise not_found("Channel not found")
     
@@ -379,11 +389,17 @@ def get_epg(
     current_user=Depends(get_current_subscriber)
 ):
     company_id = current_user.get("company_id")
-    channel_exists = db["channels"].count_documents({"_id": channel_id, "company_id": company_id}, limit=1)
-    if channel_exists == 0:
+    # Try to find channel by _id first, then by id field (for M3U imported channels)
+    channel = db["channels"].find_one({"_id": channel_id, "company_id": company_id}, {"epg_id": 1})
+    if not channel:
+        # Fallback: try finding by the 'id' field (M3U ID without company prefix)
+        channel = db["channels"].find_one({"id": channel_id, "company_id": company_id}, {"epg_id": 1})
+    if not channel:
         raise not_found("Channel not found")
 
-    filters: dict[str, object] = {"channel_id": channel_id}
+    # Use epg_id to query programs, fall back to channel_id if no mapping
+    epg_id = channel.get("epg_id") or channel_id
+    filters: dict[str, object] = {"channel_id": epg_id}
     if date_param:
         start_day = datetime.combine(date_param, datetime.min.time())
         end_day = datetime.combine(date_param, datetime.max.time())

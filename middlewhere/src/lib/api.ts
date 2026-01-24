@@ -707,6 +707,11 @@ export const api = {
             }
             return response.json();
         },
+
+        resetBabyLock: (userId: string) =>
+            apiRequest<{ status: string; message: string }>(`/api/admin/users/${userId}/reset-baby-lock`, {
+                method: 'POST',
+            }),
     },
 };
 

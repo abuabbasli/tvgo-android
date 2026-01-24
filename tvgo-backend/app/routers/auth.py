@@ -240,6 +240,47 @@ async def get_me(current_user=Depends(get_current_user)):
     )
 
 
+@router.get("/subscriber/me")
+async def get_subscriber_profile(
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Get current subscriber profile including baby lock reset status."""
+    # Get subscriber from token
+    from ..auth import get_current_subscriber
+    subscriber = db["subscribers"].find_one({"_id": current_user.id}) or db["subscribers"].find_one({"username": current_user.username})
+
+    if not subscriber:
+        raise unauthorized("Subscriber not found", code="SUBSCRIBER_NOT_FOUND")
+
+    return {
+        "id": subscriber["_id"],
+        "username": subscriber.get("username"),
+        "display_name": subscriber.get("display_name"),
+        "mac_address": subscriber.get("mac_address"),
+        "baby_lock_reset_pending": subscriber.get("baby_lock_reset_pending", False),
+    }
+
+
+@router.post("/subscriber/clear-baby-lock-reset")
+async def clear_baby_lock_reset(
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Clear the baby lock reset flag after the client has processed it."""
+    subscriber = db["subscribers"].find_one({"_id": current_user.id}) or db["subscribers"].find_one({"username": current_user.username})
+
+    if not subscriber:
+        raise unauthorized("Subscriber not found", code="SUBSCRIBER_NOT_FOUND")
+
+    db["subscribers"].update_one(
+        {"_id": subscriber["_id"]},
+        {"$set": {"baby_lock_reset_pending": False}}
+    )
+
+    return {"status": "ok"}
+
+
 # ---- Company (Middleware) Authentication ----
 
 def _company_document_to_response(doc: dict, db) -> schemas.CompanyResponse:

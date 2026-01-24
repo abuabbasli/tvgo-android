@@ -309,17 +309,17 @@ async def sync_epg(
             update_fields = {"epg_id": best_match.id}
             
             # Download logo from EPG and upload to S3 if channel doesn't have one
-            if not channel.get('logo') and best_match.icon_url:
+            if not channel.get('logo_url') and best_match.icon_url:
                 try:
                     s3_logo_url = await upload_image_from_url(best_match.icon_url, prefix="channel-logos")
                     if s3_logo_url:
-                        update_fields["logo"] = s3_logo_url
+                        update_fields["logo_url"] = s3_logo_url
                         print(f"Uploaded logo for {channel.get('name')}: {s3_logo_url}")
                 except Exception as e:
                     print(f"Failed to upload logo for {channel.get('name')}: {e}")
                     # Fallback to original URL
-                    update_fields["logo"] = best_match.icon_url
-            
+                    update_fields["logo_url"] = best_match.icon_url
+
             db["channels"].update_one(
                 {"_id": channel["_id"]},
                 {"$set": update_fields}
@@ -380,19 +380,19 @@ async def upload_epg_file(
                     best_match = epg_ch
             if best_match and best_score >= 0.8:
                 update_fields = {"epg_id": best_match.id}
-                
+
                 # Download logo from EPG and upload to S3 if channel doesn't have one
-                if not channel.get('logo') and best_match.icon_url:
+                if not channel.get('logo_url') and best_match.icon_url:
                     try:
                         s3_logo_url = await upload_image_from_url(best_match.icon_url, prefix="channel-logos")
                         if s3_logo_url:
-                            update_fields["logo"] = s3_logo_url
+                            update_fields["logo_url"] = s3_logo_url
                             print(f"Uploaded logo for {channel.get('name')}: {s3_logo_url}")
                     except Exception as e:
                         print(f"Failed to upload logo for {channel.get('name')}: {e}")
                         # Fallback to original URL
-                        update_fields["logo"] = best_match.icon_url
-                
+                        update_fields["logo_url"] = best_match.icon_url
+
                 db["channels"].update_one({"_id": channel["_id"]}, {"$set": update_fields})
                 mappings_applied += 1
         

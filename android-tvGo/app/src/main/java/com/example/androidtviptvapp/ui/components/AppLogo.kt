@@ -74,14 +74,11 @@ fun AppLogo(
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(logoUrl)
+                        .memoryCacheKey(logoUrl)  // Use URL as cache key
+                        .diskCacheKey(logoUrl)    // Use URL as disk cache key
                         .crossfade(300)
                         .memoryCachePolicy(CachePolicy.ENABLED)
                         .diskCachePolicy(CachePolicy.ENABLED)
-                        .listener(
-                            onStart = { Log.d(TAG, "Starting to load: $logoUrl") },
-                            onSuccess = { _, _ -> Log.d(TAG, "Successfully loaded: $logoUrl") },
-                            onError = { _, result -> Log.e(TAG, "Failed to load: $logoUrl, error: ${result.throwable.message}") }
-                        )
                         .build(),
                     contentDescription = "App Logo",
                     modifier = Modifier.size(size),

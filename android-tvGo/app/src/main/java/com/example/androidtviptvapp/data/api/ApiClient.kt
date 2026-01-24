@@ -102,6 +102,12 @@ interface ApiService {
         @retrofit2.http.Path("channelId") channelId: String,
         @retrofit2.http.Query("hours") hours: Int = 12
     ): ChannelScheduleResponse
+
+    @GET("api/auth/subscriber/me")
+    suspend fun getSubscriberProfile(): SubscriberProfileResponse
+
+    @POST("api/auth/subscriber/clear-baby-lock-reset")
+    suspend fun clearBabyLockReset(): Any
 }
 
 // ===== EPG SCHEDULE API =====
@@ -228,6 +234,19 @@ data class MessageItem(
     val isRead: Boolean = false
 )
 
+// ===== SUBSCRIBER PROFILE API =====
+
+data class SubscriberProfileResponse(
+    val id: String,
+    val username: String?,
+    @SerializedName("display_name")
+    val displayName: String?,
+    @SerializedName("mac_address")
+    val macAddress: String?,
+    @SerializedName("baby_lock_reset_pending")
+    val babyLockResetPending: Boolean = false
+)
+
 // ===== GAMES API =====
 
 data class GamesResponse(
@@ -318,6 +337,24 @@ object ApiClient {
         for (i in 0..retryCount) {
             try {
                 return call()
+            } catch (e: retrofit2.HttpException) {
+                // Don't retry on authentication/authorization errors - they won't succeed
+                val code = e.code()
+                if (code == 401 || code == 403 || code == 404) {
+                    android.util.Log.w("ApiClient", "HTTP $code - not retrying: ${e.message}")
+                    throw e
+                }
+                lastException = e
+                android.util.Log.w("ApiClient", "Retry ${i + 1}/$retryCount failed: HTTP $code ${e.message}")
+
+                if (i < retryCount) {
+                    val actualDelay = delayMS * (i + 1)
+                    android.util.Log.d("ApiClient", "Waiting ${actualDelay}ms before retry...")
+                    kotlinx.coroutines.delay(actualDelay)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Don't retry on cancellation - propagate immediately
+                throw e
             } catch (e: Exception) {
                 lastException = e
                 android.util.Log.w("ApiClient", "Retry ${i + 1}/$retryCount failed: ${e.message}")

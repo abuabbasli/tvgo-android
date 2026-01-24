@@ -190,7 +190,7 @@ async def ingest_m3u_from_url(
     
     created = 0
     updated = 0
-    for ch in channels:
+    for order_index, ch in enumerate(channels):
         # Create company-scoped channel ID
         channel_id = f"{company_id}_{ch.id}"
         update = {
@@ -206,6 +206,7 @@ async def ingest_m3u_from_url(
             "country": None,
             "badges": ["HD"],
             "streamer_name": request.streamer_name,
+            "order": order_index,  # Preserve M3U order
             "metadata": {
                 "source": "m3u",
                 "streamer_name": request.streamer_name,

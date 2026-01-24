@@ -35,12 +35,13 @@ fun ChannelListItem(
     val context = LocalContext.current
     
     // Stable image request with memory caching, NO crossfade
-    val imageRequest = remember(channel.id) {
+    // Use logo URL as cache key for consistent caching across sessions
+    val imageRequest = remember(channel.logo) {
         if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
             ImageRequest.Builder(context)
                 .data(channel.logo)
-                .memoryCacheKey(channel.id)
-                .diskCacheKey(channel.id)
+                .memoryCacheKey(channel.logo) // Use URL as cache key
+                .diskCacheKey(channel.logo)   // Use URL as disk cache key
                 .crossfade(false)
                 .build()
         } else null

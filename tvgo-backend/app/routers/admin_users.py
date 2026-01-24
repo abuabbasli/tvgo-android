@@ -299,5 +299,31 @@ def remove_device(
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Subscriber not found")
-        
+
     return {"status": "ok"}
+
+
+@router.post("/{user_id}/reset-baby-lock")
+def reset_baby_lock(
+    user_id: str,
+    company: dict = Depends(get_current_company),
+    db: Database = Depends(get_db)
+):
+    """
+    Reset baby lock for a subscriber.
+    This endpoint is called by admins when a user forgets their baby lock PIN.
+    The actual baby lock state is stored client-side in SharedPreferences,
+    so this endpoint sets a flag that the client app checks on startup.
+    When the flag is set, the app resets baby lock to defaults (PIN=1234, inactive).
+    """
+    existing = db["subscribers"].find_one({"_id": user_id, "company_id": company["_id"]})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+
+    # Set a flag indicating baby lock should be reset on next app launch
+    db["subscribers"].update_one(
+        {"_id": user_id, "company_id": company["_id"]},
+        {"$set": {"baby_lock_reset_pending": True, "baby_lock_reset_at": datetime.utcnow()}}
+    )
+
+    return {"status": "ok", "message": "Baby lock reset pending. User will see reset on next app launch."}

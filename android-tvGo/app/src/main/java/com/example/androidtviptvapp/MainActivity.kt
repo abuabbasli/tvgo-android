@@ -29,11 +29,15 @@ import com.example.androidtviptvapp.ui.theme.AndroidTvIptvAppTheme
 
 import com.example.androidtviptvapp.data.TvRepository
 import com.example.androidtviptvapp.ui.screens.LoginScreen
+import com.example.androidtviptvapp.ui.screens.BabyLockManager
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize BabyLockManager for parental controls
+        BabyLockManager.init(this)
 
         // Load public config first (for branding on login screen)
         TvRepository.loadData()

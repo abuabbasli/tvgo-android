@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
+import com.example.androidtviptvapp.ui.screens.BabyLockManager
 
 /**
  * Optimized TvRepository with:
@@ -102,6 +103,9 @@ object TvRepository {
                         _programs.value = response.programs
                         lastLoadTime = System.currentTimeMillis()
                         android.util.Log.d(TAG, "Loaded ${response.programs.size} programs for $channelId")
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        // Coroutine cancelled - not an error, just log debug
+                        android.util.Log.d(TAG, "EPG load cancelled for $channelId")
                     } catch (e: Exception) {
                         android.util.Log.e(TAG, "Failed to load EPG for $channelId: ${e.message}")
                     }
@@ -377,7 +381,7 @@ object TvRepository {
      * Runs entirely in background, doesn't block UI
      */
     
-    // EMBEDDED CREDENTIALS - Auto-login (DISABLED for proper login flow)
+    // EMBEDDED CREDENTIALS - Auto-login (DISABLED - user must login)
     private const val AUTO_LOGIN_ENABLED = false
     private const val EMBEDDED_USERNAME = "EBzN7ibs"
     private const val EMBEDDED_PASSWORD = "PBCOIIPM"
@@ -465,6 +469,7 @@ object TvRepository {
                 val deviceName = android.os.Build.MODEL ?: "Android TV"
 
                 android.util.Log.d("TvRepository", "Login attempt: user=$username, deviceId=$deviceId, deviceName=$deviceName")
+                android.util.Log.d("TvRepository", "Using API BASE_URL: ${AppConfig.BASE_URL}")
 
                 val response = ApiClient.service.login(
                     LoginRequest(
@@ -486,6 +491,14 @@ object TvRepository {
                 }
 
                 android.util.Log.d("TvRepository", "Login successful - token saved, data will load via loadData()")
+
+                // Check if admin has flagged baby lock for reset
+                try {
+                    BabyLockManager.checkAndApplyServerReset()
+                } catch (e: Exception) {
+                    android.util.Log.e("TvRepository", "Error checking baby lock reset: ${e.message}")
+                }
+
                 true
             } catch (e: Exception) {
                 android.util.Log.e("TvRepository", "Login failed: ${e.message}", e)
@@ -590,6 +603,7 @@ object TvRepository {
                 channelCategories.addAll(uniqueCategories)
 
                 android.util.Log.d("TvRepository", "Loaded ${channels.size} channels and ${channelCategories.size} categories")
+                android.util.Log.d("TvRepository", "Channel categories: ${uniqueCategories.map { it.id }}")
             }
         } catch (e: Exception) {
             android.util.Log.e("TvRepository", "Error loading channels", e)
@@ -630,6 +644,9 @@ object TvRepository {
                 val response = ApiClient.service.getChannelSchedule(channelId)
                 scheduleCache[channelId] = CachedSchedule(response.programs, now)
                 response.programs
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Coroutine was cancelled (user navigated away) - not an error
+                throw e // Re-throw to properly propagate cancellation
             } catch (e: Exception) {
                 android.util.Log.e("TvRepository", "Failed to load schedule for $channelId: ${e.message}")
                 cached?.programs ?: emptyList()
@@ -670,10 +687,16 @@ object TvRepository {
 
             android.util.Log.d("TvRepository", "Mapped ${domainMovies.size} movies")
 
+            // Log unique categories for debugging
+            val uniqueCategories = domainMovies.map { it.category }.distinct()
+            android.util.Log.d("TvRepository", "Movie categories found: $uniqueCategories")
+
             withContext(Dispatchers.Main) {
                 movies.clear()
                 movies.addAll(domainMovies)
-                android.util.Log.d("TvRepository", "=== MOVIES READY: ${movies.size} ===")
+                // IMPORTANT: Invalidate cache after loading new movies
+                moviesByCategoryCache.clear()
+                android.util.Log.d("TvRepository", "=== MOVIES READY: ${movies.size}, cache cleared ===")
             }
         } catch (e: Exception) {
             android.util.Log.e("TvRepository", "MOVIE LOAD ERROR: ${e.message}", e)
@@ -757,10 +780,46 @@ object TvRepository {
     private val moviesByCategoryCache = mutableMapOf<String, List<Movie>>()
 
     fun getMoviesByCategory(categoryId: String): List<Movie> {
-        return moviesByCategoryCache.getOrPut(categoryId) {
-            if (categoryId == "all") movies.toList()
-            else movies.filter { it.category == categoryId }
+        android.util.Log.d(TAG, "getMoviesByCategory($categoryId) called, movies.size=${movies.size}, cacheHit=${moviesByCategoryCache.containsKey(categoryId)}")
+
+        // If cache has it, return directly
+        val cached = moviesByCategoryCache[categoryId]
+        if (cached != null) {
+            android.util.Log.d(TAG, "getMoviesByCategory($categoryId): returning ${cached.size} from cache")
+            return cached
         }
+
+        // Compute fresh
+        android.util.Log.d(TAG, "Computing category $categoryId from ${movies.size} movies")
+        val result = if (categoryId == "all") {
+            movies.toList()
+        } else {
+            val normalizedSearch = categoryId.lowercase()
+            android.util.Log.d(TAG, "Filtering for: '$normalizedSearch'")
+
+            // Debug: sample a few movies to see their categories
+            if (movies.isNotEmpty()) {
+                val sample = movies.take(5).map { "${it.title}:${it.category}" }
+                android.util.Log.d(TAG, "Sample movies: $sample")
+            }
+
+            movies.filter { movie ->
+                val cat = movie.category.lowercase()
+                val genres = movie.genre.map { it.lowercase() }
+
+                val directMatch = cat == normalizedSearch
+                val genreMatch = genres.contains(normalizedSearch)
+                val scifiMatch = normalizedSearch == "scifi" && (cat.contains("sci") || genres.any { it.contains("sci") })
+                val partialCatMatch = cat.contains(normalizedSearch)
+                val partialGenreMatch = genres.any { it.contains(normalizedSearch) }
+
+                directMatch || genreMatch || scifiMatch || partialCatMatch || partialGenreMatch
+            }
+        }
+
+        android.util.Log.d(TAG, "getMoviesByCategory($categoryId): found ${result.size} movies")
+        moviesByCategoryCache[categoryId] = result
+        return result
     }
 
     /**
