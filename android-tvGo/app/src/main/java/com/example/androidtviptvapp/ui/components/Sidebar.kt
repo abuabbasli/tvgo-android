@@ -14,6 +14,18 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LiveTv
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.androidtviptvapp.R
@@ -32,6 +44,13 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.example.androidtviptvapp.data.TvRepository
 
+// Dark sidebar background color
+private val SidebarBackground = Color(0xFF0D0D12)
+// Selected item blue color
+private val SelectedBlue = Color(0xFF3B82F6)
+// Unselected icon color
+private val UnselectedGray = Color(0xFF6B7280)
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun Sidebar(
@@ -41,73 +60,99 @@ fun Sidebar(
     onViewModeChange: ((ViewMode) -> Unit)? = null,
     showViewToggle: Boolean = false
 ) {
-    // Hide sidebar if on Login screen (should be handled by parent but extra check)
+    // Hide sidebar if on Login screen
     if (selectedRoute == "login") return
 
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(80.dp)
-            .background(MaterialTheme.colorScheme.background)
-            .padding(vertical = 24.dp),
+            .width(72.dp)
+            .background(SidebarBackground)
+            .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // App Logo - using dedicated component
+        // App Logo
         AppLogo(
-            modifier = Modifier.padding(bottom = 8.dp),
-            size = 48.dp
+            modifier = Modifier.padding(bottom = 16.dp),
+            size = 40.dp
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
+        // Search
         SidebarItem(
-            icon = Icons.Default.Home,
+            icon = Icons.Outlined.Search,
+            selectedIcon = Icons.Filled.Search,
+            label = "Search",
+            isSelected = selectedRoute == "search",
+            onClick = { /* Search not implemented yet */ }
+        )
+
+        // Home
+        SidebarItem(
+            icon = Icons.Outlined.Home,
+            selectedIcon = Icons.Filled.Home,
             label = "Home",
             isSelected = selectedRoute == "home",
             onClick = { onNavigate("home") }
         )
 
-        // Conditional Live TV
-        val showLiveTv = com.example.androidtviptvapp.data.TvRepository.features?.enableLiveTv ?: true
+        // Conditional Live TV (Channels)
+        val showLiveTv = TvRepository.features?.enableLiveTv ?: true
         if (showLiveTv) {
             SidebarItem(
-                icon = Icons.Default.LiveTv,
+                icon = Icons.Outlined.CalendarMonth,
+                selectedIcon = Icons.Filled.CalendarMonth,
                 label = "Channels",
                 isSelected = selectedRoute == "channels",
                 onClick = { onNavigate("channels") }
             )
         }
 
-        // Conditional VOD
-        val showVod = com.example.androidtviptvapp.data.TvRepository.features?.enableVod ?: true
+        // Conditional VOD (Movies)
+        val showVod = TvRepository.features?.enableVod ?: true
         if (showVod) {
             SidebarItem(
-                icon = Icons.Default.Movie,
+                icon = Icons.Outlined.Movie,
+                selectedIcon = Icons.Filled.Movie,
                 label = "Movies",
                 isSelected = selectedRoute == "movies",
                 onClick = { onNavigate("movies") }
             )
         }
 
-        // Games section
+        // Games
         SidebarItem(
-            icon = Icons.Default.SportsEsports,
+            icon = Icons.Outlined.SportsEsports,
+            selectedIcon = Icons.Filled.SportsEsports,
             label = "Games",
             isSelected = selectedRoute == "games",
             onClick = { onNavigate("games") }
         )
 
-        // Messages section with QR code support
+        // Messages
         SidebarItem(
-            icon = Icons.Default.Email,
+            icon = Icons.Outlined.Email,
+            selectedIcon = Icons.Filled.Email,
             label = "Messages",
             isSelected = selectedRoute == "messages",
             onClick = { onNavigate("messages") }
         )
 
+        // Favorites
         SidebarItem(
-            icon = Icons.Default.Settings,
+            icon = Icons.Outlined.Favorite,
+            selectedIcon = Icons.Filled.Favorite,
+            label = "Favorites",
+            isSelected = selectedRoute == "favorites",
+            onClick = { /* Favorites not implemented yet */ }
+        )
+
+        // Settings
+        SidebarItem(
+            icon = Icons.Outlined.Settings,
+            selectedIcon = Icons.Filled.Settings,
             label = "Settings",
             isSelected = selectedRoute == "settings",
             onClick = { onNavigate("settings") }
@@ -120,7 +165,7 @@ fun Sidebar(
             Column(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .background(Color(0xFF1A1A24))
                     .padding(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -129,17 +174,17 @@ fun Sidebar(
                 IconButton(
                     onClick = { onViewModeChange(ViewMode.GRID) },
                     colors = IconButtonDefaults.colors(
-                        containerColor = if (viewMode == ViewMode.GRID) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-                        contentColor = if (viewMode == ViewMode.GRID) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedContentColor = MaterialTheme.colorScheme.onSurface
+                        containerColor = if (viewMode == ViewMode.GRID) SelectedBlue else Color.Transparent,
+                        contentColor = if (viewMode == ViewMode.GRID) Color.White else UnselectedGray,
+                        focusedContainerColor = SelectedBlue,
+                        focusedContentColor = Color.White
                     ),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.GridView,
                         contentDescription = "Grid View",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
@@ -147,17 +192,17 @@ fun Sidebar(
                 IconButton(
                     onClick = { onViewModeChange(ViewMode.LIST) },
                     colors = IconButtonDefaults.colors(
-                        containerColor = if (viewMode == ViewMode.LIST) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-                        contentColor = if (viewMode == ViewMode.LIST) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedContentColor = MaterialTheme.colorScheme.onSurface
+                        containerColor = if (viewMode == ViewMode.LIST) SelectedBlue else Color.Transparent,
+                        contentColor = if (viewMode == ViewMode.LIST) Color.White else UnselectedGray,
+                        focusedContainerColor = SelectedBlue,
+                        focusedContentColor = Color.White
                     ),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ViewList,
                         contentDescription = "List View",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -169,46 +214,44 @@ fun Sidebar(
 @Composable
 fun SidebarItem(
     icon: ImageVector,
+    selectedIcon: ImageVector,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    // Determine colors based on selection state manually
-    val containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-    val focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-    val focusedContentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    val containerColor = if (isSelected) SelectedBlue else Color.Transparent
+    val contentColor = if (isSelected) Color.White else UnselectedGray
+    val currentIcon = if (isSelected) selectedIcon else icon
 
     Surface(
         onClick = onClick,
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(50)),
-        modifier = Modifier.padding(vertical = 4.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        modifier = Modifier
+            .padding(vertical = 4.dp, horizontal = 8.dp)
+            .size(48.dp),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = containerColor,
             contentColor = contentColor,
-            focusedContainerColor = focusedContainerColor,
-            focusedContentColor = focusedContentColor,
-            pressedContainerColor = containerColor,
-            pressedContentColor = contentColor
+            focusedContainerColor = SelectedBlue,
+            focusedContentColor = Color.White,
+            pressedContainerColor = SelectedBlue.copy(alpha = 0.8f),
+            pressedContentColor = Color.White
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                border = BorderStroke(2.dp, Color.White)
             )
         ),
-        glow = ClickableSurfaceDefaults.glow(
-            focusedGlow = Glow(
-                elevationColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                elevation = 12.dp
-            )
+        scale = ClickableSurfaceDefaults.scale(
+            focusedScale = 1.1f
         )
     ) {
         Box(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = icon,
+                imageVector = currentIcon,
                 contentDescription = label,
                 modifier = Modifier.size(24.dp)
             )
