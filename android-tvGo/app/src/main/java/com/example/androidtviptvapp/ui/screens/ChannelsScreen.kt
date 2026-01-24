@@ -263,7 +263,7 @@ fun ChannelsScreen(
                     when (viewMode) {
                         ViewMode.GRID -> {
                             TvLazyVerticalGrid(
-                                columns = TvGridCells.Fixed(2),
+                                columns = TvGridCells.Fixed(3),
                                 state = gridState,
                                 contentPadding = PaddingValues(
                                     start = 4.dp,
@@ -271,8 +271,8 @@ fun ChannelsScreen(
                                     end = 4.dp,
                                     bottom = 8.dp
                                 ),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(
@@ -281,14 +281,14 @@ fun ChannelsScreen(
                                 ) { channel ->
                                     // Get or create a FocusRequester for this channel
                                     val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
-                                    
+
                                     ChannelCard(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
-                                        width = 120.dp,
+                                        width = 95.dp,
                                         modifier = Modifier
                                             .focusRequester(focusRequester)
-                                            .onFocusChanged { 
+                                            .onFocusChanged {
                                                 if (it.isFocused) {
                                                     focusedChannel = channel
                                                 }

@@ -86,7 +86,7 @@ fun ChannelCard(
                         contentDescription = channel.name,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(12.dp),
+                            .padding(8.dp),
                         contentScale = ContentScale.Fit
                     )
                 } else {
