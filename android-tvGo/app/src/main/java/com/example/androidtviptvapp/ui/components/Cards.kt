@@ -90,6 +90,24 @@ fun ChannelCard(
                     color = Color.White
                 )
             }
+
+            // Order number badge in top-left corner
+            if (channel.order > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = channel.order.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
 }
