@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.tv.foundation.PivotOffsets
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
@@ -273,6 +274,11 @@ fun ChannelsScreen(
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                // Pivot offsets for smooth scrolling - keeps focused item centered
+                                pivotOffsets = PivotOffsets(
+                                    parentFraction = 0.3f,  // Scroll when item is 30% from top
+                                    childFraction = 0.0f
+                                ),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(
@@ -302,6 +308,11 @@ fun ChannelsScreen(
                                 state = listState,
                                 contentPadding = PaddingValues(bottom = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                                // Pivot offsets for smooth scrolling - keeps focused item visible
+                                pivotOffsets = PivotOffsets(
+                                    parentFraction = 0.3f,
+                                    childFraction = 0.0f
+                                ),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(
@@ -310,14 +321,14 @@ fun ChannelsScreen(
                                 ) { channel ->
                                     // Get or create a FocusRequester for this channel
                                     val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
-                                    
+
                                     ChannelListItem(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .focusRequester(focusRequester)
-                                            .onFocusChanged { 
+                                            .onFocusChanged {
                                                 if (it.isFocused) {
                                                     focusedChannel = channel
                                                 }
