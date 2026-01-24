@@ -30,6 +30,7 @@ import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.items
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.items
+import androidx.tv.foundation.lazy.list.itemsIndexed
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -481,10 +482,10 @@ fun ChannelsScreen(
                                     contentPadding = PaddingValues(bottom = 24.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    items(
+                                    itemsIndexed(
                                         items = schedulePrograms,
-                                        key = { it.id ?: it.start ?: it.hashCode() }  // Use id or start time as key
-                                    ) { program ->
+                                        key = { index, item -> "${index}_${item.id ?: item.start ?: item.hashCode()}" }  // Include index to guarantee uniqueness
+                                    ) { index, program ->
                                         ProgramScheduleItem(
                                             time = formatProgramTime(program.start),
                                             title = program.title ?: "Unknown Program",
