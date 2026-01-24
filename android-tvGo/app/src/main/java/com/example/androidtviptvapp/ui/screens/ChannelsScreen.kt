@@ -266,13 +266,13 @@ fun ChannelsScreen(
                                 columns = TvGridCells.Fixed(2),
                                 state = gridState,
                                 contentPadding = PaddingValues(
-                                    start = 8.dp,
-                                    top = 8.dp,
-                                    end = 8.dp,
-                                    bottom = 16.dp
+                                    start = 4.dp,
+                                    top = 4.dp,
+                                    end = 4.dp,
+                                    bottom = 8.dp
                                 ),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(
@@ -285,7 +285,7 @@ fun ChannelsScreen(
                                     ChannelCard(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
-                                        width = 160.dp,
+                                        width = 120.dp,
                                         modifier = Modifier
                                             .focusRequester(focusRequester)
                                             .onFocusChanged {

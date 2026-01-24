@@ -16,8 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
-import androidx.compose.foundation.layout.size
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
@@ -33,100 +31,65 @@ import com.example.androidtviptvapp.data.Movie
  *
  * Uses simple AsyncImage with memory caching and no crossfade animation
  * to minimize GPU work during scroll.
- *
- * @param showName If true, displays channel name below the card (for Home screen design)
  */
 @Composable
 fun ChannelCard(
     channel: Channel,
     onClick: (Channel) -> Unit,
     modifier: Modifier = Modifier,
-    width: Dp = 140.dp,
-    showName: Boolean = false
+    width: Dp = 120.dp
 ) {
     val context = LocalContext.current
 
     // Stable image request with memory-first caching, NO crossfade
-    // Use logo URL as cache key for consistent caching across sessions
-    val imageRequest = remember(channel.logo) {
+    val imageRequest = remember(channel.id) {
         if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
             ImageRequest.Builder(context)
                 .data(channel.logo)
-                .memoryCacheKey(channel.logo) // Use URL as cache key
-                .diskCacheKey(channel.logo)   // Use URL as disk cache key
+                .memoryCacheKey(channel.id)
+                .diskCacheKey(channel.id)
                 .crossfade(false) // No animation - faster
                 .build()
         } else null
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Card(
-            onClick = { onClick(channel) },
-            modifier = modifier
-                .width(width)
-                .aspectRatio(4f / 3f),  // More square aspect ratio like reference
-            scale = CardDefaults.scale(focusedScale = 1.05f),
-            border = CardDefaults.border(
-                focusedBorder = Border(
-                    border = BorderStroke(2.dp, Color.White)
-                ),
-                border = Border(
-                    border = BorderStroke(1.dp, Color(0xFF3A3A3A))
-                )
+    Card(
+        onClick = { onClick(channel) },
+        modifier = modifier
+            .width(width)
+            .aspectRatio(16f / 9f),
+        scale = CardDefaults.scale(focusedScale = 1.05f),
+        border = CardDefaults.border(
+            focusedBorder = Border(
+                border = BorderStroke(3.dp, Color.White)
             ),
-            colors = CardDefaults.colors(containerColor = Color(0xFF2A2A2A))
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                if (imageRequest != null) {
-                    AsyncImage(
-                        model = imageRequest,
-                        contentDescription = channel.name,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    // Fallback: channel initials
-                    Text(
-                        text = channel.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White
-                    )
-                }
-
-                // Favorite star icon in top-right corner
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Favorite",
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-
-        // Channel name below card (when showName is true)
-        if (showName) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = channel.name,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.width(width),
-                maxLines = 1,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            border = Border(
+                border = BorderStroke(1.dp, Color(0xFF444444))
             )
+        ),
+        colors = CardDefaults.colors(containerColor = Color(0xFF1E1E1E))
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (imageRequest != null) {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                // Fallback: channel initials
+                Text(
+                    text = channel.name.take(2).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
+            }
         }
     }
 }
@@ -213,7 +176,7 @@ fun MovieCard(
                     // No valid thumbnail URL - show placeholder
                     MoviePlaceholder(movie.title)
                 }
-                
+
                 // Rating badge
                 Box(
                     modifier = Modifier
@@ -231,7 +194,7 @@ fun MovieCard(
                 }
             }
         }
-        
+
         // Title below card
         Text(
             text = movie.title,
@@ -242,7 +205,7 @@ fun MovieCard(
             maxLines = 1,
             color = MaterialTheme.colorScheme.onSurface
         )
-        
+
         // Year below title
         Text(
             text = movie.year.toString(),
