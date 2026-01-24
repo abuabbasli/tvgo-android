@@ -344,16 +344,20 @@ fun PlayerScreen(
         }
         
         // Channel info overlay (top)
+        // Use local variable to avoid race conditions with mutable state
+        val sourceForOverlay = currentSource
         AnimatedVisibility(
-            visible = showOverlay && currentSource != null,
+            visible = showOverlay && sourceForOverlay != null,
             enter = fadeIn() + slideInVertically { -it },
             exit = fadeOut() + slideOutVertically { -it },
             modifier = Modifier.align(Alignment.TopStart)
         ) {
-            ChannelInfoOverlay(
-                source = currentSource!!,
-                modifier = Modifier.padding(24.dp)
-            )
+            sourceForOverlay?.let { source ->
+                ChannelInfoOverlay(
+                    source = source,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
         }
         
         // Bottom gradient for controls

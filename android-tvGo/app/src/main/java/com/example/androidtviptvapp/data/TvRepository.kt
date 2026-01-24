@@ -666,14 +666,19 @@ object TvRepository {
         // Fetch new schedule
         return withContext(Dispatchers.IO) {
             try {
+                android.util.Log.d(TAG, "Fetching schedule for channel $channelId")
                 val response = ApiClient.service.getChannelSchedule(channelId)
+                android.util.Log.d(TAG, "Got ${response.programs.size} programs for channel $channelId")
+                if (response.programs.isNotEmpty()) {
+                    android.util.Log.d(TAG, "First program: ${response.programs.first().title} at ${response.programs.first().start}")
+                }
                 scheduleCache[channelId] = CachedSchedule(response.programs, now)
                 response.programs
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // Coroutine was cancelled (user navigated away) - not an error
                 throw e // Re-throw to properly propagate cancellation
             } catch (e: Exception) {
-                android.util.Log.e("TvRepository", "Failed to load schedule for $channelId: ${e.message}")
+                android.util.Log.e(TAG, "Failed to load schedule for $channelId: ${e.message}", e)
                 cached?.programs ?: emptyList()
             }
         }

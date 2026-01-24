@@ -143,11 +143,52 @@ data class CurrentProgram(
     val category: String?
 ) {
     // Computed properties for timestamps (OnTV-main pattern)
+    // Parse ISO date strings to Unix timestamps in milliseconds
     val startTime: Long
-        get() = try { start?.toLongOrNull() ?: 0L } catch (e: Exception) { 0L }
+        get() = parseIsoDateToMillis(start)
 
     val stopTime: Long
-        get() = try { end?.toLongOrNull() ?: 0L } catch (e: Exception) { 0L }
+        get() = parseIsoDateToMillis(end)
+
+    companion object {
+        /**
+         * Parse ISO date string to Unix timestamp in milliseconds.
+         * Handles formats like:
+         * - "2024-01-15T10:00:00"
+         * - "2024-01-15T10:00:00Z"
+         * - "2024-01-15T10:00:00+04:00"
+         * - Unix timestamp as string (e.g., "1705312800000")
+         */
+        private fun parseIsoDateToMillis(dateStr: String?): Long {
+            if (dateStr.isNullOrEmpty()) return 0L
+
+            return try {
+                // First, try to parse as a simple Long (Unix timestamp)
+                dateStr.toLongOrNull()?.let { return it }
+
+                // Parse ISO 8601 date string
+                val formatter = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    java.time.ZonedDateTime.parse(
+                        if (dateStr.contains("Z") || dateStr.contains("+") || dateStr.contains("-", startIndex = 10)) {
+                            dateStr
+                        } else {
+                            "${dateStr}Z" // Assume UTC if no timezone
+                        }
+                    ).toInstant().toEpochMilli()
+                } else {
+                    // Fallback for older Android versions
+                    val simpleDateFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
+                    simpleDateFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    val cleanedDate = dateStr.replace(Regex("[Z+].*"), "") // Remove timezone for SimpleDateFormat
+                    simpleDateFormat.parse(cleanedDate)?.time ?: 0L
+                }
+                formatter
+            } catch (e: Exception) {
+                android.util.Log.w("CurrentProgram", "Failed to parse date: $dateStr - ${e.message}")
+                0L
+            }
+        }
+    }
 }
 
 // ===== MOVIES API =====

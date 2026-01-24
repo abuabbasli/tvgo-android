@@ -377,9 +377,11 @@ fun ChannelsScreen(
                             .weight(0.52f)
                             .clip(RoundedCornerShape(12.dp))
                     ) {
-                        if (previewChannel != null) {
+                        // Use local variable to avoid race conditions with mutable state
+                        val channelToPreview = previewChannel
+                        if (channelToPreview != null) {
                             ChannelPreview(
-                                channel = previewChannel!!,
+                                channel = channelToPreview,
                                 isClickTriggered = isClickTriggered,
                                 onPlayStarted = { isClickTriggered = false }
                             )
@@ -753,8 +755,9 @@ fun ChannelPreview(
     
     // PLAY only when not scrolling
     LaunchedEffect(currentChannelToPlay.id, isScrolling) {
-        if (!isScrolling && playerViewRef != null) {
-            val player = playerViewRef!!
+        if (!isScrolling) {
+            // Use local variable to avoid race conditions
+            val player = playerViewRef ?: return@LaunchedEffect
             if (player.streamUrl != currentChannelToPlay.streamUrl) {
                 // Load new stream and RESUME playback
                 player.playUrl(currentChannelToPlay.streamUrl)
