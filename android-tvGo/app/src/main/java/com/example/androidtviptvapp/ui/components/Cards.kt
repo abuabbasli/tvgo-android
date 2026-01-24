@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.size
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
@@ -64,17 +66,17 @@ fun ChannelCard(
             onClick = { onClick(channel) },
             modifier = modifier
                 .width(width)
-                .aspectRatio(16f / 9f),
-            scale = CardDefaults.scale(focusedScale = 1.08f),
+                .aspectRatio(4f / 3f),  // More square aspect ratio like reference
+            scale = CardDefaults.scale(focusedScale = 1.05f),
             border = CardDefaults.border(
                 focusedBorder = Border(
-                    border = BorderStroke(3.dp, Color.White)
+                    border = BorderStroke(2.dp, Color.White)
                 ),
                 border = Border(
-                    border = BorderStroke(1.dp, Color(0xFF444444))
+                    border = BorderStroke(1.dp, Color(0xFF3A3A3A))
                 )
             ),
-            colors = CardDefaults.colors(containerColor = Color(0xFF1E1E1E))
+            colors = CardDefaults.colors(containerColor = Color(0xFF2A2A2A))
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -86,34 +88,30 @@ fun ChannelCard(
                         contentDescription = channel.name,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(8.dp),
+                            .padding(16.dp),
                         contentScale = ContentScale.Fit
                     )
                 } else {
                     // Fallback: channel initials
                     Text(
                         text = channel.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = Color.White
                     )
                 }
 
-                // Order number badge in top-left corner
-                if (channel.order > 0) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(4.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Black.copy(alpha = 0.7f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = channel.order.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White
-                        )
-                    }
+                // Favorite star icon in top-right corner
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Favorite",
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
