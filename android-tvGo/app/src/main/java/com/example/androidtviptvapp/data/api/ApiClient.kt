@@ -166,10 +166,17 @@ data class CurrentProgram(
                 // First, try to parse as a simple Long (Unix timestamp)
                 dateStr.toLongOrNull()?.let { return it }
 
+                // Check if string has timezone info (Z, +, or - after position 10)
+                // Date format: "2024-01-15T10:00:00" - minus signs at pos 4 and 7 are date separators
+                // Timezone offset like "-05:00" would have minus after position 10
+                val hasTimezone = dateStr.contains("Z") ||
+                    dateStr.contains("+") ||
+                    (dateStr.length > 10 && dateStr.indexOf('-', 10) > 0)
+
                 // Parse ISO 8601 date string
                 val formatter = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                     java.time.ZonedDateTime.parse(
-                        if (dateStr.contains("Z") || dateStr.contains("+") || dateStr.contains("-", startIndex = 10)) {
+                        if (hasTimezone) {
                             dateStr
                         } else {
                             "${dateStr}Z" // Assume UTC if no timezone
