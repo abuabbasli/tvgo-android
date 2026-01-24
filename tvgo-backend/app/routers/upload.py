@@ -13,5 +13,16 @@ router = APIRouter(
 
 @router.post("/upload-image")
 async def admin_upload_image(file: UploadFile = File(...)):
-    url = await upload_image_to_s3(file)
-    return {"url": url}
+    try:
+        print(f"Starting image upload: {file.filename}, content_type: {file.content_type}")
+        url = await upload_image_to_s3(file)
+        print(f"Upload successful: {url}")
+        return {"url": url}
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Upload failed: {str(e)}")
+        print(f"Full traceback: {error_details}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
