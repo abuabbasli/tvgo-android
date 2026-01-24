@@ -387,28 +387,37 @@ object TvRepository {
     fun loadData(context: Context? = null) {
         repositoryScope.launch {
             _isLoading.value = true
+            _isDataReady.value = false // Reset to show loading screen
             _loadingProgress.value = "Initializing..."
 
             try {
-                // Load config first (fast)
+                // Load config first (fast) - this doesn't require auth
                 _loadingProgress.value = "Loading configuration..."
                 loadPublicConfigAsync()
 
-                // Load channels and movies in parallel
-                _loadingProgress.value = "Loading content..."
-                val channelsDeferred = async { loadChannelsAsync() }
-                val moviesDeferred = async { loadMoviesAsync() }
+                // Only load protected content if authenticated
+                if (authToken != null) {
+                    android.util.Log.d("TvRepository", "Authenticated - loading protected content, token: ${authToken?.take(20)}...")
+                    
+                    // Load channels and movies in parallel
+                    _loadingProgress.value = "Loading content..."
+                    val channelsDeferred = async { loadChannelsAsync() }
+                    val moviesDeferred = async { loadMoviesAsync() }
 
-                // Wait for both to complete
-                channelsDeferred.await()
-                moviesDeferred.await()
+                    // Wait for both to complete
+                    channelsDeferred.await()
+                    moviesDeferred.await()
 
-                // Load current programs after channels are ready
-                _loadingProgress.value = "Loading program guide..."
-                loadCurrentProgramsAsync()
+                    // Load current programs after channels are ready
+                    _loadingProgress.value = "Loading program guide..."
+                    loadCurrentProgramsAsync()
 
-                _isDataReady.value = true
-                _loadingProgress.value = "Ready"
+                    _isDataReady.value = true
+                    _loadingProgress.value = "Ready"
+                } else {
+                    android.util.Log.d("TvRepository", "Not authenticated - skipping protected content")
+                    _loadingProgress.value = "Waiting for login..."
+                }
 
             } catch (e: Exception) {
                 android.util.Log.e("TvRepository", "Error during data load: ${e.message}", e)
@@ -467,17 +476,46 @@ object TvRepository {
                     )
                 )
 
-                withContext(Dispatchers.Main) {
-                    authToken = response.accessToken
-                    isAuthenticated = true
+                // Set token IMMEDIATELY so API calls will work
+                authToken = response.accessToken
+                android.util.Log.d("TvRepository", "Token set immediately: ${authToken?.take(20)}...")
 
+                // Update config on Main thread
+                withContext(Dispatchers.Main) {
                     if (response.config != null) {
                         appConfig = response.config.brand
                         features = response.config.features
                     }
                 }
 
-                android.util.Log.d("TvRepository", "Login successful - token saved, data will load via loadData()")
+                // CRITICAL: Load all data BEFORE setting isAuthenticated
+                // This ensures data is ready when HomeScreen renders after recomposition
+                android.util.Log.d("TvRepository", "Loading data during login (before recomposition)...")
+                _isLoading.value = true
+                _isDataReady.value = false
+                _loadingProgress.value = "Loading content..."
+                
+                // Load channels and movies in parallel using coroutineScope
+                kotlinx.coroutines.coroutineScope {
+                    val channelsJob = launch { loadChannelsAsync() }
+                    val moviesJob = launch { loadMoviesAsync() }
+                    channelsJob.join()
+                    moviesJob.join()
+                }
+                
+                _loadingProgress.value = "Loading program guide..."
+                loadCurrentProgramsAsync()
+                
+                _isDataReady.value = true
+                _isLoading.value = false
+                _loadingProgress.value = "Ready"
+
+                // NOW set isAuthenticated - this triggers recomposition but data is already ready!
+                withContext(Dispatchers.Main) {
+                    isAuthenticated = true
+                }
+
+                android.util.Log.d("TvRepository", "Login complete - ${channels.size} channels, ${movies.size} movies loaded")
 
                 // Check if admin has flagged baby lock for reset
                 try {
