@@ -381,10 +381,8 @@ object TvRepository {
      * Runs entirely in background, doesn't block UI
      */
     
-    // EMBEDDED CREDENTIALS - Auto-login (DISABLED - user must login)
+    // Auto-login disabled - user must enter credentials manually
     private const val AUTO_LOGIN_ENABLED = false
-    private const val EMBEDDED_USERNAME = "EBzN7ibs"
-    private const val EMBEDDED_PASSWORD = "PBCOIIPM"
     
     fun loadData(context: Context? = null) {
         repositoryScope.launch {
@@ -392,17 +390,6 @@ object TvRepository {
             _loadingProgress.value = "Initializing..."
 
             try {
-                // Auto-login with embedded credentials if enabled
-                if (AUTO_LOGIN_ENABLED && !isAuthenticated) {
-                    _loadingProgress.value = "Logging in..."
-                    try {
-                        login(EMBEDDED_USERNAME, EMBEDDED_PASSWORD, context)
-                        android.util.Log.d("TvRepository", "Auto-login successful")
-                    } catch (e: Exception) {
-                        android.util.Log.w("TvRepository", "Auto-login failed, continuing without auth: ${e.message}")
-                    }
-                }
-                
                 // Load config first (fast)
                 _loadingProgress.value = "Loading configuration..."
                 loadPublicConfigAsync()
