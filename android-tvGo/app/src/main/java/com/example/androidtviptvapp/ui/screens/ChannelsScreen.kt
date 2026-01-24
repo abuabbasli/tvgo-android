@@ -166,14 +166,15 @@ fun ChannelsScreen(
     // NOTE: Don't release player here! It's shared with PlayerScreen (fullscreen).
     // The player will be released when leaving the entire playback flow.
     
-    // Update selection when returning with a new channel ID - scroll to it and focus
+    // Update selection when returning with a new channel ID or jumping via number keys
     LaunchedEffect(initialChannelId) {
         if (initialChannelId != null) {
             val channel = TvRepository.channels.find { it.id == initialChannelId }
             if (channel != null) {
                 focusedChannel = channel
                 previewChannel = channel
-                
+                isClickTriggered = true  // Instant play for number key jumps
+
                 // Find index of the channel in filtered list
                 val index = filteredChannels.indexOfFirst { it.id == initialChannelId }
                 if (index >= 0) {
@@ -187,7 +188,7 @@ fun ChannelsScreen(
                             listState.scrollToItem(index)
                         }
                     }
-                    
+
                     // Wait for scroll and composition, then request focus
                     kotlinx.coroutines.delay(150)
                     focusRequesters[initialChannelId]?.requestFocus()

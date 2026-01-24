@@ -149,16 +149,23 @@ private fun MainContent() {
     var enteredNumber by remember { mutableStateOf("") }
     val numberInputTimeoutMs = 1500L
 
-    // Auto-jump to channel after number input timeout (only on channels screen)
+    // Auto-jump to channel after number input timeout
     LaunchedEffect(enteredNumber, currentRoute) {
-        if (enteredNumber.isNotEmpty() && currentRoute == Routes.CHANNELS) {
+        if (enteredNumber.isNotEmpty()) {
             kotlinx.coroutines.delay(numberInputTimeoutMs)
             val orderNumber = enteredNumber.toIntOrNull()
             if (orderNumber != null) {
                 val targetChannel = TvRepository.getChannelByOrder(orderNumber)
                 if (targetChannel != null) {
-                    // Navigate to the channel player
-                    navController.navigate("player_channel/${targetChannel.id}")
+                    if (currentRoute == Routes.CHANNELS) {
+                        // On channels screen: Update preview channel via savedStateHandle
+                        navController.currentBackStackEntry?.savedStateHandle?.set("channelId", targetChannel.id)
+                    } else if (currentRoute?.startsWith("player_channel") == true) {
+                        // On fullscreen player: Navigate to new channel in fullscreen
+                        navController.navigate("player_channel/${targetChannel.id}") {
+                            popUpTo("player_channel/{channelId}") { inclusive = true }
+                        }
+                    }
                 }
             }
             enteredNumber = ""
@@ -166,11 +173,12 @@ private fun MainContent() {
     }
 
     val isPlayerScreen = currentRoute?.startsWith("player") == true
+    val isChannelPlayerScreen = currentRoute?.startsWith("player_channel") == true
     val isChannelsScreen = currentRoute == Routes.CHANNELS
 
-    // Number key handler for channels screen
+    // Number key handler for channels screen and player screen
     val numberKeyHandler: (KeyEvent) -> Boolean = { event ->
-        if (event.type == KeyEventType.KeyDown && isChannelsScreen) {
+        if (event.type == KeyEventType.KeyDown && (isChannelsScreen || isChannelPlayerScreen)) {
             when (event.key) {
                 Key.Zero, Key.NumPad0 -> { enteredNumber += "0"; true }
                 Key.One, Key.NumPad1 -> { enteredNumber += "1"; true }
@@ -188,21 +196,72 @@ private fun MainContent() {
     }
 
     if (isPlayerScreen) {
-        // Full screen player - no sidebar, no Row layout
-        AppNavigation(
-            navController = navController,
-            channelViewMode = channelViewMode,
-            onPlayUrl = { url ->
-                val encodedUrl = android.util.Base64.encodeToString(
-                    url.toByteArray(),
-                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP
-                )
-                navController.navigate("player/$encodedUrl")
-            },
-            onPlayChannel = { channelId ->
-                navController.navigate("player_channel/$channelId")
+        // Full screen player - no sidebar, with number key support for channel jumping
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onPreviewKeyEvent(numberKeyHandler)
+        ) {
+            AppNavigation(
+                navController = navController,
+                channelViewMode = channelViewMode,
+                onPlayUrl = { url ->
+                    val encodedUrl = android.util.Base64.encodeToString(
+                        url.toByteArray(),
+                        android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP
+                    )
+                    navController.navigate("player/$encodedUrl")
+                },
+                onPlayChannel = { channelId ->
+                    navController.navigate("player_channel/$channelId")
+                }
+            )
+
+            // Number input display overlay (for direct channel jump in fullscreen)
+            AnimatedVisibility(
+                visible = enteredNumber.isNotEmpty() && isChannelPlayerScreen,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(24.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.85f),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = enteredNumber,
+                            color = Color.White,
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        // Show target channel name if found
+                        val targetChannel = enteredNumber.toIntOrNull()?.let { TvRepository.getChannelByOrder(it) }
+                        if (targetChannel != null) {
+                            Text(
+                                text = targetChannel.name,
+                                color = Color(0xFF60A5FA),
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        } else if (enteredNumber.isNotEmpty()) {
+                            Text(
+                                text = "Channel not found",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
             }
-        )
+        }
     } else {
         // Normal screens with sidebar
         Box(modifier = Modifier.fillMaxSize()) {

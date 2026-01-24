@@ -24,8 +24,8 @@ import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.outlined.Tv
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.androidtviptvapp.R
@@ -45,11 +45,13 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.androidtviptvapp.data.TvRepository
 
 // Dark sidebar background color
-private val SidebarBackground = Color(0xFF0D0D12)
-// Selected item blue color
-private val SelectedBlue = Color(0xFF3B82F6)
+private val SidebarBackground = Color(0xFF121218)
+// Selected item color (light gray/white like screenshot)
+private val SelectedColor = Color(0xFFE8E8E8)
 // Unselected icon color
-private val UnselectedGray = Color(0xFF6B7280)
+private val UnselectedGray = Color(0xFF5A5A65)
+// Item background color (dark)
+private val ItemBackground = Color(0xFF1E1E26)
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -102,8 +104,8 @@ fun Sidebar(
         val showLiveTv = TvRepository.features?.enableLiveTv ?: true
         if (showLiveTv) {
             SidebarItem(
-                icon = Icons.Outlined.CalendarMonth,
-                selectedIcon = Icons.Filled.CalendarMonth,
+                icon = Icons.Outlined.Tv,
+                selectedIcon = Icons.Filled.Tv,
                 label = "Channels",
                 isSelected = selectedRoute == "channels",
                 onClick = { onNavigate("channels") }
@@ -165,7 +167,7 @@ fun Sidebar(
             Column(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF1A1A24))
+                    .background(ItemBackground)
                     .padding(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -174,10 +176,10 @@ fun Sidebar(
                 IconButton(
                     onClick = { onViewModeChange(ViewMode.GRID) },
                     colors = IconButtonDefaults.colors(
-                        containerColor = if (viewMode == ViewMode.GRID) SelectedBlue else Color.Transparent,
-                        contentColor = if (viewMode == ViewMode.GRID) Color.White else UnselectedGray,
-                        focusedContainerColor = SelectedBlue,
-                        focusedContentColor = Color.White
+                        containerColor = if (viewMode == ViewMode.GRID) SelectedColor else Color.Transparent,
+                        contentColor = if (viewMode == ViewMode.GRID) Color(0xFF1A1A1A) else UnselectedGray,
+                        focusedContainerColor = SelectedColor,
+                        focusedContentColor = Color(0xFF1A1A1A)
                     ),
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -192,10 +194,10 @@ fun Sidebar(
                 IconButton(
                     onClick = { onViewModeChange(ViewMode.LIST) },
                     colors = IconButtonDefaults.colors(
-                        containerColor = if (viewMode == ViewMode.LIST) SelectedBlue else Color.Transparent,
-                        contentColor = if (viewMode == ViewMode.LIST) Color.White else UnselectedGray,
-                        focusedContainerColor = SelectedBlue,
-                        focusedContentColor = Color.White
+                        containerColor = if (viewMode == ViewMode.LIST) SelectedColor else Color.Transparent,
+                        contentColor = if (viewMode == ViewMode.LIST) Color(0xFF1A1A1A) else UnselectedGray,
+                        focusedContainerColor = SelectedColor,
+                        focusedContentColor = Color(0xFF1A1A1A)
                     ),
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -219,31 +221,39 @@ fun SidebarItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val containerColor = if (isSelected) SelectedBlue else Color.Transparent
-    val contentColor = if (isSelected) Color.White else UnselectedGray
+    // Selected: light background with dark icon
+    // Unselected: dark background with gray icon
+    // Focused: white border
+    val containerColor = if (isSelected) SelectedColor else ItemBackground
+    val contentColor = if (isSelected) Color(0xFF1A1A1A) else UnselectedGray
     val currentIcon = if (isSelected) selectedIcon else icon
 
     Surface(
         onClick = onClick,
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(16.dp)),
         modifier = Modifier
-            .padding(vertical = 4.dp, horizontal = 8.dp)
-            .size(48.dp),
+            .padding(vertical = 6.dp, horizontal = 8.dp)
+            .size(52.dp),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = containerColor,
             contentColor = contentColor,
-            focusedContainerColor = SelectedBlue,
+            focusedContainerColor = ItemBackground,
             focusedContentColor = Color.White,
-            pressedContainerColor = SelectedBlue.copy(alpha = 0.8f),
-            pressedContentColor = Color.White
+            pressedContainerColor = SelectedColor,
+            pressedContentColor = Color(0xFF1A1A1A)
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, Color.White)
+                border = BorderStroke(2.dp, Color.White),
+                shape = RoundedCornerShape(16.dp)
+            ),
+            border = Border(
+                border = BorderStroke(0.dp, Color.Transparent),
+                shape = RoundedCornerShape(16.dp)
             )
         ),
         scale = ClickableSurfaceDefaults.scale(
-            focusedScale = 1.1f
+            focusedScale = 1.05f
         )
     ) {
         Box(
