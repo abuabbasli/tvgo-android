@@ -220,29 +220,31 @@ export default function Sidebar({
             }}
         >
             {/* Logo */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingTop: '28px',
-                paddingBottom: '20px',
-            }}>
-                <motion.img
-                    src="/tvgo-logo.png"
-                    alt="TV Go"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{
-                        opacity: 1,
-                        scale: 1,
-                    }}
-                    transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-                    style={{
-                        objectFit: 'contain',
-                        height: '40px',
-                        maxWidth: '64px',
-                    }}
-                />
-            </div>
+            {config?.brand?.logoUrl && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingTop: '28px',
+                    paddingBottom: '20px',
+                }}>
+                    <motion.img
+                        src={config.brand.logoUrl}
+                        alt={config.brand.appName || 'Logo'}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                        }}
+                        transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+                        style={{
+                            objectFit: 'contain',
+                            height: '40px',
+                            maxWidth: '64px',
+                        }}
+                    />
+                </div>
+            )}
 
             {/* Nav Items */}
             <div style={{

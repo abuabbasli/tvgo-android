@@ -814,7 +814,7 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
                         movie={featuredMovie}
                         onPlay={() => handlePlayMovie(featuredMovie)}
                         onInfo={() => handleMovieClick(featuredMovie)}
-                        logo="/tvgo-logo.png"
+                        logo={config?.brand?.logoUrl}
                         focusedButton={isFocused && focusArea === 'hero' ? heroFocusedButton : null}
                     />
                 )}
