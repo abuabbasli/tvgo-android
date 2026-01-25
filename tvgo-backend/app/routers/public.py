@@ -55,6 +55,7 @@ def _get_user_allowed_channels(db: Database, user: dict) -> Optional[Set[str]]:
     Returns empty set if user has packages but no channels in them.
     """
     user_package_ids = user.get("package_ids") or []
+    print(f"🔍 DEBUG: User package_ids: {user_package_ids}")
     if not user_package_ids:
         return None  # No package restriction
 
@@ -62,19 +63,24 @@ def _get_user_allowed_channels(db: Database, user: dict) -> Optional[Set[str]]:
     for pid in user_package_ids:
         try:
             package_oids.append(ObjectId(pid))
-        except Exception:
+        except Exception as e:
+            print(f"❌ DEBUG: Failed to convert package ID {pid}: {e}")
             pass
 
     if not package_oids:
         return None
 
     packages = list(db["packages"].find({"_id": {"$in": package_oids}}))
+    print(f"🔍 DEBUG: Found {len(packages)} packages")
     allowed_channel_ids: Set[str] = set()
     for pkg in packages:
         channel_ids = pkg.get("channel_ids") or []
+        print(f"🔍 DEBUG: Package '{pkg.get('name')}' has {len(channel_ids)} channel IDs: {channel_ids[:5] if len(channel_ids) > 5 else channel_ids}")
         allowed_channel_ids.update(channel_ids)
 
+    print(f"🔍 DEBUG: Total allowed channel IDs: {len(allowed_channel_ids)}")
     return allowed_channel_ids
+
 
 
 def _default_programs_window() -> List[schemas.ProgramScheduleItem]:
@@ -270,11 +276,25 @@ def list_channels(
 
     # Package-based channel filtering
     allowed_channels = _get_user_allowed_channels(db, current_user)
+    print(f"🔍 DEBUG list_channels: allowed_channels = {allowed_channels}")
     if allowed_channels is not None:
         if not allowed_channels:
             # User has packages but no channels in them - return empty
+            print("⚠️ DEBUG: User has packages but no channels - returning empty")
             return schemas.ChannelsListResponse(total=0, items=[], nextOffset=None)
-        filters["_id"] = {"$in": list(allowed_channels)}
+        
+        # Build regex patterns to match channel IDs
+        # Channel IDs in DB are like "uuid_channelname" but package has just "channelname"
+        # So we match channels where _id ends with the package channel ID
+        # Important: Escape regex special characters to prevent over-matching (e.g., "1" matching "11", "21", etc.)
+        import re
+        escaped_ids = [re.escape(ch_id) for ch_id in allowed_channels]
+        regex_patterns = [f".*_{esc_id}$" for esc_id in escaped_ids]
+        filters["$or"] = [
+            {"_id": {"$in": list(allowed_channels)}},  # Exact match
+            {"_id": {"$regex": "|".join(regex_patterns)}}  # Suffix match
+        ]
+        print(f"🔍 DEBUG: Added filter with {len(allowed_channels)} channel IDs")
 
     if group:
         filters["group"] = group
@@ -294,9 +314,12 @@ def list_channels(
         else:
             filters["_id"] = {"$in": favorite_channels or ["__none__"]}
 
+    print(f"🔍 DEBUG: MongoDB filter: {filters}")
     total = db["channels"].count_documents(filters)
+    print(f"🔍 DEBUG: Total matching: {total}")
     cursor = db["channels"].find(filters).sort("order", 1).skip(offset).limit(limit)
     items = list(cursor)
+    print(f"🔍 DEBUG: Retrieved {len(items)} items")
 
     channels_schema = []
     for ch in items:

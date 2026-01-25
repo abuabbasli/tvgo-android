@@ -546,16 +546,16 @@ object TvRepository {
             url = if (url.startsWith("/")) "$baseUrl$url" else "$baseUrl/$url"
         }
 
-        // Replace localhost/local IPs with Lambda host (same as stream URLs)
-        val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
-        url = url
-            .replace("localhost", lambdaHost)
-            .replace("127.0.0.1", lambdaHost)
-            .replace("0.0.0.0", lambdaHost)
+        // DISABLED: Replace localhost/local IPs with Lambda host (for local testing)
+        // val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
+        // url = url
+        //     .replace("localhost", lambdaHost)
+        //     .replace("127.0.0.1", lambdaHost)
+        //     .replace("0.0.0.0", lambdaHost)
 
         // Handle common local network patterns
-        val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
-        url = localIpPattern.replace(url, lambdaHost)
+        // val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
+        // url = localIpPattern.replace(url, lambdaHost)
 
         android.util.Log.d("TvRepository", "resolveUrl: '$path' -> '$url'")
         return url
@@ -575,16 +575,16 @@ object TvRepository {
             streamUrl = if (streamUrl.startsWith("/")) "$baseUrl$streamUrl" else "$baseUrl/$streamUrl"
         }
 
-        // Replace localhost/local IPs with the Lambda URL host
-        val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
-        streamUrl = streamUrl
-            .replace("localhost", lambdaHost)
-            .replace("127.0.0.1", lambdaHost)
-            .replace("0.0.0.0", lambdaHost)
+        // DISABLED: Replace localhost/local IPs with the Lambda URL host (for local testing)
+        // val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
+        // streamUrl = streamUrl
+        //     .replace("localhost", lambdaHost)
+        //     .replace("127.0.0.1", lambdaHost)
+        //     .replace("0.0.0.0", lambdaHost)
 
         // Also handle common local network patterns
-        val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
-        streamUrl = localIpPattern.replace(streamUrl, lambdaHost)
+        // val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
+        // streamUrl = localIpPattern.replace(streamUrl, lambdaHost)
 
         android.util.Log.d("TvRepository", "Resolved stream URL: $streamUrl")
         return streamUrl

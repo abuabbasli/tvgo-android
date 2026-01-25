@@ -36,7 +36,6 @@
         android:icon="@mipmap/ic_launcher"
         android:label="TV GO"
         android:supportsRtl="true"
-        android:testOnly="true"
         android:theme="@style/Theme.AndroidTvIptvApp"
         android:usesCleartextTraffic="true" >
         <activity
