@@ -1,0 +1,747 @@
+/* Material Design 3 Design System - Premium TV App Styling */
+/* Matching Tvgofigma Premium Design */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ============================================
+     MD3 Core Color Palette (from Tvgofigma)
+     ============================================ */
+  --md3-bg-primary: #191c1b;
+  --md3-bg-secondary: #1e2023;
+  --md3-surface-active: #e1e3e0;
+  --md3-surface-hover: rgba(225, 227, 224, 0.08);
+
+  /* Text Colors */
+  --md3-text-primary: #e1e3e0;
+  --md3-text-secondary: #bfc9c3;
+  --md3-text-on-surface: #191c1b;
+
+  /* Border & Radius */
+  --md3-border-color: rgba(225, 227, 224, 0.15);
+  --md3-border-radius: 6px;
+  --md3-border-radius-sm: 4px;
+  --md3-border-radius-md: 12px;
+  --md3-border-radius-lg: 16px;
+  --md3-border-radius-xl: 20px;
+  --md3-border-radius-2xl: 24px;
+  --md3-border-radius-pill: 24px;
+
+  /* ============================================
+     Glassmorphism Effects
+     ============================================ */
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-bg-strong: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.04);
+  --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+  /* ============================================
+     Premium Gradients
+     ============================================ */
+  --accent-gradient: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+  --warm-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --cool-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --hero-gradient: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.8) 70%, rgba(0, 0, 0, 1) 100%);
+  --card-hover-gradient: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.05) 70%, rgba(255, 255, 255, 0.08) 100%);
+
+  /* ============================================
+     Shadow Elevation System
+     ============================================ */
+  --md3-shadow-elevation-1: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --md3-shadow-elevation-2: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --md3-shadow-elevation-3: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --md3-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --md3-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.7);
+  --md3-shadow-focus: 0 0 20px rgba(225, 227, 224, 0.3);
+
+  /* ============================================
+     Typography Scale
+     ============================================ */
+  --font-size-xs: 0.75rem;
+  /* 12px */
+  --font-size-sm: 0.875rem;
+  /* 14px */
+  --font-size-base: 1rem;
+  /* 16px */
+  --font-size-lg: 1.125rem;
+  /* 18px */
+  --font-size-xl: 1.25rem;
+  /* 20px */
+  --font-size-2xl: 1.5rem;
+  /* 24px */
+  --font-size-3xl: 1.875rem;
+  /* 30px */
+  --font-size-4xl: 2.25rem;
+  /* 36px */
+  --font-size-5xl: 3rem;
+  /* 48px */
+  --font-size-6xl: 3.75rem;
+  /* 60px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* ============================================
+     Spacing Scale
+     ============================================ */
+  --spacing-1: 0.25rem;
+  /* 4px */
+  --spacing-2: 0.5rem;
+  /* 8px */
+  --spacing-3: 0.75rem;
+  /* 12px */
+  --spacing-4: 1rem;
+  /* 16px */
+  --spacing-5: 1.25rem;
+  /* 20px */
+  --spacing-6: 1.5rem;
+  /* 24px */
+  --spacing-8: 2rem;
+  /* 32px */
+  --spacing-10: 2.5rem;
+  /* 40px */
+  --spacing-12: 3rem;
+  /* 48px */
+  --spacing-16: 4rem;
+  /* 64px */
+
+  /* ============================================
+     Animation & Transitions
+     ============================================ */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.3s cubic-bezier(0.2, 0, 0, 1);
+
+  /* ============================================
+     Legacy Variables (backward compatibility)
+     ============================================ */
+  --app-background: #191c1b;
+  --surface-color: #1e2023;
+  --primary-accent: #e1e3e0;
+  --text-primary: #e1e3e0;
+  --text-secondary: #bfc9c3;
+  --focus-border: #e1e3e0;
+
+  /* Typography */
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-size: 16px;
+
+  color-scheme: dark;
+  color: var(--md3-text-primary);
+  background-color: var(--md3-bg-primary);
+}
+
+/* ============================================
+   CSS Reset & Base Styles
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--md3-bg-primary);
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================
+   Premium Scrollbar Styling
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Slim scrollbar variant for channels/movies */
+.slim-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.slim-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.slim-scroll::-webkit-scrollbar-thumb {
+  background: rgba(225, 227, 224, 0.3);
+  border-radius: 10px;
+}
+
+.slim-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(225, 227, 224, 0.5);
+}
+
+/* ============================================
+   Button Reset
+   ============================================ */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  outline: none;
+}
+
+/* ============================================
+   Image Reset
+   ============================================ */
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  vertical-align: middle;
+  display: block;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ============================================
+   Anchors
+   ============================================ */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================
+   Lists
+   ============================================ */
+ol,
+ul,
+menu {
+  list-style: none;
+}
+
+/* ============================================
+   Line Clamp Utilities
+   ============================================ */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* ============================================
+   Aspect Ratio Utilities
+   ============================================ */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-poster {
+  aspect-ratio: 2 / 3;
+}
+
+/* ============================================
+   Responsive Visibility Utilities
+   ============================================ */
+@media (max-width: 767px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   Glassmorphism Components
+   ============================================ */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes focusPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(225, 227, 224, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 25px rgba(225, 227, 224, 0.5);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) forwards;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale var(--transition-normal) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--transition-normal) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--transition-normal) forwards;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp var(--transition-normal) forwards;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   Focus Utilities
+   ============================================ */
+.focusable {
+  transition: transform var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.focusable:focus,
+.focused {
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+/* ============================================
+   TV Focus Styles for Samsung Tizen TV
+   ============================================ */
+
+/* Base focusable element */
+.tv-focusable {
+  transition: transform var(--transition-spring),
+    box-shadow var(--transition-spring),
+    outline var(--transition-spring);
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Focused state - visible focus ring for TV navigation */
+.tv-focusable:focus,
+.tv-focusable.tv-focused {
+  transform: scale(1.03);
+  outline: 3px solid var(--md3-surface-active);
+  box-shadow: var(--md3-shadow-focus), var(--md3-shadow-elevation-2);
+  z-index: 100;
+}
+
+/* Remove default browser focus outline */
+.tv-focusable:focus-visible {
+  outline: 3px solid var(--md3-surface-active);
+}
+
+/* TV-specific button focus */
+.tv-button {
+  padding: 12px 24px;
+  border-radius: var(--md3-border-radius-md);
+  background: var(--md3-bg-secondary);
+  border: 2px solid transparent;
+  color: var(--md3-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-spring);
+}
+
+.tv-button:focus,
+.tv-button.tv-focused {
+  background: var(--md3-surface-active);
+  color: var(--md3-text-on-surface);
+  border-color: white;
+  transform: scale(1.05);
+  box-shadow: var(--md3-shadow-hover);
+}
+
+/* TV Card Focus */
+.tv-card {
+  border: 2px solid transparent;
+  border-radius: var(--md3-border-radius-lg);
+  transition: all var(--transition-spring);
+}
+
+.tv-card:focus,
+.tv-card.tv-focused {
+  border-color: var(--md3-surface-active);
+  transform: scale(1.03);
+  box-shadow: var(--md3-shadow-hover);
+}
+
+/* TV List Item Focus */
+.tv-list-item {
+  background: transparent;
+  border-left: 4px solid transparent;
+  transition: all var(--transition-spring);
+}
+
+.tv-list-item:focus,
+.tv-list-item.tv-focused {
+  background: linear-gradient(90deg, rgba(225, 227, 224, 0.15) 0%, transparent 100%);
+  border-left-color: var(--md3-surface-active);
+}
+
+/* Hide cursor on TV (no mouse) */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    cursor: none !important;
+  }
+}
+
+/* TV-safe area padding (for edge of screen) */
+.tv-safe-area {
+  padding: 36px 48px;
+}
+
+/* Focus pulse animation for TV */
+.tv-focusable:focus,
+.tv-focusable.tv-focused {
+  animation: focusPulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   Premium Card Styles
+   ============================================ */
+.premium-card {
+  background: var(--md3-bg-secondary);
+  border-radius: var(--md3-border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--md3-shadow-card);
+  transition: all var(--transition-spring);
+}
+
+.premium-card:hover {
+  transform: scale(1.03) translateY(-4px);
+  box-shadow: var(--md3-shadow-hover);
+}
+
+/* ============================================
+   Premium Button Styles
+   ============================================ */
+.premium-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--md3-border-radius-pill);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-spring);
+  cursor: pointer;
+}
+
+.premium-button-primary {
+  background: var(--md3-surface-active);
+  color: var(--md3-text-on-surface);
+}
+
+.premium-button-primary:hover {
+  transform: scale(1.05);
+  box-shadow: var(--md3-shadow-elevation-2);
+}
+
+.premium-button-secondary {
+  background: var(--glass-bg-strong);
+  color: var(--md3-text-primary);
+  border: 1px solid var(--md3-border-color);
+  backdrop-filter: blur(12px);
+}
+
+.premium-button-secondary:hover {
+  background: var(--md3-surface-hover);
+  transform: scale(1.05);
+}
+
+/* ============================================
+   Loading Skeleton Styles
+   ============================================ */
+.skeleton {
+  background: linear-gradient(90deg,
+      var(--md3-bg-secondary) 25%,
+      rgba(255, 255, 255, 0.05) 50%,
+      var(--md3-bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--md3-border-radius);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
+   Responsive Grid Utilities
+   ============================================ */
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid-cols-5 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.grid-cols-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .md-grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .md-grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg-grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .lg-grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ============================================
+   Badge Styles
+   ============================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--md3-border-radius);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.badge-live {
+  background: #dc2626;
+  color: white;
+}
+
+.badge-rating {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--md3-text-primary);
+}
+
+.badge-year {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--md3-text-secondary);
+}
+
+/* ============================================
+   Overlay Gradients
+   ============================================ */
+.overlay-bottom {
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.8) 70%, rgba(0, 0, 0, 1) 100%);
+}
+
+.overlay-full {
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0.3) 0%,
+      transparent 30%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.8) 80%,
+      rgba(0, 0, 0, 0.95) 100%);
+}
+
+/* ============================================
+   Data Focusable (for keyboard navigation)
+   ============================================ */
+[data-focusable]:focus {
+  outline: none;
+}
