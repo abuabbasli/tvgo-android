@@ -93,9 +93,9 @@ fun HomeScreen(
     // List state for scroll control
     val listState = androidx.tv.foundation.lazy.list.rememberTvLazyListState()
 
-    // KEY THROTTLING - Smooth one-item-at-a-time scrolling
+    // KEY THROTTLING - Lower value = faster scrolling
     var lastNavKeyTime by remember { mutableStateOf(0L) }
-    val navKeyThrottleMs = 150L
+    val navKeyThrottleMs = 80L  // Reduced from 150ms for faster scrolling
 
     // Scroll to top when HomeScreen opens or when data loads
     LaunchedEffect(featuredMovie?.id) {
@@ -109,45 +109,26 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
-                // THROTTLE navigation keys for smooth scrolling
-                // Also prevents crash from focus traversal on detached nodes during long press
-                try {
-                    if (event.type == KeyEventType.KeyDown) {
-                        val isNavKey = event.key == Key.DirectionUp ||
-                                       event.key == Key.DirectionDown ||
-                                       event.key == Key.DirectionLeft ||
-                                       event.key == Key.DirectionRight
+                // Throttle navigation keys for smooth scrolling
+                // Note: Activity-level dispatchKeyEvent handles crash protection
+                if (event.type == KeyEventType.KeyDown) {
+                    val isNavKey = event.key == Key.DirectionUp ||
+                                   event.key == Key.DirectionDown ||
+                                   event.key == Key.DirectionLeft ||
+                                   event.key == Key.DirectionRight
 
-                        if (isNavKey) {
-                            val now = System.currentTimeMillis()
-                            if (now - lastNavKeyTime < navKeyThrottleMs) {
-                                return@onPreviewKeyEvent true // Block rapid keys
-                            }
-                            lastNavKeyTime = now
+                    if (isNavKey) {
+                        val now = System.currentTimeMillis()
+                        if (now - lastNavKeyTime < navKeyThrottleMs) {
+                            return@onPreviewKeyEvent true // Throttle rapid keys
                         }
+                        lastNavKeyTime = now
                     }
-                    // Also throttle KeyUp for held keys to prevent rapid focus changes
-                    if (event.type == KeyEventType.KeyUp) {
-                        val isNavKey = event.key == Key.DirectionUp ||
-                                       event.key == Key.DirectionDown ||
-                                       event.key == Key.DirectionLeft ||
-                                       event.key == Key.DirectionRight
-                        if (isNavKey) {
-                            val now = System.currentTimeMillis()
-                            if (now - lastNavKeyTime < navKeyThrottleMs) {
-                                return@onPreviewKeyEvent true
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Catch any focus traversal exceptions (e.g., unattached node)
-                    android.util.Log.w("HomeScreen", "Key event error: ${e.message}")
-                    return@onPreviewKeyEvent true
                 }
                 false
             },
         contentPadding = PaddingValues(bottom = 50.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),  // Reduced from 24dp
         // SMOOTH SCROLLING: Keep focused item visible
         pivotOffsets = PivotOffsets(parentFraction = 0.3f, childFraction = 0.0f)
     ) {
@@ -168,13 +149,12 @@ fun HomeScreen(
                         Text(
                             text = "$categoryName Channels",
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(start = 48.dp, bottom = 12.dp)
+                            modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)
                         )
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
-                            horizontalArrangement = Arrangement.spacedBy(20.dp),
-                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp),
-                            pivotOffsets = PivotOffsets(parentFraction = 0.0f, childFraction = 0.0f)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),  // Reduced from 20dp
+                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 4.dp, bottom = 8.dp)
                         ) {
                             items(
                                 items = channelsInCategory,
@@ -198,13 +178,12 @@ fun HomeScreen(
                         Text(
                             text = displayName,
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(start = 48.dp, bottom = 12.dp)
+                            modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)
                         )
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp),
-                            pivotOffsets = PivotOffsets(parentFraction = 0.0f, childFraction = 0.0f)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),  // Reduced from 16dp
+                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 4.dp, bottom = 8.dp)
                         ) {
                             items(
                                 items = moviesInCategory,
@@ -230,13 +209,12 @@ fun HomeScreen(
                         Text(
                             text = "$categoryName Channels",
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(start = 48.dp, bottom = 12.dp)
+                            modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)
                         )
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
-                            horizontalArrangement = Arrangement.spacedBy(20.dp),
-                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp),
-                            pivotOffsets = PivotOffsets(parentFraction = 0.0f, childFraction = 0.0f)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),  // Reduced from 20dp
+                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 4.dp, bottom = 8.dp)
                         ) {
                             items(
                                 items = channelsInCategory,

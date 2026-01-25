@@ -177,18 +177,18 @@ fun MessageCard(
         border = ClickableSurfaceDefaults.border(
             border = Border.None,
             focusedBorder = Border(
-                border = BorderStroke(3.dp, androidx.compose.ui.graphics.Color(0xFF60A5FA)),
+                border = BorderStroke(2.dp, androidx.compose.ui.graphics.Color.White),  // White like sidebar
                 shape = RoundedCornerShape(12.dp)
             ),
             pressedBorder = Border(
-                border = BorderStroke(3.dp, androidx.compose.ui.graphics.Color(0xFF3B82F6)),
+                border = BorderStroke(2.dp, androidx.compose.ui.graphics.Color.White),
                 shape = RoundedCornerShape(12.dp)
             )
         ),
         scale = ClickableSurfaceDefaults.scale(
             scale = 1f,
-            focusedScale = 1.02f,
-            pressedScale = 0.98f
+            focusedScale = 1.01f,  // Reduced from 1.02f - more subtle
+            pressedScale = 0.99f   // Reduced from 0.98f
         )
     ) {
         Column(

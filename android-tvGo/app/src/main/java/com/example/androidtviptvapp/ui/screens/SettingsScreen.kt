@@ -275,16 +275,15 @@ private fun SettingsItem(
     isDanger: Boolean = false,
     onClick: () -> Unit
 ) {
+    // Use sidebar-like colors - no red, use white/gray theme
     val backgroundColor = when {
         isHighlighted -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-        isDanger -> Color(0xFFE53935).copy(alpha = 0.1f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        else -> Color(0xFF1E1E26)  // Match sidebar item background
     }
 
     val iconTint = when {
         isHighlighted -> Color(0xFF4CAF50)
-        isDanger -> Color(0xFFE53935)
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> Color(0xFF9CA3AF)  // Gray like sidebar
     }
 
     Surface(
@@ -295,16 +294,19 @@ private fun SettingsItem(
         shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = backgroundColor,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedContainerColor = Color(0xFF2A2A2A),  // Slightly lighter on focus
             pressedContainerColor = backgroundColor
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
                 border = androidx.compose.foundation.BorderStroke(
                     2.dp,
-                    if (isDanger) Color(0xFFE53935) else MaterialTheme.colorScheme.primary
+                    Color.White  // White border like sidebar
                 )
             )
+        ),
+        scale = ClickableSurfaceDefaults.scale(
+            focusedScale = 1.01f  // Very subtle scale - reduced from default
         )
     ) {
         Row(
@@ -317,7 +319,7 @@ private fun SettingsItem(
                 imageVector = icon,
                 contentDescription = title,
                 tint = iconTint,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(28.dp)  // Slightly smaller icon
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -326,12 +328,12 @@ private fun SettingsItem(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (isDanger) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurface
+                    color = Color.White  // White text like sidebar
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = Color(0xFF9CA3AF)  // Gray subtitle
                 )
             }
 

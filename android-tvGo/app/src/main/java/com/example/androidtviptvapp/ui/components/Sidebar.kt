@@ -68,28 +68,19 @@ fun Sidebar(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(72.dp)
+            .width(56.dp)  // Slimmer sidebar (was 72.dp)
             .background(SidebarBackground)
-            .padding(vertical = 16.dp),
+            .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
         // App Logo
         AppLogo(
-            modifier = Modifier.padding(bottom = 16.dp),
-            size = 40.dp
+            modifier = Modifier.padding(bottom = 12.dp),
+            size = 32.dp  // Smaller logo
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Search
-        SidebarItem(
-            icon = Icons.Outlined.Search,
-            selectedIcon = Icons.Filled.Search,
-            label = "Search",
-            isSelected = selectedRoute == "search",
-            onClick = { /* Search not implemented yet */ }
-        )
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Home
         SidebarItem(
@@ -140,15 +131,6 @@ fun Sidebar(
             label = "Messages",
             isSelected = selectedRoute == "messages",
             onClick = { onNavigate("messages") }
-        )
-
-        // Favorites
-        SidebarItem(
-            icon = Icons.Outlined.Favorite,
-            selectedIcon = Icons.Filled.Favorite,
-            label = "Favorites",
-            isSelected = selectedRoute == "favorites",
-            onClick = { /* Favorites not implemented yet */ }
         )
 
         // Settings
@@ -230,10 +212,10 @@ fun SidebarItem(
 
     Surface(
         onClick = onClick,
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(16.dp)),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
         modifier = Modifier
-            .padding(vertical = 6.dp, horizontal = 8.dp)
-            .size(52.dp),
+            .padding(vertical = 4.dp, horizontal = 4.dp)
+            .size(44.dp),  // Smaller items for slimmer sidebar
         colors = ClickableSurfaceDefaults.colors(
             containerColor = containerColor,
             contentColor = contentColor,
@@ -245,11 +227,11 @@ fun SidebarItem(
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
                 border = BorderStroke(2.dp, Color.White),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(12.dp)
             ),
             border = Border(
                 border = BorderStroke(0.dp, Color.Transparent),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(12.dp)
             )
         ),
         scale = ClickableSurfaceDefaults.scale(
@@ -263,7 +245,7 @@ fun SidebarItem(
             Icon(
                 imageVector = currentIcon,
                 contentDescription = label,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)  // Smaller icons
             )
         }
     }

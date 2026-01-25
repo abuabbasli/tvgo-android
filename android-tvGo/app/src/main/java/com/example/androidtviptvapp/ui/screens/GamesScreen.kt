@@ -228,9 +228,12 @@ private fun CategoryChip(
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, Color(0xFF60A5FA)),
+                border = BorderStroke(2.dp, Color.White),  // White border like rest of app
                 shape = RoundedCornerShape(20.dp)
             )
+        ),
+        scale = ClickableSurfaceDefaults.scale(
+            focusedScale = 1.01f  // Subtle scale like rest of app
         )
     ) {
         Text(
@@ -262,18 +265,12 @@ private fun GameCard(
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(3.dp, Color(0xFF3B82F6)),
+                border = BorderStroke(2.dp, Color.White),  // White border like rest of app
                 shape = RoundedCornerShape(12.dp)
             )
         ),
         scale = ClickableSurfaceDefaults.scale(
-            focusedScale = 1.05f
-        ),
-        glow = ClickableSurfaceDefaults.glow(
-            focusedGlow = Glow(
-                elevationColor = Color(0xFF3B82F6).copy(alpha = 0.5f),
-                elevation = 12.dp
-            )
+            focusedScale = 1.01f  // Reduced from 1.05f to match app styling
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -347,10 +344,52 @@ private fun GameWebView(
     var webView by remember { mutableStateOf<WebView?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var isFullscreen by remember { mutableStateOf(true) }
-    
+    var hasError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Validate URL before loading
+    val isValidUrl = remember(game.gameUrl) {
+        game.gameUrl.isNotBlank() &&
+        (game.gameUrl.startsWith("http://") || game.gameUrl.startsWith("https://"))
+    }
+
     // Handle back button
     BackHandler(enabled = true) {
         onClose()
+    }
+
+    // Show error if URL is invalid
+    if (!isValidUrl) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Invalid game URL",
+                    color = Color.Red,
+                    fontSize = 18.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    onClick = onClose,
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = Color(0xFF3B82F6),
+                        focusedContainerColor = Color(0xFF60A5FA)
+                    )
+                ) {
+                    Text(
+                        text = "Go Back",
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    )
+                }
+            }
+        }
+        return
     }
     
     Box(
@@ -422,97 +461,173 @@ private fun GameWebView(
                 )
             }
             
-            // WebView
-            AndroidView(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .focusable()
-                    .onKeyEvent { keyEvent ->
-                        // Forward D-pad to WebView
-                        when (keyEvent.key) {
-                            Key.DirectionUp, Key.DirectionDown, 
-                            Key.DirectionLeft, Key.DirectionRight,
-                            Key.Enter, Key.NumPadEnter -> {
-                                val androidKeyCode = when (keyEvent.key) {
-                                    Key.DirectionUp -> KeyEvent.KEYCODE_DPAD_UP
-                                    Key.DirectionDown -> KeyEvent.KEYCODE_DPAD_DOWN
-                                    Key.DirectionLeft -> KeyEvent.KEYCODE_DPAD_LEFT
-                                    Key.DirectionRight -> KeyEvent.KEYCODE_DPAD_RIGHT
-                                    Key.Enter, Key.NumPadEnter -> KeyEvent.KEYCODE_DPAD_CENTER
-                                    else -> return@onKeyEvent false
-                                }
-                                val action = if (keyEvent.type == KeyEventType.KeyDown) 
-                                    KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP
-                                webView?.dispatchKeyEvent(KeyEvent(action, androidKeyCode))
-                                true
+            // WebView with error handling
+            if (hasError) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                        .background(Color(0xFF1A1A2E)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = errorMessage ?: "Failed to load game",
+                            color = Color.Red,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Surface(
+                                onClick = {
+                                    hasError = false
+                                    errorMessage = null
+                                    webView?.reload()
+                                },
+                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                colors = ClickableSurfaceDefaults.colors(
+                                    containerColor = Color(0xFF3B82F6),
+                                    focusedContainerColor = Color(0xFF60A5FA)
+                                )
+                            ) {
+                                Text(
+                                    text = "Retry",
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                                )
                             }
-                            else -> false
+                            Surface(
+                                onClick = onClose,
+                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                colors = ClickableSurfaceDefaults.colors(
+                                    containerColor = Color(0xFF374151),
+                                    focusedContainerColor = Color(0xFF4B5563)
+                                )
+                            ) {
+                                Text(
+                                    text = "Go Back",
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                AndroidView(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                        .focusable()
+                        .onKeyEvent { keyEvent ->
+                            // Forward D-pad to WebView
+                            when (keyEvent.key) {
+                                Key.DirectionUp, Key.DirectionDown,
+                                Key.DirectionLeft, Key.DirectionRight,
+                                Key.Enter, Key.NumPadEnter -> {
+                                    val androidKeyCode = when (keyEvent.key) {
+                                        Key.DirectionUp -> KeyEvent.KEYCODE_DPAD_UP
+                                        Key.DirectionDown -> KeyEvent.KEYCODE_DPAD_DOWN
+                                        Key.DirectionLeft -> KeyEvent.KEYCODE_DPAD_LEFT
+                                        Key.DirectionRight -> KeyEvent.KEYCODE_DPAD_RIGHT
+                                        Key.Enter, Key.NumPadEnter -> KeyEvent.KEYCODE_DPAD_CENTER
+                                        else -> return@onKeyEvent false
+                                    }
+                                    val action = if (keyEvent.type == KeyEventType.KeyDown)
+                                        KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP
+                                    webView?.dispatchKeyEvent(KeyEvent(action, androidKeyCode))
+                                    true
+                                }
+                                else -> false
+                            }
+                        },
+                    factory = { context ->
+                        try {
+                            WebView(context).apply {
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+
+                                isFocusable = true
+                                isFocusableInTouchMode = true
+
+                                settings.apply {
+                                    javaScriptEnabled = true
+                                    domStorageEnabled = true
+                                    databaseEnabled = true
+                                    mediaPlaybackRequiresUserGesture = false
+                                    useWideViewPort = true
+                                    loadWithOverviewMode = true
+                                    setSupportZoom(true)
+                                    builtInZoomControls = true
+                                    displayZoomControls = false
+                                    cacheMode = WebSettings.LOAD_DEFAULT
+                                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                    setRenderPriority(WebSettings.RenderPriority.HIGH)
+                                    javaScriptCanOpenWindowsAutomatically = true
+                                }
+
+                                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+
+                                webViewClient = object : WebViewClient() {
+                                    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                                        super.onPageStarted(view, url, favicon)
+                                        isLoading = true
+                                    }
+
+                                    override fun onPageFinished(view: WebView?, url: String?) {
+                                        super.onPageFinished(view, url)
+                                        isLoading = false
+
+                                        // Inject focus styles
+                                        view?.evaluateJavascript("""
+                                            (function() {
+                                                var style = document.createElement('style');
+                                                style.textContent = `
+                                                    *:focus {
+                                                        outline: 3px solid #3B82F6 !important;
+                                                        outline-offset: 2px !important;
+                                                        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4) !important;
+                                                    }
+                                                `;
+                                                document.head.appendChild(style);
+                                            })();
+                                        """.trimIndent(), null)
+                                    }
+
+                                    override fun onReceivedError(
+                                        view: WebView?,
+                                        errorCode: Int,
+                                        description: String?,
+                                        failingUrl: String?
+                                    ) {
+                                        super.onReceivedError(view, errorCode, description, failingUrl)
+                                        android.util.Log.e("GameWebView", "Error loading game: $description (code: $errorCode)")
+                                        hasError = true
+                                        errorMessage = description ?: "Failed to load game"
+                                        isLoading = false
+                                    }
+                                }
+
+                                webChromeClient = object : WebChromeClient() {}
+
+                                loadUrl(game.gameUrl)
+                                webView = this
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("GameWebView", "Failed to create WebView", e)
+                            hasError = true
+                            errorMessage = "Failed to initialize game: ${e.message}"
+                            // Return a placeholder WebView to avoid crash
+                            WebView(context)
                         }
                     },
-                factory = { context ->
-                    WebView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        
-                        isFocusable = true
-                        isFocusableInTouchMode = true
-                        
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            mediaPlaybackRequiresUserGesture = false
-                            useWideViewPort = true
-                            loadWithOverviewMode = true
-                            setSupportZoom(true)
-                            builtInZoomControls = true
-                            displayZoomControls = false
-                            cacheMode = WebSettings.LOAD_DEFAULT
-                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                            setRenderPriority(WebSettings.RenderPriority.HIGH)
-                            javaScriptCanOpenWindowsAutomatically = true
-                        }
-                        
-                        setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-                        
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                                super.onPageStarted(view, url, favicon)
-                                isLoading = true
-                            }
-                            
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                isLoading = false
-                                
-                                // Inject focus styles
-                                view?.evaluateJavascript("""
-                                    (function() {
-                                        var style = document.createElement('style');
-                                        style.textContent = `
-                                            *:focus {
-                                                outline: 3px solid #3B82F6 !important;
-                                                outline-offset: 2px !important;
-                                                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4) !important;
-                                            }
-                                        `;
-                                        document.head.appendChild(style);
-                                    })();
-                                """.trimIndent(), null)
-                            }
-                        }
-                        
-                        webChromeClient = object : WebChromeClient() {}
-                        
-                        loadUrl(game.gameUrl)
-                        webView = this
-                    }
-                },
-                update = { view -> webView = view }
-            )
+                    update = { view -> webView = view }
+                )
+            }
         }
         
         // Exit fullscreen button

@@ -39,15 +39,17 @@ import com.example.androidtviptvapp.ui.screens.BabyLockManager
 class MainActivity : ComponentActivity() {
 
     // Key throttling to prevent crashes from rapid focus traversal on long press
+    // Lower value = faster scrolling, higher value = more stable
     private var lastNavKeyTime = 0L
-    private val navKeyThrottleMs = 120L // Minimum time between nav key events
+    private val navKeyThrottleMs = 80L // Reduced from 120ms for faster scrolling
 
     /**
      * Intercept key events BEFORE they reach Compose to prevent crashes from
      * rapid focus traversal on detached nodes during long press.
      *
-     * The Compose TV focus system can crash with "visitAncestors called on an unattached node"
-     * when keys are held down and focus traversal tries to visit nodes that are being recomposed.
+     * Known Compose TV crashes this prevents:
+     * 1. "visitAncestors called on an unattached node" - focus traversal crash
+     * 2. "replace() called on item that was not placed" - layout crash during rapid scroll
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         // Check if this is a navigation key (D-pad)
@@ -63,18 +65,23 @@ class MainActivity : ComponentActivity() {
             val now = System.currentTimeMillis()
             if (now - lastNavKeyTime < navKeyThrottleMs) {
                 // Too fast - consume the event to prevent rapid focus changes
-                // This prevents the crash when holding down navigation keys
                 return true
             }
             lastNavKeyTime = now
         }
 
-        // Let the event through normally
+        // Let the event through normally, catch any Compose crashes
         return try {
             super.dispatchKeyEvent(event)
         } catch (e: IllegalStateException) {
-            // Catch the "unattached node" crash and consume the event
-            android.util.Log.w("MainActivity", "Caught focus crash: ${e.message}")
+            // Catch Compose crashes:
+            // - "unattached node" from focus traversal
+            // - "replace() called on item that was not placed" from layout
+            android.util.Log.w("MainActivity", "Caught Compose crash: ${e.message}")
+            true
+        } catch (e: Exception) {
+            // Catch any other unexpected errors during key dispatch
+            android.util.Log.w("MainActivity", "Caught key dispatch error: ${e.message}")
             true
         }
     }
@@ -219,7 +226,7 @@ private fun MainContent() {
     val isChannelsScreen = currentRoute == Routes.CHANNELS
 
     // Number key handler for channels screen and player screen
-    val numberKeyHandler: (KeyEvent) -> Boolean = { event ->
+    val numberKeyHandler: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = { event ->
         if (event.type == KeyEventType.KeyDown && (isChannelsScreen || isChannelPlayerScreen)) {
             when (event.key) {
                 Key.Zero, Key.NumPad0 -> { enteredNumber += "0"; true }

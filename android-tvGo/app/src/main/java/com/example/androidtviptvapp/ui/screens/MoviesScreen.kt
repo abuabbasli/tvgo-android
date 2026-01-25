@@ -127,16 +127,16 @@ fun MoviesScreen(
                 val moviesInCategory = movies.filter { it.category == category }
                 if (moviesInCategory.isNotEmpty()) {
                     item {
-                        Column(modifier = Modifier.padding(top = 32.dp)) {
+                        Column(modifier = Modifier.padding(top = 16.dp)) {
                             Text(
                                 text = "${category.replaceFirstChar { it.uppercase() }} Movies",
                                 style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.padding(start = 48.dp, bottom = 16.dp)
+                                modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)
                             )
                             TvLazyRow(
                                 modifier = Modifier.focusGroup(),
                                 contentPadding = PaddingValues(horizontal = 48.dp),
-                                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)  // Reduced from 20dp
                             ) {
                                 items(
                                     items = moviesInCategory,
@@ -157,16 +157,16 @@ fun MoviesScreen(
             val filtered = movies.filter { it.category == selectedCategory }
             if (filtered.isNotEmpty()) {
                 item {
-                    Column(modifier = Modifier.padding(top = 32.dp)) {
+                    Column(modifier = Modifier.padding(top = 16.dp)) {
                         Text(
                             text = "${selectedCategory.replaceFirstChar { it.uppercase() }} Movies",
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(start = 48.dp, bottom = 16.dp)
+                            modifier = Modifier.padding(start = 48.dp, bottom = 8.dp)
                         )
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
                             contentPadding = PaddingValues(horizontal = 48.dp),
-                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)  // Reduced from 20dp
                         ) {
                             items(
                                 items = filtered,
