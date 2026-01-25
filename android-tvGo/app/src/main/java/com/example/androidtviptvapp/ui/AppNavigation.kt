@@ -61,8 +61,7 @@ fun AppNavigation(
                 .getStateFlow<String?>("channelId", null)
                 .collectAsState()
             
-            android.util.Log.d("AppNavigation", "ChannelsScreen received channelId: $returnedChannelId")
-            
+            // Debug logging removed for performance
             ChannelsScreen(
                 viewMode = channelViewMode,
                 initialChannelId = returnedChannelId,
@@ -144,12 +143,10 @@ fun AppNavigation(
         }
         composable(Routes.PLAYER_CHANNEL) { backStackEntry ->
             val channelId = backStackEntry.arguments?.getString("channelId")
-            android.util.Log.d("AppNavigation", "Looking for channelId: $channelId")
-            android.util.Log.d("AppNavigation", "Total channels in repo: ${com.example.androidtviptvapp.data.TvRepository.channels.size}")
-            
+            // Debug logging removed for performance
+
             if (channelId != null) {
                 val channel = com.example.androidtviptvapp.data.TvRepository.channels.find { it.id == channelId }
-                android.util.Log.d("AppNavigation", "Found channel: ${channel?.name}, streamUrl: ${channel?.streamUrl}")
                 
                 if (channel != null) {
                     PlayerScreen(

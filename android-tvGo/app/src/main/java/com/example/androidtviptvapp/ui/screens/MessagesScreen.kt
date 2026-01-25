@@ -136,7 +136,10 @@ fun MessagesScreen() {
                                         scope.launch {
                                             try {
                                                 ApiClient.service.markMessageRead(message.id)
-                                            } catch (_: Exception) {}
+                                            } catch (e: Exception) {
+                                                // Silent fail - marking as read is not critical
+                                                android.util.Log.w("MessagesScreen", "Failed to mark message read: ${e.message}")
+                                            }
                                         }
                                     }
                                 }

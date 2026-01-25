@@ -1,6 +1,7 @@
 package com.example.androidtviptvapp
 
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
@@ -36,6 +37,47 @@ import com.example.androidtviptvapp.ui.screens.LoginScreen
 import com.example.androidtviptvapp.ui.screens.BabyLockManager
 
 class MainActivity : ComponentActivity() {
+
+    // Key throttling to prevent crashes from rapid focus traversal on long press
+    private var lastNavKeyTime = 0L
+    private val navKeyThrottleMs = 120L // Minimum time between nav key events
+
+    /**
+     * Intercept key events BEFORE they reach Compose to prevent crashes from
+     * rapid focus traversal on detached nodes during long press.
+     *
+     * The Compose TV focus system can crash with "visitAncestors called on an unattached node"
+     * when keys are held down and focus traversal tries to visit nodes that are being recomposed.
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Check if this is a navigation key (D-pad)
+        val isNavKey = when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT -> true
+            else -> false
+        }
+
+        if (isNavKey) {
+            val now = System.currentTimeMillis()
+            if (now - lastNavKeyTime < navKeyThrottleMs) {
+                // Too fast - consume the event to prevent rapid focus changes
+                // This prevents the crash when holding down navigation keys
+                return true
+            }
+            lastNavKeyTime = now
+        }
+
+        // Let the event through normally
+        return try {
+            super.dispatchKeyEvent(event)
+        } catch (e: IllegalStateException) {
+            // Catch the "unattached node" crash and consume the event
+            android.util.Log.w("MainActivity", "Caught focus crash: ${e.message}")
+            true
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

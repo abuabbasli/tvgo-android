@@ -29,10 +29,18 @@ import com.example.androidtviptvapp.ui.screens.BabyLockManager
  * - Schedule caching to reduce API calls
  * - Efficient memory usage
  * - No main thread blocking
+ * - Pre-computed categories for instant UI rendering
+ * - Minimal logging in production
  */
 object TvRepository {
     // Managed coroutine scope - tied to app lifecycle
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // CPU-intensive work scope (for mapping/filtering)
+    private val computeDispatcher = Dispatchers.Default
+
+    // Production mode - disable verbose logging for performance
+    private const val DEBUG_LOGGING = false
 
     // Loading states for UI feedback
     private val _isLoading = MutableStateFlow(true)
@@ -97,16 +105,17 @@ object TvRepository {
                 lastLoadTime + EPG_RELOAD_MIN_INTERVAL_MS < now) {
                 loadJob = repositoryScope.launch {
                     try {
-                        android.util.Log.d(TAG, "Loading EPG for channel $channelId")
                         // Use standard retry for EPG (OnTV-main pattern)
                         val response = ApiClient.retry { ApiClient.service.getChannelSchedule(channelId) }
                         _programs.value = response.programs
                         lastLoadTime = System.currentTimeMillis()
-                        android.util.Log.d(TAG, "Loaded ${response.programs.size} programs for $channelId")
+                        if (DEBUG_LOGGING) {
+                            android.util.Log.d(TAG, "Loaded ${response.programs.size} programs for $channelId")
+                        }
                     } catch (e: kotlinx.coroutines.CancellationException) {
-                        // Coroutine cancelled - not an error, just log debug
-                        android.util.Log.d(TAG, "EPG load cancelled for $channelId")
+                        // Coroutine cancelled - not an error, ignore silently
                     } catch (e: Exception) {
+                        // Only log errors, not debug info
                         android.util.Log.e(TAG, "Failed to load EPG for $channelId: ${e.message}")
                     }
                     loadJob = null
@@ -201,9 +210,7 @@ object TvRepository {
         val usedMem = runtime.totalMemory() - runtime.freeMemory()
         val maxMem = runtime.maxMemory()
         val usagePercent = (usedMem.toFloat() / maxMem * 100).toInt()
-        
-        android.util.Log.d(TAG, "Memory: ${usedMem/1024/1024}MB / ${maxMem/1024/1024}MB ($usagePercent%)")
-        
+
         if (usagePercent > 80) {
             android.util.Log.w(TAG, "High memory usage ($usagePercent%) - clearing caches")
             imageLoader?.memoryCache?.clear()
@@ -222,7 +229,6 @@ object TvRepository {
     fun saveMoviePosition(movieId: String, positionMs: Long) {
         if (positionMs > 0) {
             moviePositions[movieId] = positionMs
-            android.util.Log.d("TvRepository", "Saved position for movie $movieId: ${positionMs/1000}s")
         }
     }
     
@@ -252,7 +258,6 @@ object TvRepository {
         while (channelHistory.size > MAX_HISTORY_SIZE) {
             channelHistory.removeAt(channelHistory.size - 1)
         }
-        android.util.Log.d(TAG, "Added channel ${channel.name} to history")
     }
 
     /**
@@ -278,6 +283,21 @@ object TvRepository {
         Category("romance", "Romance")
     )
 
+    // =========================================================================
+    // PRE-COMPUTED DATA FOR INSTANT UI RENDERING
+    // These are computed ONCE after data loads, not during recomposition
+    // =========================================================================
+
+    // Pre-computed channels by category for HomeScreen (category -> channels list)
+    val precomputedChannelsByCategory = mutableStateMapOf<String, List<Channel>>()
+
+    // Pre-computed movies by category for HomeScreen (category -> movies list)
+    val precomputedMoviesByCategory = mutableStateMapOf<String, List<Movie>>()
+
+    // Flag to indicate pre-computation is complete
+    private val _isPrecomputeReady = MutableStateFlow(false)
+    val isPrecomputeReady: StateFlow<Boolean> = _isPrecomputeReady.asStateFlow()
+
     // Optimized Coil ImageLoader singleton
     private var imageLoader: ImageLoader? = null
 
@@ -292,32 +312,24 @@ object TvRepository {
         return ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.15) // 15% - leave more RAM for player on TV boxes
+                    .maxSizePercent(0.20) // 20% for fast scrolling on TV
                     .strongReferencesEnabled(true) // Keep strong refs for TV scrolling
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
-                    .maxSizeBytes(50L * 1024 * 1024) // 50MB - TV boxes have limited storage
+                    .maxSizeBytes(100L * 1024 * 1024) // 100MB - aggressive disk cache
                     .build()
             }
             .okHttpClient { getUnsafeOkHttpClient() }
-            .crossfade(200) // Smooth transitions
+            .crossfade(false) // DISABLE crossfade for instant display during scroll
             .respectCacheHeaders(false) // Force caching regardless of server headers
+            .allowHardware(true) // Use hardware bitmaps for better performance
             .components {
                 add(coil.decode.SvgDecoder.Factory()) // Add SVG support
             }
-            .logger(object : coil.util.Logger {
-                override var level: Int = android.util.Log.DEBUG
-                override fun log(tag: String, priority: Int, message: String?, throwable: Throwable?) {
-                    when (priority) {
-                        android.util.Log.ERROR -> android.util.Log.e("CoilLoader", message ?: "", throwable)
-                        android.util.Log.WARN -> android.util.Log.w("CoilLoader", message ?: "")
-                        else -> android.util.Log.d("CoilLoader", message ?: "")
-                    }
-                }
-            })
+            // No logger in production for performance
             .build()
     }
     
@@ -328,8 +340,7 @@ object TvRepository {
         val loader = getImageLoader(context)
         repositoryScope.launch {
             val logosToPreload = channels.take(50).mapNotNull { it.logo.takeIf { url -> url.isNotEmpty() } }
-            android.util.Log.d("TvRepository", "Preloading ${logosToPreload.size} channel logos")
-            
+
             logosToPreload.forEach { logoUrl ->
                 try {
                     val request = coil.request.ImageRequest.Builder(context)
@@ -397,8 +408,6 @@ object TvRepository {
 
                 // Only load protected content if authenticated
                 if (authToken != null) {
-                    android.util.Log.d("TvRepository", "Authenticated - loading protected content, token: ${authToken?.take(20)}...")
-                    
                     // Load channels and movies in parallel
                     _loadingProgress.value = "Loading content..."
                     val channelsDeferred = async { loadChannelsAsync() }
@@ -415,7 +424,6 @@ object TvRepository {
                     _isDataReady.value = true
                     _loadingProgress.value = "Ready"
                 } else {
-                    android.util.Log.d("TvRepository", "Not authenticated - skipping protected content")
                     _loadingProgress.value = "Waiting for login..."
                 }
 
@@ -430,13 +438,11 @@ object TvRepository {
 
     private suspend fun loadPublicConfigAsync() {
         try {
-            android.util.Log.d("TvRepository", "Loading public config...")
             val config = ApiClient.service.getPublicConfig()
             withContext(Dispatchers.Main) {
                 appConfig = config.brand
                 features = config.features
             }
-            android.util.Log.d("TvRepository", "Config loaded: appName=${config.brand.appName}")
         } catch (e: Exception) {
             android.util.Log.e("TvRepository", "Failed to load config: ${e.message}")
         }
@@ -464,8 +470,9 @@ object TvRepository {
 
                 val deviceName = android.os.Build.MODEL ?: "Android TV"
 
-                android.util.Log.d("TvRepository", "Login attempt: user=$username, deviceId=$deviceId, deviceName=$deviceName")
-                android.util.Log.d("TvRepository", "Using API BASE_URL: ${AppConfig.BASE_URL}")
+                if (DEBUG_LOGGING) {
+                    android.util.Log.d("TvRepository", "Login attempt: user=$username, deviceId=$deviceId")
+                }
 
                 val response = ApiClient.service.login(
                     LoginRequest(
@@ -478,7 +485,6 @@ object TvRepository {
 
                 // Set token IMMEDIATELY so API calls will work
                 authToken = response.accessToken
-                android.util.Log.d("TvRepository", "Token set immediately: ${authToken?.take(20)}...")
 
                 // Update config on Main thread
                 withContext(Dispatchers.Main) {
@@ -490,7 +496,6 @@ object TvRepository {
 
                 // CRITICAL: Load all data BEFORE setting isAuthenticated
                 // This ensures data is ready when HomeScreen renders after recomposition
-                android.util.Log.d("TvRepository", "Loading data during login (before recomposition)...")
                 _isLoading.value = true
                 _isDataReady.value = false
                 _loadingProgress.value = "Loading content..."
@@ -505,7 +510,11 @@ object TvRepository {
                 
                 _loadingProgress.value = "Loading program guide..."
                 loadCurrentProgramsAsync()
-                
+
+                // OPTIMIZATION: Pre-compute HomeScreen data BEFORE showing UI
+                _loadingProgress.value = "Preparing interface..."
+                precomputeHomeScreenData(isBabyMode = false)
+
                 _isDataReady.value = true
                 _isLoading.value = false
                 _loadingProgress.value = "Ready"
@@ -532,11 +541,12 @@ object TvRepository {
         }
     }
 
+    // Pre-compiled regex for performance (avoid recompiling on every call)
+    private val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
+    private const val LAMBDA_HOST = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
+
     private fun resolveUrl(path: String?): String {
-        if (path.isNullOrEmpty()) {
-            android.util.Log.w("TvRepository", "resolveUrl: path is null or empty")
-            return ""
-        }
+        if (path.isNullOrEmpty()) return ""
 
         val baseUrl = AppConfig.IMAGE_BASE_URL
         var url = path
@@ -547,22 +557,24 @@ object TvRepository {
         }
 
         // Replace localhost/local IPs with Lambda host (same as stream URLs)
-        val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
         url = url
-            .replace("localhost", lambdaHost)
-            .replace("127.0.0.1", lambdaHost)
-            .replace("0.0.0.0", lambdaHost)
+            .replace("localhost", LAMBDA_HOST)
+            .replace("127.0.0.1", LAMBDA_HOST)
+            .replace("0.0.0.0", LAMBDA_HOST)
 
-        // Handle common local network patterns
-        val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
-        url = localIpPattern.replace(url, lambdaHost)
+        // Handle common local network patterns (using pre-compiled regex)
+        url = localIpPattern.replace(url, LAMBDA_HOST)
 
-        android.util.Log.d("TvRepository", "resolveUrl: '$path' -> '$url'")
+        // Only log in debug mode
+        if (DEBUG_LOGGING) {
+            android.util.Log.d("TvRepository", "resolveUrl: '$path' -> '$url'")
+        }
         return url
     }
 
     /**
      * Resolve stream URLs - handles localhost/local IPs that need to be replaced
+     * Optimized: uses pre-compiled regex and minimal logging
      */
     private fun resolveStreamUrl(url: String?): String {
         if (url.isNullOrEmpty()) return ""
@@ -576,17 +588,18 @@ object TvRepository {
         }
 
         // Replace localhost/local IPs with the Lambda URL host
-        val lambdaHost = "hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws"
         streamUrl = streamUrl
-            .replace("localhost", lambdaHost)
-            .replace("127.0.0.1", lambdaHost)
-            .replace("0.0.0.0", lambdaHost)
+            .replace("localhost", LAMBDA_HOST)
+            .replace("127.0.0.1", LAMBDA_HOST)
+            .replace("0.0.0.0", LAMBDA_HOST)
 
-        // Also handle common local network patterns
-        val localIpPattern = Regex("192\\.168\\.\\d+\\.\\d+|10\\.\\d+\\.\\d+\\.\\d+|172\\.(1[6-9]|2[0-9]|3[01])\\.\\d+\\.\\d+")
-        streamUrl = localIpPattern.replace(streamUrl, lambdaHost)
+        // Handle common local network patterns (using pre-compiled regex)
+        streamUrl = localIpPattern.replace(streamUrl, LAMBDA_HOST)
 
-        android.util.Log.d("TvRepository", "Resolved stream URL: $streamUrl")
+        // Only log in debug mode
+        if (DEBUG_LOGGING) {
+            android.util.Log.d("TvRepository", "Resolved stream URL: $streamUrl")
+        }
         return streamUrl
     }
 
@@ -597,39 +610,52 @@ object TvRepository {
             val response = ApiClient.bigRetry { ApiClient.service.getChannels() }
             android.util.Log.d("TvRepository", "Got ${response.items.size} channels from API")
 
-            val domainChannels = response.items.mapIndexed { index, dto ->
-                Channel(
-                    id = dto.id,
-                    name = dto.name,
-                    logo = resolveUrl(dto.logo),
-                    category = dto.category ?: dto.group ?: "all",
-                    streamUrl = resolveStreamUrl(dto.streamUrl),
-                    description = dto.description ?: "",
-                    logoColor = dto.logoColor ?: "#000000",
-                    order = dto.order ?: (index + 1),  // Use backend order or fallback to index
-                    schedule = emptyList()
-                )
+            // OPTIMIZATION: Do ALL CPU-intensive work on Default dispatcher (not IO or Main)
+            val (domainChannels, uniqueCategories) = withContext(computeDispatcher) {
+                val channels = response.items.mapIndexed { index, dto ->
+                    Channel(
+                        id = dto.id,
+                        name = dto.name,
+                        logo = resolveUrl(dto.logo),
+                        category = dto.category ?: dto.group ?: "all",
+                        streamUrl = resolveStreamUrl(dto.streamUrl),
+                        description = dto.description ?: "",
+                        logoColor = dto.logoColor ?: "#000000",
+                        order = dto.order ?: (index + 1),
+                        schedule = emptyList()
+                    )
+                }
+
+                // Extract unique categories from channels
+                val categories = channels
+                    .asSequence() // Use sequence for lazy evaluation
+                    .map { it.category }
+                    .filter { it.isNotBlank() && it != "all" }
+                    .distinct()
+                    .sorted()
+                    .map { Category(it, it) }
+                    .toList()
+
+                Pair(channels, categories)
             }
 
-            // Extract unique categories from channels
-            val uniqueCategories = domainChannels
-                .map { it.category }
-                .filter { it.isNotBlank() && it != "all" }
-                .distinct()
-                .sorted()
-                .map { Category(it, it) }
-
+            // OPTIMIZATION: Update UI state in batches to avoid jank
             withContext(Dispatchers.Main) {
                 channels.clear()
-                channels.addAll(domainChannels)
-
                 channelCategories.clear()
                 channelCategories.add(Category("all", "All Channels"))
                 channelCategories.addAll(uniqueCategories)
-
-                android.util.Log.d("TvRepository", "Loaded ${channels.size} channels and ${channelCategories.size} categories")
-                android.util.Log.d("TvRepository", "Channel categories: ${uniqueCategories.map { it.id }}")
             }
+
+            // Add channels in chunks to allow UI to breathe
+            domainChannels.chunked(50).forEach { chunk ->
+                withContext(Dispatchers.Main) {
+                    channels.addAll(chunk)
+                }
+                kotlinx.coroutines.yield() // Let other coroutines run
+            }
+
+            android.util.Log.d("TvRepository", "Loaded ${channels.size} channels and ${channelCategories.size} categories")
         } catch (e: Exception) {
             android.util.Log.e("TvRepository", "Error loading channels", e)
         }
@@ -637,16 +663,13 @@ object TvRepository {
 
     private suspend fun loadCurrentProgramsAsync() {
         try {
-            android.util.Log.d("TvRepository", "Loading current programs...")
             val response = ApiClient.service.getCurrentPrograms()
-            android.util.Log.d("TvRepository", "Got ${response.programs.size} current programs")
-
             withContext(Dispatchers.Main) {
                 currentPrograms.clear()
                 currentPrograms.putAll(response.programs)
             }
         } catch (e: Exception) {
-            android.util.Log.e("TvRepository", "Error loading current programs: ${e.message}")
+            // Silent fail - current programs are optional
         }
     }
 
@@ -666,19 +689,15 @@ object TvRepository {
         // Fetch new schedule
         return withContext(Dispatchers.IO) {
             try {
-                android.util.Log.d(TAG, "Fetching schedule for channel $channelId")
                 val response = ApiClient.service.getChannelSchedule(channelId)
-                android.util.Log.d(TAG, "Got ${response.programs.size} programs for channel $channelId")
-                if (response.programs.isNotEmpty()) {
-                    android.util.Log.d(TAG, "First program: ${response.programs.first().title} at ${response.programs.first().start}")
-                }
                 scheduleCache[channelId] = CachedSchedule(response.programs, now)
                 response.programs
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // Coroutine was cancelled (user navigated away) - not an error
                 throw e // Re-throw to properly propagate cancellation
             } catch (e: Exception) {
-                android.util.Log.e(TAG, "Failed to load schedule for $channelId: ${e.message}", e)
+                // Only log errors, return cached or empty
+                android.util.Log.e(TAG, "Schedule load failed for $channelId: ${e.message}")
                 cached?.programs ?: emptyList()
             }
         }
@@ -691,43 +710,45 @@ object TvRepository {
             val response = ApiClient.bigRetry { ApiClient.service.getMovies() }
             android.util.Log.d("TvRepository", "Got ${response.total} movies from API")
 
-            val domainMovies = response.items.map { item ->
-                // Debug: Log image URLs
-                val posterUrl = item.images?.poster
-                val resolvedThumbnail = resolveUrl(posterUrl)
-                android.util.Log.d("TvRepository", "Movie: ${item.title}, poster: $posterUrl -> $resolvedThumbnail")
-
-                Movie(
-                    id = item.id,
-                    title = item.title,
-                    thumbnail = resolvedThumbnail,
-                    backdrop = resolveUrl(item.images?.landscape ?: item.images?.hero),
-                    category = item.genres?.firstOrNull()?.lowercase() ?: "all",
-                    year = item.year ?: 2024,
-                    rating = item.rating?.toString() ?: "0.0",
-                    description = item.synopsis ?: "",
-                    videoUrl = resolveStreamUrl(item.media?.streamUrl),
-                    trailerUrl = item.media?.trailerUrl ?: "",
-                    genre = item.genres ?: emptyList(),
-                    runtime = item.runtimeMinutes ?: 0,
-                    directors = item.credits?.directors ?: emptyList(),
-                    cast = item.credits?.cast ?: emptyList()
-                )
+            // OPTIMIZATION: Do ALL CPU-intensive work on Default dispatcher
+            val domainMovies = withContext(computeDispatcher) {
+                response.items.map { item ->
+                    Movie(
+                        id = item.id,
+                        title = item.title,
+                        thumbnail = resolveUrl(item.images?.poster),
+                        backdrop = resolveUrl(item.images?.landscape ?: item.images?.hero),
+                        category = item.genres?.firstOrNull()?.lowercase() ?: "all",
+                        year = item.year ?: 2024,
+                        rating = item.rating?.toString() ?: "0.0",
+                        description = item.synopsis ?: "",
+                        videoUrl = resolveStreamUrl(item.media?.streamUrl),
+                        trailerUrl = item.media?.trailerUrl ?: "",
+                        genre = item.genres ?: emptyList(),
+                        runtime = item.runtimeMinutes ?: 0,
+                        directors = item.credits?.directors ?: emptyList(),
+                        cast = item.credits?.cast ?: emptyList()
+                    )
+                }
             }
 
             android.util.Log.d("TvRepository", "Mapped ${domainMovies.size} movies")
 
-            // Log unique categories for debugging
-            val uniqueCategories = domainMovies.map { it.category }.distinct()
-            android.util.Log.d("TvRepository", "Movie categories found: $uniqueCategories")
-
+            // Clear and prepare for batch update
             withContext(Dispatchers.Main) {
                 movies.clear()
-                movies.addAll(domainMovies)
-                // IMPORTANT: Invalidate cache after loading new movies
                 moviesByCategoryCache.clear()
-                android.util.Log.d("TvRepository", "=== MOVIES READY: ${movies.size}, cache cleared ===")
             }
+
+            // OPTIMIZATION: Add movies in chunks to avoid UI jank
+            domainMovies.chunked(100).forEach { chunk ->
+                withContext(Dispatchers.Main) {
+                    movies.addAll(chunk)
+                }
+                kotlinx.coroutines.yield() // Let other coroutines run
+            }
+
+            android.util.Log.d("TvRepository", "=== MOVIES READY: ${movies.size} ===")
         } catch (e: Exception) {
             android.util.Log.e("TvRepository", "MOVIE LOAD ERROR: ${e.message}", e)
         }
@@ -737,8 +758,6 @@ object TvRepository {
      * Force refresh all data from the server.
      */
     fun refreshData(context: Context? = null) {
-        android.util.Log.d("TvRepository", "=== REFRESHING ALL DATA ===")
-
         // Clear caches
         context?.let { clearImageCache(it) }
         scheduleCache.clear()
@@ -751,14 +770,12 @@ object TvRepository {
      * Clear Coil's memory and disk cache.
      */
     fun clearImageCache(context: Context) {
-        android.util.Log.d("TvRepository", "Clearing image caches...")
         imageLoader?.memoryCache?.clear()
         repositoryScope.launch {
             try {
                 imageLoader?.diskCache?.clear()
-                android.util.Log.d("TvRepository", "Image caches cleared")
             } catch (e: Exception) {
-                android.util.Log.e("TvRepository", "Error clearing disk cache: ${e.message}")
+                // Silent fail - cache clearing is not critical
             }
         }
     }
@@ -777,12 +794,10 @@ object TvRepository {
      * Logout - clear authentication and all user data
      */
     fun logout() {
-        android.util.Log.d("TvRepository", "Logging out...")
-        
         // Clear auth state
         authToken = null
         isAuthenticated = false
-        
+
         // Clear all data
         channels.clear()
         movies.clear()
@@ -793,12 +808,13 @@ object TvRepository {
         moviesByCategoryCache.clear()
         channelHistory.clear()
         moviePositions.clear()
-        
+        precomputedChannelsByCategory.clear()
+        precomputedMoviesByCategory.clear()
+
         // Reset loading state
         _isDataReady.value = false
+        _isPrecomputeReady.value = false
         _loadingProgress.value = ""
-        
-        android.util.Log.d("TvRepository", "Logout complete")
     }
 
     // Pre-computed filtered lists for better performance
@@ -810,29 +826,15 @@ object TvRepository {
     private val moviesByCategoryCache = mutableMapOf<String, List<Movie>>()
 
     fun getMoviesByCategory(categoryId: String): List<Movie> {
-        android.util.Log.d(TAG, "getMoviesByCategory($categoryId) called, movies.size=${movies.size}, cacheHit=${moviesByCategoryCache.containsKey(categoryId)}")
-
-        // If cache has it, return directly
+        // If cache has it, return directly (no logging for performance)
         val cached = moviesByCategoryCache[categoryId]
-        if (cached != null) {
-            android.util.Log.d(TAG, "getMoviesByCategory($categoryId): returning ${cached.size} from cache")
-            return cached
-        }
+        if (cached != null) return cached
 
         // Compute fresh
-        android.util.Log.d(TAG, "Computing category $categoryId from ${movies.size} movies")
         val result = if (categoryId == "all") {
             movies.toList()
         } else {
             val normalizedSearch = categoryId.lowercase()
-            android.util.Log.d(TAG, "Filtering for: '$normalizedSearch'")
-
-            // Debug: sample a few movies to see their categories
-            if (movies.isNotEmpty()) {
-                val sample = movies.take(5).map { "${it.title}:${it.category}" }
-                android.util.Log.d(TAG, "Sample movies: $sample")
-            }
-
             movies.filter { movie ->
                 val cat = movie.category.lowercase()
                 val genres = movie.genre.map { it.lowercase() }
@@ -847,7 +849,6 @@ object TvRepository {
             }
         }
 
-        android.util.Log.d(TAG, "getMoviesByCategory($categoryId): found ${result.size} movies")
         moviesByCategoryCache[categoryId] = result
         return result
     }
@@ -857,5 +858,100 @@ object TvRepository {
      */
     fun invalidateMovieCache() {
         moviesByCategoryCache.clear()
+        precomputedMoviesByCategory.clear()
+        precomputedChannelsByCategory.clear()
+        _isPrecomputeReady.value = false
+    }
+
+    // =========================================================================
+    // PRE-COMPUTATION FOR HOMESCREEN (runs ONCE after data loads)
+    // This eliminates expensive filtering during UI recomposition
+    // =========================================================================
+
+    /**
+     * Pre-compute all category data for HomeScreen.
+     * Called ONCE after channels and movies are loaded.
+     * Runs entirely on background thread.
+     */
+    suspend fun precomputeHomeScreenData(isBabyMode: Boolean = false) {
+        withContext(computeDispatcher) {
+            android.util.Log.d(TAG, "Pre-computing HomeScreen data (babyMode=$isBabyMode)...")
+            val startTime = System.currentTimeMillis()
+
+            // Pre-compute channels by category
+            val channelCategoryMapping = if (isBabyMode) {
+                mapOf("Uşaq" to "Kids")
+            } else {
+                mapOf(
+                    "Uşaq" to "Kids",
+                    "İdman" to "Sports",
+                    "İnformasiya" to "News",
+                    "Əyləncə" to "Entertainment",
+                    "Film" to "Movies"
+                )
+            }
+
+            val channelsByCategory = channelCategoryMapping.entries.mapNotNull { (azName, displayName) ->
+                val channelsInCategory = channels.filter {
+                    it.category.equals(azName, ignoreCase = true)
+                }.take(15)
+                if (channelsInCategory.isNotEmpty()) displayName to channelsInCategory else null
+            }.toMap()
+
+            // Pre-compute movies by category
+            val movieCategoryOrder = if (isBabyMode) {
+                listOf("comedy", "animation", "family")
+            } else {
+                listOf("action", "scifi", "thriller", "comedy", "drama", "horror")
+            }
+
+            val moviesByCategory = movieCategoryOrder.associateWith { categoryId ->
+                getMoviesByCategoryInternal(categoryId).take(15)
+            }.filterValues { it.isNotEmpty() }
+
+            // Update state on main thread
+            withContext(Dispatchers.Main) {
+                precomputedChannelsByCategory.clear()
+                precomputedChannelsByCategory.putAll(channelsByCategory)
+
+                precomputedMoviesByCategory.clear()
+                precomputedMoviesByCategory.putAll(moviesByCategory)
+
+                _isPrecomputeReady.value = true
+            }
+
+            val elapsed = System.currentTimeMillis() - startTime
+            android.util.Log.d(TAG, "Pre-computation complete in ${elapsed}ms: ${channelsByCategory.size} channel cats, ${moviesByCategory.size} movie cats")
+        }
+    }
+
+    /**
+     * Internal movie filtering - does NOT use cache, for pre-computation only
+     */
+    private fun getMoviesByCategoryInternal(categoryId: String): List<Movie> {
+        if (categoryId == "all") return movies.toList()
+
+        val normalizedSearch = categoryId.lowercase()
+        return movies.filter { movie ->
+            val cat = movie.category.lowercase()
+            val genres = movie.genre.map { it.lowercase() }
+
+            val directMatch = cat == normalizedSearch
+            val genreMatch = genres.contains(normalizedSearch)
+            val scifiMatch = normalizedSearch == "scifi" && (cat.contains("sci") || genres.any { it.contains("sci") })
+            val partialCatMatch = cat.contains(normalizedSearch)
+            val partialGenreMatch = genres.any { it.contains(normalizedSearch) }
+
+            directMatch || genreMatch || scifiMatch || partialCatMatch || partialGenreMatch
+        }
+    }
+
+    /**
+     * Re-compute HomeScreen data when baby mode changes
+     */
+    fun onBabyModeChanged(isBabyMode: Boolean) {
+        repositoryScope.launch {
+            precomputeHomeScreenData(isBabyMode)
+        }
     }
 }

@@ -4,9 +4,15 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.unit.dp
+import androidx.tv.foundation.PivotOffsets
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyRow
 import androidx.tv.foundation.lazy.list.items
@@ -24,6 +30,9 @@ import com.example.androidtviptvapp.ui.screens.BabyLockManager
 /**
  * HomeScreen with alternating channel and movie category rows
  * Design pattern: Hero → Channel Category → Movie Category → Channel Category → Movie Category...
+ *
+ * OPTIMIZED: Uses pre-computed data from TvRepository to avoid expensive
+ * filtering operations during recomposition.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -34,84 +43,59 @@ fun HomeScreen(
     // Check if baby mode is active
     val isBabyModeActive = BabyLockManager.isBabyModeActive
 
-    // Channel categories mapping: Azerbaijani name -> English display name
-    // When baby mode is active, only show Kids category
-    val channelCategoryMapping = if (isBabyModeActive) {
-        mapOf("Uşaq" to "Kids")
-    } else {
-        mapOf(
-            "Uşaq" to "Kids",
-            "İdman" to "Sports",
-            "İnformasiya" to "News",
-            "Əyləncə" to "Entertainment",
-            "Film" to "Movies"
-        )
+    // OPTIMIZATION: Trigger re-computation when baby mode changes
+    LaunchedEffect(isBabyModeActive) {
+        TvRepository.onBabyModeChanged(isBabyModeActive)
     }
 
-    // Movie categories to show - when baby mode is active, only show family-friendly content
-    val movieCategoryOrder = if (isBabyModeActive) {
-        listOf("comedy", "animation", "family") // Family-friendly categories
-    } else {
-        listOf("action", "scifi", "thriller", "comedy", "drama", "horror")
-    }
+    // OPTIMIZATION: Use pre-computed data from TvRepository (computed ONCE after login)
+    // This eliminates expensive filtering during every recomposition!
+    val isPrecomputeReady by TvRepository.isPrecomputeReady.collectAsState()
+    val precomputedChannels = TvRepository.precomputedChannelsByCategory
+    val precomputedMovies = TvRepository.precomputedMoviesByCategory
 
-    // Reactive: Read directly from TvRepository state lists
-    val channels = TvRepository.channels
+    // Reactive: Read directly from TvRepository state lists (for hero and fallback)
     val movies = TvRepository.movies
 
     // Featured movie for hero
     val featuredMovie = movies.firstOrNull()
 
-    // Compute channels by category - directly compute when channels change or baby mode changes
-    val channelsByCategory = remember(channels.size, isBabyModeActive) {
-        android.util.Log.d("HomeScreen", "Computing channelsByCategory, channels.size=${channels.size}, babyMode=$isBabyModeActive")
-        channelCategoryMapping.entries.mapNotNull { (azName, displayName) ->
-            val channelsInCategory = channels.filter {
-                it.category.equals(azName, ignoreCase = true)
-            }.take(15)
-            if (channelsInCategory.isNotEmpty()) displayName to channelsInCategory else null
-        }.also {
-            android.util.Log.d("HomeScreen", "channelsByCategory result: ${it.size} categories")
-        }
+    // Movie category display names
+    val movieDisplayNames = mapOf(
+        "action" to "Action Movies",
+        "scifi" to "Sci-Fi Movies",
+        "thriller" to "Thriller Movies",
+        "comedy" to "Comedy Movies",
+        "drama" to "Drama Movies",
+        "horror" to "Horror Movies",
+        "animation" to "Animated Movies",
+        "family" to "Family Movies"
+    )
+
+    // Movie category order for consistent display
+    val movieCategoryOrder = if (isBabyModeActive) {
+        listOf("comedy", "animation", "family")
+    } else {
+        listOf("action", "scifi", "thriller", "comedy", "drama", "horror")
     }
 
-    // Compute movies by category - directly compute each time movies change or baby mode changes
-    val moviesByCategory = remember(movies.size, isBabyModeActive) {
-        android.util.Log.d("HomeScreen", "Computing moviesByCategory, movies.size=${movies.size}, babyMode=$isBabyModeActive")
-        if (movies.isEmpty()) {
-            android.util.Log.d("HomeScreen", "Movies list is empty")
-            emptyList()
-        } else {
-            val uniqueCategories = movies.map { it.category }.distinct()
-            android.util.Log.d("HomeScreen", "Movie categories in data: $uniqueCategories")
-            movieCategoryOrder.mapNotNull { categoryId ->
-                val moviesInCategory = TvRepository.getMoviesByCategory(categoryId).take(15)
-                android.util.Log.d("HomeScreen", "Category '$categoryId' has ${moviesInCategory.size} movies")
-                val displayName = when(categoryId) {
-                    "action" -> "Action Movies"
-                    "scifi" -> "Sci-Fi Movies"
-                    "thriller" -> "Thriller Movies"
-                    "comedy" -> "Comedy Movies"
-                    "drama" -> "Drama Movies"
-                    "horror" -> "Horror Movies"
-                    "animation" -> "Animated Movies"
-                    "family" -> "Family Movies"
-                    else -> "${categoryId.replaceFirstChar { it.uppercase() }} Movies"
-                }
-                if (moviesInCategory.isNotEmpty()) Triple(categoryId, displayName, moviesInCategory) else null
-            }.also {
-                android.util.Log.d("HomeScreen", "moviesByCategory result: ${it.size} categories")
-            }
+    // OPTIMIZATION: Use pre-computed data directly (no filtering here!)
+    val channelsByCategory = precomputedChannels.toList()
+    val moviesByCategory = movieCategoryOrder.mapNotNull { categoryId ->
+        precomputedMovies[categoryId]?.let { movies ->
+            Triple(categoryId, movieDisplayNames[categoryId] ?: "$categoryId Movies", movies)
         }
     }
 
     // Interleave channel categories and movie categories
     val maxPairs = maxOf(channelsByCategory.size, moviesByCategory.size)
 
-    android.util.Log.d("HomeScreen", "Rendering: ${channelsByCategory.size} channel cats, ${moviesByCategory.size} movie cats, maxPairs=$maxPairs")
-
     // List state for scroll control
     val listState = androidx.tv.foundation.lazy.list.rememberTvLazyListState()
+
+    // KEY THROTTLING - Smooth one-item-at-a-time scrolling
+    var lastNavKeyTime by remember { mutableStateOf(0L) }
+    val navKeyThrottleMs = 150L
 
     // Scroll to top when HomeScreen opens or when data loads
     LaunchedEffect(featuredMovie?.id) {
@@ -122,9 +106,50 @@ fun HomeScreen(
 
     TvLazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                // THROTTLE navigation keys for smooth scrolling
+                // Also prevents crash from focus traversal on detached nodes during long press
+                try {
+                    if (event.type == KeyEventType.KeyDown) {
+                        val isNavKey = event.key == Key.DirectionUp ||
+                                       event.key == Key.DirectionDown ||
+                                       event.key == Key.DirectionLeft ||
+                                       event.key == Key.DirectionRight
+
+                        if (isNavKey) {
+                            val now = System.currentTimeMillis()
+                            if (now - lastNavKeyTime < navKeyThrottleMs) {
+                                return@onPreviewKeyEvent true // Block rapid keys
+                            }
+                            lastNavKeyTime = now
+                        }
+                    }
+                    // Also throttle KeyUp for held keys to prevent rapid focus changes
+                    if (event.type == KeyEventType.KeyUp) {
+                        val isNavKey = event.key == Key.DirectionUp ||
+                                       event.key == Key.DirectionDown ||
+                                       event.key == Key.DirectionLeft ||
+                                       event.key == Key.DirectionRight
+                        if (isNavKey) {
+                            val now = System.currentTimeMillis()
+                            if (now - lastNavKeyTime < navKeyThrottleMs) {
+                                return@onPreviewKeyEvent true
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Catch any focus traversal exceptions (e.g., unattached node)
+                    android.util.Log.w("HomeScreen", "Key event error: ${e.message}")
+                    return@onPreviewKeyEvent true
+                }
+                false
+            },
         contentPadding = PaddingValues(bottom = 50.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        // SMOOTH SCROLLING: Keep focused item visible
+        pivotOffsets = PivotOffsets(parentFraction = 0.3f, childFraction = 0.0f)
     ) {
         // Hero Section
         if (featuredMovie != null) {
@@ -148,7 +173,8 @@ fun HomeScreen(
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
                             horizontalArrangement = Arrangement.spacedBy(20.dp),
-                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp)
+                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp),
+                            pivotOffsets = PivotOffsets(parentFraction = 0.0f, childFraction = 0.0f)
                         ) {
                             items(
                                 items = channelsInCategory,
@@ -177,7 +203,8 @@ fun HomeScreen(
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp)
+                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp),
+                            pivotOffsets = PivotOffsets(parentFraction = 0.0f, childFraction = 0.0f)
                         ) {
                             items(
                                 items = moviesInCategory,
@@ -208,7 +235,8 @@ fun HomeScreen(
                         TvLazyRow(
                             modifier = Modifier.focusGroup(),
                             horizontalArrangement = Arrangement.spacedBy(20.dp),
-                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp)
+                            contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 8.dp, bottom = 16.dp),
+                            pivotOffsets = PivotOffsets(parentFraction = 0.0f, childFraction = 0.0f)
                         ) {
                             items(
                                 items = channelsInCategory,

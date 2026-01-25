@@ -112,6 +112,10 @@ fun ChannelCard(
     }
 }
 
+/**
+ * MovieCard - OPTIMIZED for smooth scrolling on TV.
+ * Uses simple AsyncImage with NO crossfade for instant display.
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun MovieCard(
@@ -121,20 +125,17 @@ fun MovieCard(
 ) {
     val context = LocalContext.current
 
-    // Check if thumbnail is valid before creating request
-    val hasValidThumbnail = remember(movie.thumbnail) {
-        !movie.thumbnail.isNullOrBlank() && movie.thumbnail.startsWith("http")
-    }
-
-    // Remember image request to avoid recreation - only create if valid URL
-    // Use thumbnail URL as cache key for consistent caching
-    val imageRequest = remember(movie.thumbnail) {
-        if (hasValidThumbnail) {
+    // OPTIMIZED: Simple image request with NO crossfade for instant display
+    val imageRequest = remember(movie.id) {
+        val thumbnail = movie.thumbnail
+        if (!thumbnail.isNullOrBlank() && thumbnail.startsWith("http")) {
             ImageRequest.Builder(context)
-                .data(movie.thumbnail)
-                .memoryCacheKey(movie.thumbnail!!) // Use URL as cache key
-                .diskCacheKey(movie.thumbnail!!)   // Use URL as disk cache key
-                .crossfade(150)
+                .data(thumbnail)
+                .memoryCacheKey(thumbnail)
+                .diskCacheKey(thumbnail)
+                .crossfade(false) // NO animation for smooth scroll
+                .allowHardware(true) // Use hardware bitmaps
+                .size(240, 360) // Fixed size for consistent caching
                 .build()
         } else null
     }
@@ -155,41 +156,13 @@ fun MovieCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (imageRequest != null) {
-                    SubcomposeAsyncImage(
+                    // OPTIMIZED: Use simple AsyncImage instead of SubcomposeAsyncImage
+                    AsyncImage(
                         model = imageRequest,
-                        contentDescription = movie.title,
+                        contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
-                    ) {
-                        when (val state = painter.state) {
-                            is AsyncImagePainter.State.Loading -> {
-                                // Show gradient placeholder while loading
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.verticalGradient(
-                                                colors = listOf(Color(0xFF3A3A3A), Color(0xFF2A2A2A))
-                                            )
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = movie.title.take(1).uppercase(),
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        color = Color.Gray
-                                    )
-                                }
-                            }
-                            is AsyncImagePainter.State.Error -> {
-                                // Show gradient with movie initials on error
-                                MoviePlaceholder(movie.title)
-                            }
-                            else -> {
-                                SubcomposeAsyncImageContent()
-                            }
-                        }
-                    }
+                    )
                 } else {
                     // No valid thumbnail URL - show placeholder
                     MoviePlaceholder(movie.title)

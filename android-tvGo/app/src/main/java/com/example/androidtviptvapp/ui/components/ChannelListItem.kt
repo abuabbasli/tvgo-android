@@ -23,7 +23,7 @@ import com.example.androidtviptvapp.data.Channel
 
 /**
  * ChannelListItem with logos - optimized for smooth scrolling.
- * Uses simple AsyncImage with no crossfade for performance.
+ * Uses simple AsyncImage with aggressive caching for instant display.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -33,16 +33,17 @@ fun ChannelListItem(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
-    // Stable image request with memory caching, NO crossfade
-    // Use logo URL as cache key for consistent caching across sessions
-    val imageRequest = remember(channel.logo) {
+
+    // OPTIMIZED image request - aggressive caching, no animations
+    val imageRequest = remember(channel.id) {  // Use channel.id for stability
         if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
             ImageRequest.Builder(context)
                 .data(channel.logo)
-                .memoryCacheKey(channel.logo) // Use URL as cache key
-                .diskCacheKey(channel.logo)   // Use URL as disk cache key
-                .crossfade(false)
+                .memoryCacheKey(channel.logo)
+                .diskCacheKey(channel.logo)
+                .crossfade(false)  // No animation for instant display
+                .allowHardware(true)  // Use hardware bitmaps
+                .size(96, 96)  // Fixed size for consistent caching
                 .build()
         } else null
     }

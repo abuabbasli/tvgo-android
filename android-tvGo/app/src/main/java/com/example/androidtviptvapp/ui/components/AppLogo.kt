@@ -25,14 +25,15 @@ import com.example.androidtviptvapp.R
 import com.example.androidtviptvapp.data.TvRepository
 
 private const val TAG = "AppLogo"
+private const val DEBUG_LOGGING = false  // Disable verbose logging for performance
 
 /**
  * AppLogo component that displays the brand logo from remote URL with disk caching.
  * Falls back to local drawable if remote fails or URL is not available.
- * 
+ *
  * Features:
  * - Proper reactive state observation of TvRepository.appConfig
- * - Disk caching for offline access and faster loads  
+ * - Disk caching for offline access and faster loads
  * - Memory caching for instant display
  * - Graceful fallback to local app_logo.png
  * - Loading indicator during fetch
@@ -48,13 +49,6 @@ fun AppLogo(
     val logoUrl = appConfig?.logoUrl
     val context = LocalContext.current
     
-    // Log whenever we recompose
-    LaunchedEffect(logoUrl) {
-        Log.d(TAG, "Logo URL changed to: $logoUrl")
-    }
-    
-    Log.d(TAG, "Rendering AppLogo - appConfig: ${appConfig != null}, logoUrl: $logoUrl")
-    
     Box(
         modifier = modifier
             .size(size)
@@ -64,13 +58,11 @@ fun AppLogo(
         when {
             // Case 1: No logo URL yet (config not loaded) - show local fallback
             logoUrl.isNullOrEmpty() -> {
-                Log.d(TAG, "No logo URL available, showing fallback")
                 FallbackLogo(size = size)
             }
-            
-            // Case 2: Has logo URL - try to load it 
+
+            // Case 2: Has logo URL - try to load it
             else -> {
-                Log.d(TAG, "Loading logo from URL: $logoUrl")
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(logoUrl)
@@ -100,7 +92,6 @@ fun AppLogo(
                     },
                     error = {
                         // On error, show the local fallback
-                        Log.e(TAG, "Error loading logo, showing fallback")
                         FallbackLogo(size = size)
                     },
                     success = {
