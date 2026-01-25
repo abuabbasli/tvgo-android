@@ -14,30 +14,7 @@ app = FastAPI(title="tvGO Middleware API")
 # CORS for dev and production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:8080",
-        "http://localhost:8081",
-        "http://localhost:8082",
-        "http://localhost:8083",
-        "http://localhost:8084",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:8081",
-        "http://127.0.0.1:8082",
-        "http://127.0.0.1:8083",
-        "http://127.0.0.1:8084",
-        # AWS Lambda URLs
-        "https://utrvecx6vxpn73ysosqal2swsi0wvwxu.lambda-url.eu-central-1.on.aws",
-        "https://ncgvj6zcklzk6l3on7orwhuyju0kmhxe.lambda-url.eu-central-1.on.aws",
-        "https://hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws",
-    ],
+    allow_origins=["*"],  # Allow all origins for local development with Android
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
