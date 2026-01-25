@@ -13,9 +13,9 @@ object AppConfig {
     // Local backend - use your computer's IP for physical device
     // For emulator use: 10.0.2.2
     // For physical device use your computer IP (currently: 192.168.1.76)
-    const val BASE_URL = "http://10.0.2.2:8000/"
-    const val IMAGE_BASE_URL = "http://10.0.2.2:8000"
-    const val SERVER_IP = "10.0.2.2"
+    const val BASE_URL = "http://21.0.0.176:8000/"
+    const val IMAGE_BASE_URL = "http://21.0.0.176:8000"
+    const val SERVER_IP = "21.0.0.176"
 
     // ===========================================
     // PRODUCTION - Lambda URL (comment out when testing locally)
