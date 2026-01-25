@@ -706,3 +706,50 @@ def get_game(
     if not document:
         raise not_found("Game not found")
     return _game_document_to_schema(document)
+
+
+@router.get("/debug/package-info")
+def debug_package_info(
+    db: Database = Depends(get_db),
+    current_user=Depends(get_current_subscriber)
+):
+    """Debug endpoint to check package-based channel filtering."""
+    user_package_ids = current_user.get("package_ids") or []
+
+    # Get packages
+    packages_info = []
+    if user_package_ids:
+        package_oids = []
+        for pid in user_package_ids:
+            try:
+                package_oids.append(ObjectId(pid))
+            except Exception:
+                pass
+
+        if package_oids:
+            packages = list(db["packages"].find({"_id": {"$in": package_oids}}))
+            for pkg in packages:
+                packages_info.append({
+                    "id": str(pkg["_id"]),
+                    "name": pkg.get("name"),
+                    "channel_ids": pkg.get("channel_ids", []),
+                    "channel_count": len(pkg.get("channel_ids", []))
+                })
+
+    # Get allowed channels
+    allowed_channels = _get_user_allowed_channels(db, current_user)
+
+    # Get total channels for company
+    company_id = current_user.get("company_id")
+    total_channels = db["channels"].count_documents({"company_id": company_id})
+
+    return {
+        "subscriber_id": current_user.get("_id"),
+        "company_id": company_id,
+        "user_package_ids": user_package_ids,
+        "packages_found": packages_info,
+        "allowed_channel_ids": list(allowed_channels) if allowed_channels is not None else None,
+        "allowed_channel_count": len(allowed_channels) if allowed_channels is not None else "ALL",
+        "total_company_channels": total_channels,
+        "filtering_active": allowed_channels is not None
+    }
