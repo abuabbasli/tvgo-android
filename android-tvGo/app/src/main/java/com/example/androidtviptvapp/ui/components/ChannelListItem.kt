@@ -25,8 +25,8 @@ import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
 
 /**
- * ChannelListItem with logos - optimized for smooth scrolling.
- * Uses simple AsyncImage with aggressive caching for instant display.
+ * ChannelListItem - Compact design for faster scrolling.
+ * Smaller height = more items visible = faster perceived scrolling.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -38,67 +38,67 @@ fun ChannelListItem(
     val context = LocalContext.current
 
     // OPTIMIZED image request - aggressive caching, no animations
-    val imageRequest = remember(channel.id) {  // Use channel.id for stability
+    val imageRequest = remember(channel.id) {
         if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
             ImageRequest.Builder(context)
                 .data(channel.logo)
                 .memoryCacheKey(channel.logo)
                 .diskCacheKey(channel.logo)
-                .crossfade(false)  // No animation for instant display
-                .allowHardware(true)  // Use hardware bitmaps
-                .size(96, 96)  // Fixed size for consistent caching
+                .crossfade(false)
+                .allowHardware(true)
+                .size(64, 64)  // Smaller size for compact items
                 .build()
         } else null
     }
 
-    ListItem(
-        selected = false,
+    // Compact custom item using Surface for focus handling
+    androidx.tv.material3.Surface(
         onClick = { onClick(channel) },
-        headlineContent = {
-            Text(
-                text = channel.displayName,  // Shows "order  channelname"
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            )
-        },
-        supportingContent = {
-            Text(
-                text = channel.description.take(40),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9CA3AF),
-                maxLines = 1
-            )
-        },
-        leadingContent = {
+        modifier = modifier
+            .fillMaxWidth()
+            .height(62.dp),  // 40% larger (44dp * 1.4 = ~62dp)
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
+            shape = RoundedCornerShape(6.dp)
+        ),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = Color.Transparent,
+            focusedContainerColor = Color(0xFF2A2A2A)
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(
+            focusedScale = 1.0f  // No zoom for speed
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Logo - 40% larger
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(45.dp)
+                    .clip(RoundedCornerShape(6.dp))
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 if (imageRequest != null) {
-                    // Use SubcomposeAsyncImage with proper loading/error states
                     SubcomposeAsyncImage(
                         model = imageRequest,
                         contentDescription = null,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .padding(4.dp),
+                        modifier = Modifier.size(38.dp),
                         contentScale = ContentScale.Fit,
                         loading = {
-                            // Show initials while loading
                             Text(
                                 text = channel.name.take(2).uppercase(),
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = Color.Gray
                             )
                         },
                         error = {
-                            // Show initials on error (logo failed to load)
                             Text(
                                 text = channel.name.take(2).uppercase(),
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = Color.Gray
                             )
                         }
@@ -106,21 +106,21 @@ fun ChannelListItem(
                 } else {
                     Text(
                         text = channel.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )
                 }
             }
-        },
-        colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent,
-            focusedContainerColor = Color(0xFF2A2A2A),
-            selectedContainerColor = Color(0xFF2A2A2A),
-            contentColor = Color(0xFFE0E0E0),
-            focusedContentColor = Color.White
-        ),
-        shape = ListItemDefaults.shape(shape = RoundedCornerShape(8.dp)),
-        scale = ListItemDefaults.scale(focusedScale = 1.0f),  // No zoom animation for faster scrolling
-        modifier = modifier.fillMaxWidth()
-    )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Channel name - larger text
+            Text(
+                text = channel.displayName,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                maxLines = 1
+            )
+        }
+    }
 }

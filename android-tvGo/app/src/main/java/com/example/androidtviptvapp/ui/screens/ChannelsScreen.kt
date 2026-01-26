@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.animation.core.tween
 import androidx.tv.foundation.PivotOffsets
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -334,20 +335,19 @@ fun ChannelsScreen(
                                     end = 4.dp,
                                     bottom = 8.dp
                                 ),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),  // Reduced spacing
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                // Pivot offsets - focused item stays at ~40% from top
+                                verticalArrangement = Arrangement.spacedBy(2.dp),  // Minimal spacing
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                // Pivot offsets - focused item stays near top for faster visual feedback
                                 pivotOffsets = PivotOffsets(
-                                    parentFraction = 0.4f,  // Moved down from 0.3f
+                                    parentFraction = 0.4f,
                                     childFraction = 0.0f
                                 ),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(
                                     items = filteredChannels,
-                                    key = { it.id }  // Stable key for efficient diffing
+                                    key = { it.id }
                                 ) { channel ->
-                                    // Get or create a FocusRequester for this channel
                                     val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
 
                                     ChannelCard(
@@ -369,19 +369,18 @@ fun ChannelsScreen(
                             TvLazyColumn(
                                 state = listState,
                                 contentPadding = PaddingValues(bottom = 24.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),  // Reduced spacing for faster visual scroll
-                                // Pivot offsets - focused item stays at ~40% from top (4th position)
+                                verticalArrangement = Arrangement.spacedBy(0.dp),  // No spacing for fastest scroll
+                                // Pivot offsets - focused item near top for faster visual feedback
                                 pivotOffsets = PivotOffsets(
-                                    parentFraction = 0.4f,  // Moved down from 0.3f
+                                    parentFraction = 0.4f,
                                     childFraction = 0.0f
                                 ),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(
                                     items = filteredChannels,
-                                    key = { it.id }  // Stable key for efficient diffing
+                                    key = { it.id }
                                 ) { channel ->
-                                    // Get or create a FocusRequester for this channel
                                     val focusRequester = focusRequesters.getOrPut(channel.id) { FocusRequester() }
 
                                     ChannelListItem(

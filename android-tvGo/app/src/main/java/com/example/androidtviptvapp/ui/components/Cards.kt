@@ -42,13 +42,16 @@ fun ChannelCard(
     val context = LocalContext.current
 
     // Stable image request with memory-first caching, NO crossfade
-    val imageRequest = remember(channel.id) {
+    val imageRequest = remember(channel.logo) {
         if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
             ImageRequest.Builder(context)
                 .data(channel.logo)
-                .memoryCacheKey(channel.id)
-                .diskCacheKey(channel.id)
+                .memoryCacheKey(channel.logo)  // Use logo URL as cache key
+                .diskCacheKey(channel.logo)
                 .crossfade(false) // No animation - faster
+                .allowHardware(true)
+                .decoderFactory(SvgDecoder.Factory()) // Support SVG logos
+                .size(192, 108) // Fixed size for grid cards
                 .build()
         } else null
     }
