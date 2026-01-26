@@ -684,12 +684,12 @@ private fun ProgramScheduleItem(
             Box(
                 modifier = Modifier
                     .background(
-                        if (isLive) Color(0xFF1E3A5F) else Color.Transparent,
+                        if (isLive) Color(0xFFE0E0E0) else Color.Transparent,
                         RoundedCornerShape(4.dp)
                     )
                     .border(
                         width = 1.dp,
-                        color = if (isLive) Color(0xFF3B82F6) else Color(0xFF4B5563),
+                        color = if (isLive) Color(0xFFE0E0E0) else Color(0xFF4B5563),
                         shape = RoundedCornerShape(4.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -697,7 +697,7 @@ private fun ProgramScheduleItem(
                 Text(
                     text = time,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isLive) Color(0xFF60A5FA) else Color(0xFF9CA3AF)
+                    color = if (isLive) Color.Black else Color(0xFF9CA3AF)
                 )
             }
             
