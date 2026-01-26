@@ -109,6 +109,8 @@ fun PlayerScreen(
                     playerView?.play(newSource)
                     currentSource = newSource
                     onChannelChanged(targetChannel.id)
+                    // Store as last played channel
+                    ChannelFocusManager.updatePlayedChannel(targetChannel.id)
                     showOverlay = true
                 }
             }
@@ -165,6 +167,8 @@ fun PlayerScreen(
             if (next != null) {
                 currentSource = next
                 onChannelChanged(next.channel.id)
+                // Store as last played channel
+                ChannelFocusManager.updatePlayedChannel(next.channel.id)
                 showOverlay = true
             }
         }
@@ -182,8 +186,10 @@ fun PlayerScreen(
 
     // Save initial channel
     LaunchedEffect(Unit) {
-        channelId?.let { 
+        channelId?.let {
             onChannelChanged(it)
+            // Store as last played channel
+            ChannelFocusManager.updatePlayedChannel(it)
         }
     }
     

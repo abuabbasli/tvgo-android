@@ -96,9 +96,12 @@ fun ChannelsScreen(
 
     // The currently focused channel (updates on every focus for navigation)
     var focusedChannel by remember {
-        mutableStateOf(
-            if (initialChannelId != null) TvRepository.channels.find { it.id == initialChannelId }
-            else null
+        mutableStateOf<Channel?>(
+            if (initialChannelId != null) {
+                TvRepository.channels.find { it.id == initialChannelId }
+            } else {
+                null  // Will be set in LaunchedEffect
+            }
         )
     }
 
@@ -143,7 +146,9 @@ fun ChannelsScreen(
         if (System.currentTimeMillis() - lastFocusChangeTime >= 400) {
             isActivelyScrolling = false
             // NOW update the debounced channel for info display
-            focusedChannel?.let { debouncedFocusedChannel = it }
+            focusedChannel?.let {
+                debouncedFocusedChannel = it
+            }
         }
     }
 
@@ -192,19 +197,52 @@ fun ChannelsScreen(
         if (!isActivelyScrolling) {
             // Single press - update info area after short delay
             kotlinx.coroutines.delay(100)
-            focusedChannel?.let { debouncedFocusedChannel = it }
+            focusedChannel?.let {
+                debouncedFocusedChannel = it
+            }
         }
         // If scrolling, the scroll detection LaunchedEffect handles it
     }
     
-    // Initialize focus/preview when filtered channels change
+    // Initialize focus/preview when filtered channels change or when entering the screen
     LaunchedEffect(filteredChannels) {
         if (focusedChannel == null || focusedChannel !in filteredChannels) {
-            focusedChannel = filteredChannels.firstOrNull()
+            // Determine which channel to focus on
+            val channelToFocus = if (initialChannelId != null) {
+                // Coming from fullscreen player - focus on that channel
+                filteredChannels.find { it.id == initialChannelId }
+            } else {
+                // Check if we have a last played channel stored
+                val lastChannelId = ChannelFocusManager.getLastFocusedChannel()
+                if (lastChannelId != null) {
+                    // Returning from another section - restore last played channel
+                    filteredChannels.find { it.id == lastChannelId }
+                } else {
+                    // First time entering - start at first channel
+                    null
+                }
+            }
+
+            // Set the focused channel
+            focusedChannel = channelToFocus ?: filteredChannels.firstOrNull()
             debouncedFocusedChannel = focusedChannel
+
+            // Scroll to the channel and request focus
+            focusedChannel?.let { channel ->
+                val index = filteredChannels.indexOfFirst { it.id == channel.id }
+                if (index >= 0) {
+                    kotlinx.coroutines.delay(100)
+                    when (viewMode) {
+                        ViewMode.GRID -> gridState.scrollToItem(index)
+                        ViewMode.LIST -> listState.scrollToItem(index)
+                    }
+                    kotlinx.coroutines.delay(100)
+                    focusRequesters[channel.id]?.requestFocus()
+                }
+            }
         }
         if (previewChannel == null || previewChannel !in filteredChannels) {
-            previewChannel = filteredChannels.firstOrNull()
+            previewChannel = focusedChannel ?: filteredChannels.firstOrNull()
         }
     }
     
@@ -819,6 +857,8 @@ fun ChannelPreview(
                 player.pause = false
             }
             sharedManager.setCurrentChannel(channel.id, channel.streamUrl)
+            // Store as last played channel
+            ChannelFocusManager.updatePlayedChannel(channel.id)
             onPlayStarted()
         } else {
             // Focus change - pause current and wait
@@ -836,6 +876,8 @@ fun ChannelPreview(
                 player.pause = false
             }
             sharedManager.setCurrentChannel(channel.id, channel.streamUrl)
+            // Store as last played channel
+            ChannelFocusManager.updatePlayedChannel(channel.id)
             TvRepository.triggerUpdatePrograms(channel.id)
         }
     }
