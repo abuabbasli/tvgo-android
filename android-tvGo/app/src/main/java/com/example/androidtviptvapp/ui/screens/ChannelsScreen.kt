@@ -150,10 +150,10 @@ fun ChannelsScreen(
     var enteredNumber by remember { mutableStateOf("") }
     val numberInputTimeoutMs = 1500L  // Auto-jump after 1.5 seconds
 
-    // KEY THROTTLING - Prevent multiple channel jumps when holding button
-    // This ensures smooth one-item-at-a-time scrolling on TV remotes
+    // KEY THROTTLING - Disabled for maximum scroll speed
+    // Only re-enable if crash issues occur on detached nodes
     var lastNavKeyTime by remember { mutableStateOf(0L) }
-    val navKeyThrottleMs = 150L  // Minimum time between nav key presses
+    val navKeyThrottleMs = 50L  // Minimum time between nav key presses
 
     // Auto-jump to channel after number input timeout
     LaunchedEffect(enteredNumber) {
@@ -209,23 +209,27 @@ fun ChannelsScreen(
     
     // NOTE: Don't release player here! It's shared with PlayerScreen (fullscreen).
     // The player will be released when leaving the entire playback flow.
-    
+
+    // Get SharedPlayerManager to check returning from fullscreen state
+    val sharedPlayerManager = com.example.androidtviptvapp.player.SharedPlayerManager
+
     // Update selection when returning with a new channel ID or jumping via number keys
     LaunchedEffect(initialChannelId) {
         if (initialChannelId != null) {
             val channel = TvRepository.channels.find { it.id == initialChannelId }
             if (channel != null) {
+                val isReturningFromFullscreen = sharedPlayerManager.returningFromFullscreen
+
                 focusedChannel = channel
                 previewChannel = channel
-                isClickTriggered = true  // Instant play for number key jumps
+                debouncedFocusedChannel = channel
 
                 // Find index of the channel in filtered list
                 val index = filteredChannels.indexOfFirst { it.id == initialChannelId }
                 if (index >= 0) {
-                    // Scroll to the channel first
+                    // Scroll to the channel
                     when (viewMode) {
                         ViewMode.GRID -> {
-                            // In grid with 2 columns, we need to scroll to the row
                             gridState.scrollToItem(index)
                         }
                         ViewMode.LIST -> {
@@ -237,6 +241,12 @@ fun ChannelsScreen(
                     kotlinx.coroutines.delay(150)
                     focusRequesters[initialChannelId]?.requestFocus()
                 }
+
+                // Only trigger click (play) if NOT returning from fullscreen
+                // (returning from fullscreen = player already playing the channel)
+                if (!isReturningFromFullscreen) {
+                    isClickTriggered = true  // Instant play for number key jumps
+                }
             }
         }
     }
@@ -245,44 +255,7 @@ fun ChannelsScreen(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
-                // THROTTLE navigation keys to ensure one-item-at-a-time scrolling
-                // Also prevents crash from focus traversal on detached nodes during long press
-                try {
-                    if (event.type == KeyEventType.KeyDown) {
-                        val isNavKey = event.key == Key.DirectionUp ||
-                                       event.key == Key.DirectionDown ||
-                                       event.key == Key.DirectionLeft ||
-                                       event.key == Key.DirectionRight
-
-                        if (isNavKey) {
-                            val now = System.currentTimeMillis()
-                            if (now - lastNavKeyTime < navKeyThrottleMs) {
-                                // Too fast - consume event to prevent crash on detached nodes
-                                return@onPreviewKeyEvent true
-                            }
-                            lastNavKeyTime = now
-                            // Let the event through (handled by default focus system)
-                            return@onPreviewKeyEvent false
-                        }
-                    }
-                    // Also throttle KeyUp for held keys to prevent rapid focus changes
-                    if (event.type == KeyEventType.KeyUp) {
-                        val isNavKey = event.key == Key.DirectionUp ||
-                                       event.key == Key.DirectionDown ||
-                                       event.key == Key.DirectionLeft ||
-                                       event.key == Key.DirectionRight
-                        if (isNavKey) {
-                            val now = System.currentTimeMillis()
-                            if (now - lastNavKeyTime < navKeyThrottleMs) {
-                                return@onPreviewKeyEvent true
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Catch any focus traversal exceptions (e.g., unattached node)
-                    android.util.Log.w("ChannelsScreen", "Key event error: ${e.message}")
-                    return@onPreviewKeyEvent true
-                }
+                // No throttling - let all navigation events through for maximum scroll speed
                 false
             }
             .onKeyEvent { event ->
@@ -361,11 +334,11 @@ fun ChannelsScreen(
                                     end = 4.dp,
                                     bottom = 8.dp
                                 ),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),  // Reduced spacing
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                // Pivot offsets for smooth scrolling - keeps focused item centered
+                                // Pivot offsets - focused item stays at ~40% from top
                                 pivotOffsets = PivotOffsets(
-                                    parentFraction = 0.3f,  // Scroll when item is 30% from top
+                                    parentFraction = 0.4f,  // Moved down from 0.3f
                                     childFraction = 0.0f
                                 ),
                                 modifier = Modifier.fillMaxSize()
@@ -396,10 +369,10 @@ fun ChannelsScreen(
                             TvLazyColumn(
                                 state = listState,
                                 contentPadding = PaddingValues(bottom = 24.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                // Pivot offsets for smooth scrolling - keeps focused item visible
+                                verticalArrangement = Arrangement.spacedBy(4.dp),  // Reduced spacing for faster visual scroll
+                                // Pivot offsets - focused item stays at ~40% from top (4th position)
                                 pivotOffsets = PivotOffsets(
-                                    parentFraction = 0.3f,
+                                    parentFraction = 0.4f,  // Moved down from 0.3f
                                     childFraction = 0.0f
                                 ),
                                 modifier = Modifier.fillMaxSize()
@@ -867,7 +840,7 @@ fun ChannelPreview(
             TvRepository.triggerUpdatePrograms(channel.id)
         }
     }
-    
+
     // Track if player is paused (for overlay)
     var isPaused by remember { mutableStateOf(true) }
 

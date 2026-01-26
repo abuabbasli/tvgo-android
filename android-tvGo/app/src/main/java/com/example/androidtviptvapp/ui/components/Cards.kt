@@ -58,7 +58,7 @@ fun ChannelCard(
         modifier = modifier
             .width(width)
             .aspectRatio(16f / 9f),
-        scale = CardDefaults.scale(focusedScale = 1.05f),
+        scale = CardDefaults.scale(focusedScale = 1.0f),  // No zoom animation for faster scrolling
         border = CardDefaults.border(
             focusedBorder = Border(
                 border = BorderStroke(3.dp, Color.White)
@@ -74,13 +74,30 @@ fun ChannelCard(
             contentAlignment = Alignment.Center
         ) {
             if (imageRequest != null) {
-                AsyncImage(
+                // Use SubcomposeAsyncImage with proper loading/error states
+                SubcomposeAsyncImage(
                     model = imageRequest,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(12.dp),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+                    loading = {
+                        // Show initials while loading
+                        Text(
+                            text = channel.name.take(2).uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    },
+                    error = {
+                        // Show initials on error
+                        Text(
+                            text = channel.name.take(2).uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                    }
                 )
             } else {
                 // Fallback: channel initials
@@ -267,7 +284,7 @@ fun HomeChannelCard(
             modifier = modifier
                 .width(cardWidth)
                 .aspectRatio(16f / 9f),
-            scale = CardDefaults.scale(focusedScale = 1.05f),
+            scale = CardDefaults.scale(focusedScale = 1.0f),  // No zoom animation for faster scrolling
             border = CardDefaults.border(
                 focusedBorder = Border(
                     border = BorderStroke(3.dp, Color.White)

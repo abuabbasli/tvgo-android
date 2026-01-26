@@ -36,8 +36,7 @@ private const val DEBUG_LOGGING = false  // Disable verbose logging for performa
  * - Disk caching for offline access and faster loads
  * - Memory caching for instant display
  * - Graceful fallback to local app_logo.png
- * - Loading indicator during fetch
- * - CrossFade animation for smooth transitions
+ * - NO flicker: Shows nothing until we know what to display
  */
 @Composable
 fun AppLogo(
@@ -48,7 +47,10 @@ fun AppLogo(
     val appConfig = TvRepository.appConfig
     val logoUrl = appConfig?.logoUrl
     val context = LocalContext.current
-    
+
+    // Track if config has been loaded at least once
+    val configLoaded = appConfig != null
+
     Box(
         modifier = modifier
             .size(size)
@@ -56,19 +58,24 @@ fun AppLogo(
         contentAlignment = Alignment.Center
     ) {
         when {
-            // Case 1: No logo URL yet (config not loaded) - show local fallback
+            // Case 1: Config not yet loaded - show nothing (no flicker)
+            !configLoaded -> {
+                // Empty box while waiting for config
+            }
+
+            // Case 2: Config loaded but no logo URL - show fallback
             logoUrl.isNullOrEmpty() -> {
                 FallbackLogo(size = size)
             }
 
-            // Case 2: Has logo URL - try to load it
+            // Case 3: Has logo URL - try to load it
             else -> {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(logoUrl)
                         .memoryCacheKey(logoUrl)  // Use URL as cache key
                         .diskCacheKey(logoUrl)    // Use URL as disk cache key
-                        .crossfade(300)
+                        .crossfade(false)  // No crossfade to prevent flicker
                         .memoryCachePolicy(CachePolicy.ENABLED)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .build(),
@@ -76,19 +83,7 @@ fun AppLogo(
                     modifier = Modifier.size(size),
                     contentScale = ContentScale.Fit,
                     loading = {
-                        // Show a subtle loading state
-                        Box(
-                            modifier = Modifier
-                                .size(size)
-                                .background(Color.Transparent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(size / 2),
-                                strokeWidth = 2.dp,
-                                color = Color.White.copy(alpha = 0.5f)
-                            )
-                        }
+                        // Show nothing while loading to prevent flicker
                     },
                     error = {
                         // On error, show the local fallback

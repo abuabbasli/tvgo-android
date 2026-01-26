@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,7 +20,7 @@ import androidx.tv.material3.ListItem
 import androidx.tv.material3.ListItemDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
 
@@ -75,13 +78,30 @@ fun ChannelListItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (imageRequest != null) {
-                    AsyncImage(
+                    // Use SubcomposeAsyncImage with proper loading/error states
+                    SubcomposeAsyncImage(
                         model = imageRequest,
                         contentDescription = null,
                         modifier = Modifier
                             .size(40.dp)
                             .padding(4.dp),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Fit,
+                        loading = {
+                            // Show initials while loading
+                            Text(
+                                text = channel.name.take(2).uppercase(),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Gray
+                            )
+                        },
+                        error = {
+                            // Show initials on error (logo failed to load)
+                            Text(
+                                text = channel.name.take(2).uppercase(),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Gray
+                            )
+                        }
                     )
                 } else {
                     Text(
@@ -100,6 +120,7 @@ fun ChannelListItem(
             focusedContentColor = Color.White
         ),
         shape = ListItemDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        scale = ListItemDefaults.scale(focusedScale = 1.0f),  // No zoom animation for faster scrolling
         modifier = modifier.fillMaxWidth()
     )
 }

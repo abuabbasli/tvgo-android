@@ -1,6 +1,8 @@
 package com.example.androidtviptvapp.player
 
 import android.content.Context
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -12,34 +14,26 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * SharedPlayerManager - TRUE SINGLETON to manage ONE shared player across entire app.
- * Following OnTV-main MainActivity pattern EXACTLY.
+ * SharedPlayerManager - TRUE SINGLETON player that persists across screens.
  *
- * CRITICAL: TV boxes have very limited RAM (1-2GB). Creating multiple ExoPlayers
- * WILL crash the device. This singleton ensures only ONE player exists at any time.
+ * KEY INSIGHT: Instead of creating/destroying players when navigating between
+ * preview and fullscreen, we keep ONE player and just move it between containers.
  *
- * Key Features:
- * - Single player instance that persists across navigation
- * - Tracks current channel so we can skip reload on return
- * - Provides state flow for UI observation
- * - Memory-efficient: reuses same player, never creates new ones
- * - Tick-based health monitoring (OnTV-main pattern)
+ * This prevents:
+ * - Channel reload when going fullscreen
+ * - Channel reload when returning from fullscreen
+ * - Memory issues from multiple players
+ * - Buffering/loading delays on navigation
  */
 object SharedPlayerManager {
 
-    // =========================================================================
-    // TICK-BASED STATE UPDATES (OnTV-main Pattern EXACTLY)
-    // MainActivity runs tick every 300ms - same as TICK_DT in OnTV-main
-    // =========================================================================
-
-    const val TICK_DT = 300L  // OnTV-main: TICK_DT = 300
-    private const val MEMORY_CHECK_INTERVAL = 200 // Check memory every 60 seconds (200 ticks)
+    const val TICK_DT = 300L
+    private const val MEMORY_CHECK_INTERVAL = 200
     private var tickJob: Job? = null
     private var tickCount = 0
 
     /**
-     * Player state for UI observation - updated by tick()
-     * Enhanced with OnTV-main style error tracking
+     * Player state for UI observation
      */
     data class PlayerState(
         val isPlaying: Boolean = false,
@@ -49,44 +43,201 @@ object SharedPlayerManager {
         val duration: Long = 0L,
         val error: String? = null,
         val isRetrying: Boolean = false,
-        val channelId: String? = null
+        val channelId: String? = null,
+        val channelName: String? = null
     )
 
     private val _playerState = MutableStateFlow(PlayerState())
     val playerState: StateFlow<PlayerState> = _playerState.asStateFlow()
 
-    // Current channel being played
+    // Current channel info
     private val _currentChannelId = MutableStateFlow<String?>(null)
     val currentChannelId: StateFlow<String?> = _currentChannelId.asStateFlow()
 
-    // Current stream URL
+    private val _currentChannelName = MutableStateFlow<String?>(null)
+    val currentChannelName: StateFlow<String?> = _currentChannelName.asStateFlow()
+
     private val _currentStreamUrl = MutableStateFlow<String?>(null)
     val currentStreamUrl: StateFlow<String?> = _currentStreamUrl.asStateFlow()
 
-    // THE singleton player - only one ever exists!
+    // THE singleton player - created once, never destroyed until app exit
     private var singletonPlayer: PlayerView? = null
     private var playerContext: Context? = null
 
-    // Track if player is attached to a view (prevent double-destroy)
-    private var isAttached: Boolean = false
+    // Current container the player is attached to
+    private var currentContainer: FrameLayout? = null
 
-    // Last playback position for resume
-    private var lastPosition: Long = 0
+    // Track if we're in fullscreen mode
+    private val _isFullscreen = MutableStateFlow(false)
+    val isFullscreen: StateFlow<Boolean> = _isFullscreen.asStateFlow()
 
-    // Flag to skip debounce when returning from fullscreen
-    var skipNextDebounce: Boolean = false
+    // Track returning from fullscreen to prevent scroll/reload
+    private var _returningFromFullscreen = false
+    val returningFromFullscreen: Boolean get() = _returningFromFullscreen
 
-    // Track player creation count for debugging
+    // Track creation for debugging
     private var creationCount = 0
 
     /**
-     * Start tick-based state updates. Call when player becomes active.
-     * OnTV-main pattern: MainActivity.startedScope?.launch { while(true) { delay(TICK_DT); tick() } }
+     * Get or create the singleton player.
+     * Player is created ONCE and reused forever.
+     */
+    fun getOrCreatePlayer(context: Context): PlayerView {
+        val appContext = context.applicationContext
+
+        singletonPlayer?.let { existing ->
+            if (existing.isInitialized) {
+                Timber.d("Reusing singleton player (creation #$creationCount)")
+                return existing
+            }
+            Timber.w("Player exists but not initialized, recreating...")
+            singletonPlayer = null
+        }
+
+        creationCount++
+        Timber.d("Creating singleton player #$creationCount")
+        logMemoryUsage()
+
+        val newPlayer = PlayerView(appContext).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            resizeMode = AdaptExoPlayerView.RESIZE_MODE_FIT
+            init()
+        }
+        singletonPlayer = newPlayer
+        playerContext = appContext
+
+        return newPlayer
+    }
+
+    /**
+     * Attach the singleton player to a container.
+     * Removes from previous container first - NO RELOAD happens!
+     */
+    fun attachToContainer(container: FrameLayout, context: Context) {
+        val player = getOrCreatePlayer(context)
+
+        // Remove from current container if attached elsewhere
+        if (currentContainer != null && currentContainer != container) {
+            Timber.d("Moving player from old container to new container")
+            (player.parent as? ViewGroup)?.removeView(player)
+        }
+
+        // Add to new container if not already there
+        if (player.parent != container) {
+            // Remove from any parent first
+            (player.parent as? ViewGroup)?.removeView(player)
+
+            Timber.d("Attaching player to container")
+            container.addView(player, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ))
+        }
+
+        currentContainer = container
+    }
+
+    /**
+     * Detach player from current container (but DON'T destroy it!)
+     * Player keeps playing in background.
+     */
+    fun detachFromContainer() {
+        singletonPlayer?.let { player ->
+            Timber.d("Detaching player from container (keeps playing)")
+            (player.parent as? ViewGroup)?.removeView(player)
+        }
+        currentContainer = null
+    }
+
+    /**
+     * Play a channel URL. If same channel, just continues playing - NO RELOAD!
+     */
+    fun playChannel(channelId: String, channelName: String, streamUrl: String) {
+        val player = singletonPlayer ?: return
+
+        // If same channel is already playing, don't reload!
+        if (_currentChannelId.value == channelId && player.streamUrl == streamUrl) {
+            Timber.d("Same channel already playing, NO RELOAD: $channelName")
+            player.pause = false
+            return
+        }
+
+        Timber.d("Playing NEW channel: $channelName ($channelId)")
+        _currentChannelId.value = channelId
+        _currentChannelName.value = channelName
+        _currentStreamUrl.value = streamUrl
+
+        player.playUrl(streamUrl, vod = false)
+    }
+
+    /**
+     * Check if a specific channel is currently playing
+     */
+    fun isChannelPlaying(channelId: String): Boolean {
+        return _currentChannelId.value == channelId
+    }
+
+    /**
+     * Check if we have any channel playing
+     */
+    fun hasActivePlayback(): Boolean {
+        return _currentChannelId.value != null && singletonPlayer?.isInitialized == true
+    }
+
+    /**
+     * Pause playback
+     */
+    fun pause() {
+        singletonPlayer?.pause = true
+    }
+
+    /**
+     * Resume playback
+     */
+    fun resume() {
+        singletonPlayer?.pause = false
+    }
+
+    /**
+     * Toggle play/pause
+     */
+    fun togglePlayPause() {
+        singletonPlayer?.let { player ->
+            player.pause = !player.pause
+        }
+    }
+
+    /**
+     * Get the player for direct access (e.g., for channel switching)
+     */
+    fun getPlayer(): PlayerView? = singletonPlayer
+
+    /**
+     * Set fullscreen mode
+     */
+    fun setFullscreen(fullscreen: Boolean) {
+        _isFullscreen.value = fullscreen
+        Timber.d("Fullscreen mode: $fullscreen")
+    }
+
+    /**
+     * Set current channel info (for tracking)
+     */
+    fun setCurrentChannel(channelId: String, streamUrl: String) {
+        _currentChannelId.value = channelId
+        _currentStreamUrl.value = streamUrl
+    }
+
+    /**
+     * Start tick-based state updates
      */
     fun startTicking(scope: CoroutineScope) {
-        if (tickJob?.isActive == true) return // Already ticking
+        if (tickJob?.isActive == true) return
 
-        Timber.d("Starting tick updates (${TICK_DT}ms interval)")
+        Timber.d("Starting tick updates (${TICK_DT}ms)")
         tickCount = 0
         tickJob = scope.launch {
             while (isActive) {
@@ -97,34 +248,22 @@ object SharedPlayerManager {
     }
 
     /**
-     * Stop tick updates. Call when player view is detached.
+     * Stop tick updates
      */
     fun stopTicking() {
         tickJob?.cancel()
         tickJob = null
-        Timber.d("Stopped tick updates")
     }
 
     /**
-     * Internal tick - OnTV-main pattern EXACTLY
-     *
-     * OnTV-main MainActivity.tick():
-     *   player.tick()
-     *   playerOverlay.tick()
-     *   menu?.takeIf { it.showed }?.tick()
-     *
-     * CRITICAL: This calls player.tick() which monitors playback health.
-     * This is the CORE of the freeze detection and auto-recovery system.
+     * Internal tick - updates state and calls player.tick()
      */
     private fun tick() {
         tickCount++
 
         singletonPlayer?.let { player ->
-            // CRITICAL: Call player tick for health monitoring (OnTV-main pattern EXACTLY)
-            // This checks for frozen streams, handles seek process, and auto-recovers
             player.tick()
 
-            // Update state flow for UI observation
             _playerState.value = PlayerState(
                 isPlaying = !player.pause && player.isPlayReady,
                 isBuffering = player.isBuffering,
@@ -133,168 +272,84 @@ object SharedPlayerManager {
                 duration = player.duration,
                 error = player.currentError?.message,
                 isRetrying = player.isRetryAfterError != null,
-                channelId = _currentChannelId.value
+                channelId = _currentChannelId.value,
+                channelName = _currentChannelName.value
             )
         }
 
-        // Periodic memory check (every ~60 seconds = 200 ticks at 300ms)
+        // Periodic memory check
         if (tickCount % MEMORY_CHECK_INTERVAL == 0) {
             com.example.androidtviptvapp.data.TvRepository.checkMemoryAndCleanup()
         }
     }
 
     /**
-     * Get the SINGLE shared player instance.
-     * If no player exists, creates one. If one exists, returns it.
-     * NEVER call this from multiple places expecting different players!
-     */
-    fun getOrCreatePlayer(context: Context): PlayerView {
-        val appContext = context.applicationContext
-
-        // Check if we already have a valid player
-        singletonPlayer?.let { existing ->
-            if (existing.isInitialized) {
-                Timber.d("Reusing existing singleton player (creation count: $creationCount)")
-                logMemoryUsage()
-                return existing
-            } else {
-                // Player was destroyed but reference exists, clean up
-                Timber.w("Player reference exists but not initialized, recreating...")
-                singletonPlayer = null
-            }
-        }
-
-        // Create new player only if none exists
-        creationCount++
-        Timber.d("Creating singleton player #$creationCount")
-        logMemoryUsage()
-
-        val newPlayer = PlayerView(appContext).apply {
-            resizeMode = AdaptExoPlayerView.RESIZE_MODE_FIT
-            init()
-        }
-        singletonPlayer = newPlayer
-        playerContext = appContext
-        isAttached = false
-
-        return newPlayer
-    }
-
-    /**
-     * Mark player as attached to a view
-     */
-    fun markAttached() {
-        isAttached = true
-    }
-
-    /**
-     * Mark player as detached from view (DON'T destroy - just detaching)
-     */
-    fun markDetached() {
-        isAttached = false
-    }
-
-    /**
-     * Set the current channel being played
-     */
-    fun setCurrentChannel(channelId: String, streamUrl: String) {
-        Timber.d("Setting current channel: $channelId")
-        _currentChannelId.value = channelId
-        _currentStreamUrl.value = streamUrl
-    }
-
-    /**
-     * Check if a channel is already playing
-     */
-    fun isChannelPlaying(channelId: String): Boolean {
-        return _currentChannelId.value == channelId
-    }
-
-    /**
-     * Save playback position for resume
-     */
-    fun savePosition() {
-        singletonPlayer?.let {
-            lastPosition = it.seek
-            Timber.d("Saved position: $lastPosition")
-        }
-    }
-
-    /**
-     * Get last saved position
-     */
-    fun getLastPosition(): Long = lastPosition
-
-    /**
-     * Clear the current channel (when stopping playback)
+     * Clear current channel (stop playback tracking)
      */
     fun clearCurrentChannel() {
         _currentChannelId.value = null
+        _currentChannelName.value = null
         _currentStreamUrl.value = null
-        lastPosition = 0
     }
 
     /**
-     * COMPLETELY release all resources. Call only on app exit or OOM.
-     * Enhanced with proper tick job cleanup - OnTV-main pattern
+     * Mark returning from fullscreen - prevents scroll/reload in ChannelsScreen
+     */
+    fun markReturningFromFullscreen() {
+        _returningFromFullscreen = true
+        Timber.d("Marked returning from fullscreen")
+    }
+
+    /**
+     * Clear the returning from fullscreen flag
+     */
+    fun clearReturningFromFullscreen() {
+        _returningFromFullscreen = false
+        Timber.d("Cleared returning from fullscreen flag")
+    }
+
+    /**
+     * Should skip debounce - returns true when returning from fullscreen
+     */
+    fun shouldSkipDebounce(): Boolean = _returningFromFullscreen
+
+    /**
+     * Release everything - only call on app exit
      */
     fun releaseCompletely() {
         Timber.w("RELEASING COMPLETELY - destroying singleton player")
         logMemoryUsage()
 
-        // Stop tick updates first
         stopTicking()
 
-        // Cancel any pending load jobs on the player
         singletonPlayer?.loadAndPlayJob?.cancel()
         singletonPlayer?.loadAndPlayJob = null
 
-        // Destroy player
+        detachFromContainer()
+
         singletonPlayer?.destroy()
         singletonPlayer = null
         playerContext = null
-        isAttached = false
-        clearCurrentChannel()
 
-        // Reset state
+        clearCurrentChannel()
+        _isFullscreen.value = false
         _playerState.value = PlayerState()
 
-        // Force garbage collection
         System.gc()
-
-        logMemoryUsage()
     }
 
     /**
-     * Mark that we're returning from fullscreen (skip debounce)
-     */
-    fun markReturningFromFullscreen() {
-        skipNextDebounce = true
-        Timber.d("Marked returning from fullscreen - will skip debounce")
-    }
-
-    /**
-     * Check and consume skip debounce flag
-     */
-    fun shouldSkipDebounce(): Boolean {
-        val skip = skipNextDebounce
-        skipNextDebounce = false
-        return skip
-    }
-
-    /**
-     * Log memory usage for debugging TV box issues
+     * Log memory usage
      */
     private fun logMemoryUsage() {
         val runtime = Runtime.getRuntime()
         val usedMem = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
         val maxMem = runtime.maxMemory() / 1024 / 1024
-        val freeMem = runtime.freeMemory() / 1024 / 1024
-        Timber.d("Memory: used=${usedMem}MB, free=${freeMem}MB, max=${maxMem}MB")
+        Timber.d("Memory: used=${usedMem}MB, max=${maxMem}MB")
     }
 
     /**
-     * Check if player is valid and can be reused
+     * Check if player is valid
      */
     fun isPlayerValid(): Boolean {
         return singletonPlayer?.isInitialized == true

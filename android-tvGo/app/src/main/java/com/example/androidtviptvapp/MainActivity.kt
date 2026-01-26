@@ -33,6 +33,7 @@ import com.example.androidtviptvapp.ui.components.ViewMode
 import com.example.androidtviptvapp.ui.theme.AndroidTvIptvAppTheme
 
 import com.example.androidtviptvapp.data.TvRepository
+import com.example.androidtviptvapp.data.SessionManager
 import com.example.androidtviptvapp.ui.screens.LoginScreen
 import com.example.androidtviptvapp.ui.screens.BabyLockManager
 
@@ -41,7 +42,7 @@ class MainActivity : ComponentActivity() {
     // Key throttling to prevent crashes from rapid focus traversal on long press
     // Lower value = faster scrolling, higher value = more stable
     private var lastNavKeyTime = 0L
-    private val navKeyThrottleMs = 80L // Reduced from 120ms for faster scrolling
+    private val navKeyThrottleMs = 30L // Very fast scrolling - minimal throttle
 
     /**
      * Intercept key events BEFORE they reach Compose to prevent crashes from
@@ -89,6 +90,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Initialize SessionManager for login caching
+        SessionManager.init(this)
+
         // Initialize BabyLockManager for parental controls
         BabyLockManager.init(this)
 
@@ -110,8 +114,24 @@ class MainActivity : ComponentActivity() {
                     val loadingProgress by TvRepository.loadingProgress.collectAsState()
                     val isDataReady by TvRepository.isDataReady.collectAsState()
 
+                    // Auto-login state
+                    var isAttemptingAutoLogin by remember { mutableStateOf(true) }
+                    var autoLoginFailed by remember { mutableStateOf(false) }
+
+                    // Attempt auto-login on first launch
+                    LaunchedEffect(Unit) {
+                        if (SessionManager.hasSavedSession() && !isAuthenticated) {
+                            val success = SessionManager.tryAutoLogin(this@MainActivity)
+                            autoLoginFailed = !success
+                        }
+                        isAttemptingAutoLogin = false
+                    }
+
                     Box(modifier = Modifier.fillMaxSize()) {
-                        if (!isAuthenticated) {
+                        // Show loading while attempting auto-login
+                        if (isAttemptingAutoLogin && SessionManager.hasSavedSession()) {
+                            LoadingScreen(progress = "Logging in...")
+                        } else if (!isAuthenticated) {
                             // Show login screen if not authenticated
                             LoginScreen(
                                 onLoginSuccess = {
@@ -165,10 +185,17 @@ private fun LoadingScreen(progress: String) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App logo or name
+            // App logo from config
+            com.example.androidtviptvapp.ui.components.AppLogo(
+                size = 120.dp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // App name
             Text(
                 text = TvRepository.appConfig?.appName ?: "TV App",
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.headlineMedium,
                 color = Color.White
             )
 

@@ -55,32 +55,32 @@ fun PlayerScreen(
 ) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isRetrying by remember { mutableStateOf(false) }
-    
+
     // Get channel from repository
     val channel = remember(channelId) {
         channelId?.let { id ->
             TvRepository.channels.find { it.id == id }
         }
     }
-    
+
     // Create PlaybackSource for the channel
     val initialSource = remember(channel) {
         channel?.let {
             ChannelPlaybackSource.create(it, TvRepository.channels.toList())
         }
     }
-    
+
     // Current source state
     var currentSource by remember { mutableStateOf(initialSource) }
-    
+
     // Overlay states (OnTV-main pattern: info, controls, hotbar)
     var showOverlay by remember { mutableStateOf(true) }
     var showControls by remember { mutableStateOf(false) }
-    
+
     // Player state
     var isPlaying by remember { mutableStateOf(true) }
     var isBuffering by remember { mutableStateOf(false) }
-    
+
     // Focus requester for key capture
     val focusRequester = remember { FocusRequester() }
     val controlsFocusRequester = remember { FocusRequester() }
@@ -171,7 +171,7 @@ fun PlayerScreen(
 
         return true // Always consume the event to prevent bubbling
     }
-    
+
     // Toggle play/pause
     fun togglePlayPause() {
         playerView?.let { pv ->
@@ -296,14 +296,14 @@ fun PlayerScreen(
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     resizeMode = AdaptExoPlayerView.RESIZE_MODE_FIT
-                    
+
                     // Initialize the player
                     init()
                     playerView = this
-                    
+
                     // Register with PlaybackManager
                     PlaybackManager.registerPlayerView(this)
-                    
+
                     // Start playback
                     val source = initialSource
                     if (source != null) {

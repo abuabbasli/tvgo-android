@@ -153,6 +153,9 @@ dependencies {
     // QR Code
     implementation("com.google.zxing:core:3.5.2")
 
+    // Encrypted SharedPreferences for secure login caching
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Timber Logging (OnTV-main pattern)
     implementation("com.jakewharton.timber:timber:5.0.1")
 

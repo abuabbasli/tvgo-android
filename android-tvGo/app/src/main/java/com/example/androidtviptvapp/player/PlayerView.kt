@@ -87,6 +87,11 @@ class PlayerView @JvmOverloads constructor(
     var playReadyCount = 0
         private set
 
+    // Frozen stream detection - if position doesn't change for too long, restart
+    private var lastKnownPosition: Long = 0
+    private var frozenTickCount: Int = 0
+    private val FROZEN_THRESHOLD_TICKS = 10  // 10 ticks @ 300ms = 3 seconds of no position change
+
     // =========================================================================
     // Directional Seek (OnTV-main Pattern)
     // =========================================================================
@@ -372,13 +377,31 @@ class PlayerView @JvmOverloads constructor(
     // =========================================================================
 
     /**
-     * Main tick function - OnTV-main pattern EXACTLY
+     * Main tick function - OnTV-main pattern with frozen stream detection
      */
     fun tick() {
         if (isPlayReady)
             playReadyCount += 1
         else if (!isBuffering)
             playReadyCount = 0
+
+        // Frozen stream detection - check if position is advancing
+        if (isPlayReady && !pause && channelPlaybackSource?.isLive == true) {
+            val currentPos = seek
+            if (currentPos == lastKnownPosition && currentPos > 0) {
+                frozenTickCount++
+                if (frozenTickCount >= FROZEN_THRESHOLD_TICKS) {
+                    Timber.w("Stream appears frozen (position stuck at $currentPos for ${frozenTickCount * 300}ms), restarting...")
+                    frozenTickCount = 0
+                    restartStream()
+                }
+            } else {
+                frozenTickCount = 0
+                lastKnownPosition = currentPos
+            }
+        } else {
+            frozenTickCount = 0
+        }
 
         if (seekProcessDirection != 0) {
             val targetSeek = targetSeek

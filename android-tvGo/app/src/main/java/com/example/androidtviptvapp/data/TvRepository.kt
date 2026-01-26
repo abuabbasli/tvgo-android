@@ -524,6 +524,11 @@ object TvRepository {
                     isAuthenticated = true
                 }
 
+                // Save session for auto-login next time
+                context?.let {
+                    SessionManager.saveSession(username, pass, response.accessToken)
+                }
+
                 android.util.Log.d("TvRepository", "Login complete - ${channels.size} channels, ${movies.size} movies loaded")
 
                 // Check if admin has flagged baby lock for reset
@@ -794,6 +799,9 @@ object TvRepository {
      * Logout - clear authentication and all user data
      */
     fun logout() {
+        // Clear saved session
+        SessionManager.clearSession()
+
         // Clear auth state
         authToken = null
         isAuthenticated = false
