@@ -37,12 +37,21 @@ private const val DEBUG_LOGGING = false  // Disable verbose logging for performa
  * - Memory caching for instant display
  * - Graceful fallback to local app_logo.png
  * - NO flicker: Shows nothing until we know what to display
+ *
+ * @param forceStaticLogo If true, always shows the static logo (useful for login screen)
  */
 @Composable
 fun AppLogo(
     modifier: Modifier = Modifier,
-    size: Dp = 48.dp
+    size: Dp = 48.dp,
+    forceStaticLogo: Boolean = false
 ) {
+    // If forcing static logo, skip all remote logic
+    if (forceStaticLogo) {
+        FallbackLogo(modifier = modifier, size = size)
+        return
+    }
+
     // Directly observe appConfig - this will recompose when config changes
     val appConfig = TvRepository.appConfig
     val logoUrl = appConfig?.logoUrl
@@ -58,9 +67,9 @@ fun AppLogo(
         contentAlignment = Alignment.Center
     ) {
         when {
-            // Case 1: Config not yet loaded - show nothing (no flicker)
+            // Case 1: Config not yet loaded - show static logo immediately
             !configLoaded -> {
-                // Empty box while waiting for config
+                FallbackLogo(size = size)
             }
 
             // Case 2: Config loaded but no logo URL - show fallback
@@ -83,7 +92,8 @@ fun AppLogo(
                     modifier = Modifier.size(size),
                     contentScale = ContentScale.Fit,
                     loading = {
-                        // Show nothing while loading to prevent flicker
+                        // Show static logo while loading
+                        FallbackLogo(size = size)
                     },
                     error = {
                         // On error, show the local fallback
