@@ -161,6 +161,9 @@ fun ChannelsScreen(
     var lastNavKeyTime by remember { mutableStateOf(0L) }
     val navKeyThrottleMs = 50L  // Minimum time between nav key presses
 
+    // Track which channel index should be focused after scroll/composition
+    var targetFocusIndex by remember { mutableStateOf<Int?>(null) }
+
     // Auto-jump to channel after number input timeout
     LaunchedEffect(enteredNumber) {
         if (enteredNumber.isNotEmpty()) {
@@ -169,24 +172,66 @@ fun ChannelsScreen(
             if (orderNumber != null) {
                 val targetChannel = TvRepository.getChannelByOrder(orderNumber)
                 if (targetChannel != null) {
-                    // Update focus and preview
-                    focusedChannel = targetChannel
-                    previewChannel = targetChannel
-                    isClickTriggered = true
+                    android.util.Log.d("ChannelsScreen", "Number jump to channel: ${targetChannel.name} (id=${targetChannel.id})")
 
-                    // Find index and scroll to it
-                    val index = filteredChannels.indexOfFirst { it.id == targetChannel.id }
-                    if (index >= 0) {
-                        when (viewMode) {
-                            ViewMode.GRID -> gridState.scrollToItem(index)
-                            ViewMode.LIST -> listState.scrollToItem(index)
-                        }
-                        kotlinx.coroutines.delay(100)
-                        focusRequesters[targetChannel.id]?.requestFocus()
+                    // Find the index in filtered list
+                    val targetIndex = filteredChannels.indexOfFirst { it.id == targetChannel.id }
+                    if (targetIndex >= 0) {
+                        android.util.Log.d("ChannelsScreen", "Found channel at index $targetIndex")
+
+                        // Update state variables
+                        focusedChannel = targetChannel
+                        debouncedFocusedChannel = targetChannel
+                        previewChannel = targetChannel
+                        isClickTriggered = true
+
+                        // Set target index for scrolling
+                        targetFocusIndex = targetIndex
+                    } else {
+                        android.util.Log.w("ChannelsScreen", "Channel ${targetChannel.name} not found in filtered list")
                     }
                 }
             }
             enteredNumber = ""
+        }
+    }
+
+    // Handle scrolling and focus when target index changes
+    LaunchedEffect(targetFocusIndex) {
+        val index = targetFocusIndex
+        if (index != null && index >= 0 && index < filteredChannels.size) {
+            try {
+                android.util.Log.d("ChannelsScreen", "Scrolling to index $index in view mode $viewMode")
+
+                // Scroll the list/grid to make the item visible
+                when (viewMode) {
+                    ViewMode.GRID -> {
+                        gridState.scrollToItem(index)
+                    }
+                    ViewMode.LIST -> {
+                        listState.scrollToItem(index)
+                    }
+                }
+
+                // Wait for scroll to complete and item to be composed
+                kotlinx.coroutines.delay(200)
+
+                // Now request focus on the item
+                val channel = filteredChannels[index]
+                val requester = focusRequesters[channel.id]
+                if (requester != null) {
+                    android.util.Log.d("ChannelsScreen", "Requesting focus for ${channel.name} after scroll")
+                    requester.requestFocus()
+                } else {
+                    android.util.Log.w("ChannelsScreen", "No focus requester for ${channel.id} after scroll")
+                }
+
+                // Clear the target
+                targetFocusIndex = null
+            } catch (e: Exception) {
+                android.util.Log.e("ChannelsScreen", "Error during scroll and focus: ${e.message}")
+                targetFocusIndex = null
+            }
         }
     }
     
@@ -211,17 +256,51 @@ fun ChannelsScreen(
     LaunchedEffect(filteredChannels, initialChannelId) {
         // Determine which channel to focus on
         val channelToFocus = if (initialChannelId != null) {
-            // Coming from fullscreen player - focus on that channel
-            filteredChannels.find { it.id == initialChannelId }
+            // Coming from fullscreen player or number jump - focus on that channel
+            var channel = filteredChannels.find { it.id == initialChannelId }
+
+            // If channel not in filtered list, switch to "all" category to show it
+            if (channel == null && !isBabyModeActive) {
+                val fullChannel = allChannels.find { it.id == initialChannelId }
+                if (fullChannel != null) {
+                    android.util.Log.d("ChannelsScreen", "Channel $initialChannelId not in current category, switching to 'all'")
+                    selectedCategory = "all"
+                    // Wait for recomposition with new filter
+                    kotlinx.coroutines.delay(50)
+                    channel = filteredChannels.find { it.id == initialChannelId }
+                }
+            }
+
+            channel
         } else if (!hasInitialized || focusedChannel == null || focusedChannel !in filteredChannels) {
-            // Check if we have a last played channel stored
-            val lastChannelId = ChannelFocusManager.getLastFocusedChannel()
-            if (lastChannelId != null) {
-                // Returning from another section - restore last played channel
-                filteredChannels.find { it.id == lastChannelId }
+            // Check if we have a currently playing preview channel first
+            if (previewChannel != null && previewChannel in filteredChannels) {
+                android.util.Log.d("ChannelsScreen", "Restoring focus to currently playing preview channel: ${previewChannel?.name}")
+                previewChannel
             } else {
-                // First time entering - start at first channel
-                null
+                // Check if we have a last played channel stored
+                val lastChannelId = ChannelFocusManager.getLastFocusedChannel()
+                if (lastChannelId != null) {
+                    // Returning from another section - restore last played channel
+                    var channel = filteredChannels.find { it.id == lastChannelId }
+
+                    // If last played channel not in filtered list, switch to "all" category
+                    if (channel == null && !isBabyModeActive) {
+                        val fullChannel = allChannels.find { it.id == lastChannelId }
+                        if (fullChannel != null) {
+                            android.util.Log.d("ChannelsScreen", "Last played channel not in current category, switching to 'all'")
+                            selectedCategory = "all"
+                            // Wait for recomposition with new filter
+                            kotlinx.coroutines.delay(50)
+                            channel = filteredChannels.find { it.id == lastChannelId }
+                        }
+                    }
+
+                    channel
+                } else {
+                    // First time entering - start at first channel
+                    null
+                }
             }
         } else {
             // Keep current focused channel if still valid
@@ -233,16 +312,11 @@ fun ChannelsScreen(
             focusedChannel = channelToFocus
             debouncedFocusedChannel = channelToFocus
 
-            // Scroll to the channel and request focus
-            val index = filteredChannels.indexOfFirst { it.id == channelToFocus.id }
-            if (index >= 0) {
-                kotlinx.coroutines.delay(100)
-                when (viewMode) {
-                    ViewMode.GRID -> gridState.scrollToItem(index)
-                    ViewMode.LIST -> listState.scrollToItem(index)
-                }
-                kotlinx.coroutines.delay(100)
-                focusRequesters[channelToFocus.id]?.requestFocus()
+            // Find index and trigger focus
+            val targetIndex = filteredChannels.indexOfFirst { it.id == channelToFocus.id }
+            if (targetIndex >= 0) {
+                android.util.Log.d("ChannelsScreen", "Initialization: setting target index $targetIndex for ${channelToFocus.name}")
+                targetFocusIndex = targetIndex
             }
         } else if (!hasInitialized) {
             // First time - just focus on first channel
@@ -250,8 +324,8 @@ fun ChannelsScreen(
             if (firstChannel != null) {
                 focusedChannel = firstChannel
                 debouncedFocusedChannel = firstChannel
-                kotlinx.coroutines.delay(100)
-                focusRequesters[firstChannel.id]?.requestFocus()
+                android.util.Log.d("ChannelsScreen", "First initialization: setting target index 0")
+                targetFocusIndex = 0
             }
         }
 
@@ -274,28 +348,18 @@ fun ChannelsScreen(
         if (initialChannelId != null) {
             val channel = TvRepository.channels.find { it.id == initialChannelId }
             if (channel != null) {
+                android.util.Log.d("ChannelsScreen", "InitialChannelId jump to: ${channel.name} (id=$initialChannelId)")
                 val isReturningFromFullscreen = sharedPlayerManager.returningFromFullscreen
 
                 focusedChannel = channel
                 previewChannel = channel
                 debouncedFocusedChannel = channel
 
-                // Find index of the channel in filtered list
-                val index = filteredChannels.indexOfFirst { it.id == initialChannelId }
-                if (index >= 0) {
-                    // Scroll to the channel
-                    when (viewMode) {
-                        ViewMode.GRID -> {
-                            gridState.scrollToItem(index)
-                        }
-                        ViewMode.LIST -> {
-                            listState.scrollToItem(index)
-                        }
-                    }
-
-                    // Wait for scroll and composition, then request focus
-                    kotlinx.coroutines.delay(150)
-                    focusRequesters[initialChannelId]?.requestFocus()
+                // Find index and trigger scroll + focus
+                val targetIndex = filteredChannels.indexOfFirst { it.id == initialChannelId }
+                if (targetIndex >= 0) {
+                    android.util.Log.d("ChannelsScreen", "InitialChannelId: setting target index $targetIndex")
+                    targetFocusIndex = targetIndex
                 }
 
                 // Only trigger click (play) if NOT returning from fullscreen

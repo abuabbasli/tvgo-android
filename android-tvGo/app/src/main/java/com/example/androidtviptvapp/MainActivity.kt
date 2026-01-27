@@ -228,23 +228,62 @@ private fun MainContent() {
     // Auto-jump to channel after number input timeout
     LaunchedEffect(enteredNumber, currentRoute) {
         if (enteredNumber.isNotEmpty()) {
-            kotlinx.coroutines.delay(numberInputTimeoutMs)
-            val orderNumber = enteredNumber.toIntOrNull()
-            if (orderNumber != null) {
-                val targetChannel = TvRepository.getChannelByOrder(orderNumber)
-                if (targetChannel != null) {
-                    if (currentRoute == Routes.CHANNELS) {
-                        // On channels screen: Update preview channel via savedStateHandle
-                        navController.currentBackStackEntry?.savedStateHandle?.set("channelId", targetChannel.id)
-                    } else if (currentRoute?.startsWith("player_channel") == true) {
-                        // On fullscreen player: Navigate to new channel in fullscreen
-                        navController.navigate("player_channel/${targetChannel.id}") {
-                            popUpTo("player_channel/{channelId}") { inclusive = true }
+            // Store the current entered number to compare later
+            val currentNumber = enteredNumber
+
+            try {
+                kotlinx.coroutines.delay(numberInputTimeoutMs)
+
+                // Only proceed if the number hasn't changed during the delay
+                // This prevents jumping to intermediate values when typing multi-digit numbers
+                if (currentNumber != enteredNumber) {
+                    android.util.Log.d("MainActivity", "Number changed during delay ($currentNumber -> $enteredNumber), skipping jump")
+                    return@LaunchedEffect
+                }
+
+                val orderNumber = enteredNumber.toIntOrNull()
+                android.util.Log.d("MainActivity", "Channel jump: enteredNumber='$enteredNumber', orderNumber=$orderNumber, currentRoute=$currentRoute")
+
+                if (orderNumber != null) {
+                    val targetChannel = TvRepository.getChannelByOrder(orderNumber)
+                    android.util.Log.d("MainActivity", "Looking for channel with order $orderNumber, found: ${targetChannel?.name} (id=${targetChannel?.id})")
+
+                    if (targetChannel != null) {
+                        if (currentRoute == Routes.CHANNELS) {
+                            // On channels screen: Update preview channel via savedStateHandle
+                            android.util.Log.d("MainActivity", "Jumping to channel ${targetChannel.name} on channels screen")
+                            try {
+                                navController.currentBackStackEntry?.savedStateHandle?.set("channelId", targetChannel.id)
+                            } catch (e: Exception) {
+                                android.util.Log.w("MainActivity", "Failed to set channel ID: ${e.message}")
+                            }
+                        } else if (currentRoute?.startsWith("player_channel") == true) {
+                            // On fullscreen player: Navigate to new channel in fullscreen
+                            android.util.Log.d("MainActivity", "Jumping to channel ${targetChannel.name} on player screen")
+                            try {
+                                navController.navigate("player_channel/${targetChannel.id}") {
+                                    popUpTo("player_channel/{channelId}") { inclusive = true }
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.w("MainActivity", "Failed to navigate to channel: ${e.message}")
+                            }
+                        }
+                    } else {
+                        android.util.Log.w("MainActivity", "No channel found with order $orderNumber. Total channels: ${TvRepository.channels.size}")
+                        // Log first few channels to see their order values
+                        TvRepository.channels.take(5).forEach { ch ->
+                            android.util.Log.d("MainActivity", "  Channel: ${ch.name}, order=${ch.order}")
                         }
                     }
                 }
+            } catch (e: Exception) {
+                android.util.Log.w("MainActivity", "Error in channel jump: ${e.message}")
+            } finally {
+                // Only clear if we're still on the same number (not interrupted by new input)
+                if (currentNumber == enteredNumber) {
+                    enteredNumber = ""
+                }
             }
-            enteredNumber = ""
         }
     }
 

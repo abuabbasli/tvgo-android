@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,6 +47,10 @@ object BabyLockManager {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         _isBabyModeActive.value = prefs.getBoolean(KEY_BABY_MODE_ACTIVE, false)
         android.util.Log.d(TAG, "Initialized - baby mode active: ${_isBabyModeActive.value}")
+    }
+
+    fun isInitialized(): Boolean {
+        return ::prefs.isInitialized
     }
 
     /**
@@ -121,6 +127,7 @@ fun SettingsScreen(
     // Initialize BabyLockManager
     LaunchedEffect(Unit) {
         BabyLockManager.init(context)
+        android.util.Log.d("SettingsScreen", "Baby mode state after init: ${BabyLockManager.isBabyModeActive}")
     }
 
     // State for dialogs
@@ -129,6 +136,11 @@ fun SettingsScreen(
 
     // Observe baby mode state
     val isBabyModeActive = BabyLockManager.isBabyModeActive
+
+    // Debug log whenever state changes
+    LaunchedEffect(isBabyModeActive) {
+        android.util.Log.d("SettingsScreen", "Baby mode active changed to: $isBabyModeActive")
+    }
 
     Box(
         modifier = Modifier
@@ -177,9 +189,17 @@ fun SettingsScreen(
                     onClick = {
                         if (isBabyModeActive) {
                             // Switching to Parent Mode - need PIN
+                            android.util.Log.d("SettingsScreen", "Requesting to switch to Parent Mode")
                             babyLockAction = BabyLockAction.Deactivate
                             showBabyLockDialog = true
+                        } else {
+                            android.util.Log.d("SettingsScreen", "Already in Parent Mode")
                         }
+                    },
+                    onLongClick = {
+                        // Emergency reset - force deactivate baby mode
+                        android.util.Log.w("SettingsScreen", "Emergency baby mode reset triggered")
+                        BabyLockManager.deactivateBabyMode()
                     }
                 )
 
@@ -316,10 +336,12 @@ private fun ProfileModeCard(
     description: String,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     Surface(
         onClick = onClick,
+        onLongClick = onLongClick,
         modifier = modifier.height(180.dp),
         shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
@@ -390,11 +412,52 @@ private fun ModernPinDialog(
 ) {
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    val focusRequester = remember { FocusRequester() }
 
     val title = when (action) {
         BabyLockAction.Activate -> "Enter PIN to switch to Parent Mode"
         BabyLockAction.Deactivate -> "Enter PIN to switch to Parent Mode"
         else -> "Enter PIN Code"
+    }
+
+    // Request focus when dialog opens
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(100)
+        try {
+            focusRequester.requestFocus()
+        } catch (e: Exception) {
+            android.util.Log.w("SettingsScreen", "Failed to request focus on dialog: ${e.message}")
+        }
+    }
+
+    // Helper function to handle PIN input
+    fun handlePinInput(digit: String) {
+        if (pin.length < 4) {
+            pin += digit
+            error = null
+            // Auto-verify when 4 digits entered
+            if (pin.length == 4) {
+                if (BabyLockManager.verifyPin(pin)) {
+                    when (action) {
+                        BabyLockAction.Activate -> BabyLockManager.activateBabyMode()
+                        BabyLockAction.Deactivate -> BabyLockManager.deactivateBabyMode()
+                        else -> {}
+                    }
+                    onSuccess()
+                } else {
+                    error = "Incorrect PIN"
+                    pin = ""
+                }
+            }
+        }
+    }
+
+    // Helper function to handle backspace
+    fun handleBackspace() {
+        if (pin.isNotEmpty()) {
+            pin = pin.dropLast(1)
+            error = null
+        }
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -403,6 +466,62 @@ private fun ModernPinDialog(
                 .width(440.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color(0xFF2A2A2A))
+                .focusRequester(focusRequester)
+                .onPreviewKeyEvent { event ->
+                    // Capture remote control number keys
+                    if (event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
+                        when (event.key) {
+                            androidx.compose.ui.input.key.Key.Zero, androidx.compose.ui.input.key.Key.NumPad0 -> {
+                                handlePinInput("0")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.One, androidx.compose.ui.input.key.Key.NumPad1 -> {
+                                handlePinInput("1")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Two, androidx.compose.ui.input.key.Key.NumPad2 -> {
+                                handlePinInput("2")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Three, androidx.compose.ui.input.key.Key.NumPad3 -> {
+                                handlePinInput("3")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Four, androidx.compose.ui.input.key.Key.NumPad4 -> {
+                                handlePinInput("4")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Five, androidx.compose.ui.input.key.Key.NumPad5 -> {
+                                handlePinInput("5")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Six, androidx.compose.ui.input.key.Key.NumPad6 -> {
+                                handlePinInput("6")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Seven, androidx.compose.ui.input.key.Key.NumPad7 -> {
+                                handlePinInput("7")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Eight, androidx.compose.ui.input.key.Key.NumPad8 -> {
+                                handlePinInput("8")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Nine, androidx.compose.ui.input.key.Key.NumPad9 -> {
+                                handlePinInput("9")
+                                true
+                            }
+                            androidx.compose.ui.input.key.Key.Backspace, androidx.compose.ui.input.key.Key.Delete -> {
+                                handleBackspace()
+                                true
+                            }
+                            else -> false
+                        }
+                    } else {
+                        false
+                    }
+                }
+                .focusable()
         ) {
             // Close button
             IconButton(
@@ -525,21 +644,7 @@ private fun ModernPinDialog(
                             row.forEach { digit ->
                                 PinNumberButton(
                                     digit = digit,
-                                    onClick = {
-                                        if (pin.length < 4) {
-                                            pin += digit
-                                            error = null
-                                            // Auto-verify when 4 digits entered
-                                            if (pin.length == 4) {
-                                                if (BabyLockManager.verifyPin(pin)) {
-                                                    onSuccess()
-                                                } else {
-                                                    error = "Incorrect PIN"
-                                                    pin = ""
-                                                }
-                                            }
-                                        }
-                                    }
+                                    onClick = { handlePinInput(digit) }
                                 )
                             }
                         }
@@ -550,29 +655,11 @@ private fun ModernPinDialog(
                         Box(modifier = Modifier.size(62.dp)) // Spacer
                         PinNumberButton(
                             digit = "0",
-                            onClick = {
-                                if (pin.length < 4) {
-                                    pin += "0"
-                                    error = null
-                                    if (pin.length == 4) {
-                                        if (BabyLockManager.verifyPin(pin)) {
-                                            onSuccess()
-                                        } else {
-                                            error = "Incorrect PIN"
-                                            pin = ""
-                                        }
-                                    }
-                                }
-                            }
+                            onClick = { handlePinInput("0") }
                         )
                         PinNumberButton(
                             digit = "⌫",
-                            onClick = {
-                                if (pin.isNotEmpty()) {
-                                    pin = pin.dropLast(1)
-                                    error = null
-                                }
-                            }
+                            onClick = { handleBackspace() }
                         )
                     }
                 }
