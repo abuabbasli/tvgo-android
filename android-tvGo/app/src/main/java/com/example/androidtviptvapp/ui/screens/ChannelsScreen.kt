@@ -183,7 +183,8 @@ fun ChannelsScreen(
                         focusedChannel = targetChannel
                         debouncedFocusedChannel = targetChannel
                         previewChannel = targetChannel
-                        isClickTriggered = true
+                        // DON'T auto-play - let user explicitly click to play and store as last played
+                        // isClickTriggered = true
 
                         // Set target index for scrolling
                         targetFocusIndex = targetIndex
@@ -362,11 +363,10 @@ fun ChannelsScreen(
                     targetFocusIndex = targetIndex
                 }
 
-                // Only trigger click (play) if NOT returning from fullscreen
-                // (returning from fullscreen = player already playing the channel)
-                if (!isReturningFromFullscreen) {
-                    isClickTriggered = true  // Instant play for number key jumps
-                }
+                // DON'T auto-play on number jumps - let user explicitly click to play
+                // Only the preview will update, not trigger full playback
+                // When returning from fullscreen, the preview channel is already playing
+                // so no need to trigger click
             }
         }
     }
