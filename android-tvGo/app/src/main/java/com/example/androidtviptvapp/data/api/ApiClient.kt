@@ -341,9 +341,43 @@ object ApiClient {
         chain.proceed(request)
     }
 
+    // Custom DNS to handle emulator DNS issues
+    private val customDns = object : okhttp3.Dns {
+        override fun lookup(hostname: String): List<java.net.InetAddress> {
+            try {
+                // Try default DNS first
+                return okhttp3.Dns.SYSTEM.lookup(hostname)
+            } catch (e: Exception) {
+                android.util.Log.w("ApiClient", "DNS lookup failed for $hostname: ${e.message}")
+
+                // Hardcoded fallback IPs for Lambda URL (for emulator DNS issues)
+                if (hostname.contains("hsbcasafqma6eflzbulquhxflu0stbuw.lambda-url.eu-central-1.on.aws")) {
+                    android.util.Log.i("ApiClient", "Using hardcoded IP fallback for Lambda URL")
+                    return listOf(
+                        java.net.InetAddress.getByName("3.125.109.180"),
+                        java.net.InetAddress.getByName("3.67.101.14"),
+                        java.net.InetAddress.getByName("52.28.167.18")
+                    )
+                }
+
+                // Fallback: try manual resolution
+                try {
+                    val addresses = java.net.InetAddress.getAllByName(hostname)
+                    if (addresses.isNotEmpty()) {
+                        return addresses.toList()
+                    }
+                } catch (e2: Exception) {
+                    android.util.Log.e("ApiClient", "Fallback DNS also failed: ${e2.message}")
+                }
+                throw e
+            }
+        }
+    }
+
     // Optimized OkHttp client with timeouts and connection pooling
     private val okHttpClient = okhttp3.OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .dns(customDns)  // Add custom DNS
         .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(15, java.util.concurrent.TimeUnit.SECONDS)

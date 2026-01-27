@@ -3,9 +3,10 @@ package com.example.androidtviptvapp.ui.screens
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -17,10 +18,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.tv.material3.*
 import com.example.androidtviptvapp.data.TvRepository
@@ -123,118 +124,168 @@ fun SettingsScreen(
     }
 
     // State for dialogs
-    var showLogoutDialog by remember { mutableStateOf(false) }
     var showBabyLockDialog by remember { mutableStateOf(false) }
-    var showChangePinDialog by remember { mutableStateOf(false) }
     var babyLockAction by remember { mutableStateOf<BabyLockAction>(BabyLockAction.None) }
 
     // Observe baby mode state
     val isBabyModeActive = BabyLockManager.isBabyModeActive
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 32.dp)
+            .background(Color(0xFF1A1A1A))
     ) {
-        // Title
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // Settings items
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 80.dp, vertical = 50.dp)
         ) {
-            // Baby Lock Section
-            Text(
-                text = "Parental Controls",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            // Profile Mode Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = "Profile Mode",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Profile Mode",
+                    fontSize = 26.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-            // Baby Mode Toggle
-            SettingsItem(
-                icon = Icons.Default.ChildCare,
-                title = "Baby Mode",
-                subtitle = if (isBabyModeActive) "Active - Only kids content shown" else "Tap to enable",
-                isHighlighted = isBabyModeActive,
-                onClick = {
-                    if (isBabyModeActive) {
-                        // Deactivating - need PIN
-                        babyLockAction = BabyLockAction.Deactivate
-                        showBabyLockDialog = true
-                    } else {
-                        // Activating - need PIN to set
-                        babyLockAction = BabyLockAction.Activate
-                        showBabyLockDialog = true
-                    }
-                }
-            )
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Change PIN (only visible when baby mode is not active)
-            if (!isBabyModeActive) {
-                SettingsItem(
-                    icon = Icons.Default.Pin,
-                    title = "Change Baby Lock PIN",
-                    subtitle = "Change the 4-digit PIN for baby mode",
+            // Mode Cards Row - Smaller cards centered
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+            ) {
+                // Parent Mode Card
+                ProfileModeCard(
+                    icon = Icons.Default.Person,
+                    title = "Parent Mode",
+                    description = "Full access to all content and settings",
+                    isSelected = !isBabyModeActive,
+                    modifier = Modifier.width(320.dp),
                     onClick = {
-                        showChangePinDialog = true
+                        if (isBabyModeActive) {
+                            // Switching to Parent Mode - need PIN
+                            babyLockAction = BabyLockAction.Deactivate
+                            showBabyLockDialog = true
+                        }
+                    }
+                )
+
+                // Child Mode Card
+                ProfileModeCard(
+                    icon = Icons.Default.ChildCare,
+                    title = "Child Mode",
+                    description = "Kid-safe content and limited access",
+                    isSelected = isBabyModeActive,
+                    modifier = Modifier.width(320.dp),
+                    onClick = {
+                        if (!isBabyModeActive) {
+                            // Switching to Child Mode - need PIN
+                            babyLockAction = BabyLockAction.Activate
+                            showBabyLockDialog = true
+                        }
                     }
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Account Section
-            Text(
-                text = "Account",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            // Info Box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF2A2A2A))
+                    .border(1.dp, Color(0xFF3A3A3A), RoundedCornerShape(12.dp))
+                    .padding(20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = Color(0xFF60A5FA),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "Parent Mode provides unrestricted access to all channels, movies, and games.",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Child Mode filters content to show only age-appropriate material.",
+                            color = Color(0xFF9CA3AF),
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
 
-            // Logout
-            SettingsItem(
-                icon = Icons.Default.Logout,
-                title = "Log Out",
-                subtitle = "Sign out of your account",
-                isDanger = true,
-                onClick = { showLogoutDialog = true }
-            )
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Logout Button at the bottom
+            Surface(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+                colors = ClickableSurfaceDefaults.colors(
+                    containerColor = Color(0xFF2A2A2A),
+                    focusedContainerColor = Color(0xFF3A3A3A)
+                ),
+                border = ClickableSurfaceDefaults.border(
+                    focusedBorder = Border(
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Color.White)
+                    )
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = "Logout",
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Log Out",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // App Info
-        Text(
-            text = "tvGO v1.0.0",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-    }
-
-    // Logout Confirmation Dialog
-    if (showLogoutDialog) {
-        ConfirmationDialog(
-            title = "Log Out",
-            message = "Are you sure you want to log out?",
-            confirmText = "Log Out",
-            onConfirm = {
-                TvRepository.logout()
-                onLogout()
-            },
-            onDismiss = { showLogoutDialog = false }
-        )
     }
 
     // Baby Lock PIN Dialog
     if (showBabyLockDialog) {
-        BabyLockPinDialog(
+        ModernPinDialog(
             action = babyLockAction,
             onSuccess = {
                 when (babyLockAction) {
@@ -251,14 +302,6 @@ fun SettingsScreen(
             }
         )
     }
-
-    // Change PIN Dialog
-    if (showChangePinDialog) {
-        ChangePinDialog(
-            onSuccess = { showChangePinDialog = false },
-            onDismiss = { showChangePinDialog = false }
-        )
-    }
 }
 
 enum class BabyLockAction {
@@ -267,523 +310,294 @@ enum class BabyLockAction {
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-private fun SettingsItem(
+private fun ProfileModeCard(
     icon: ImageVector,
     title: String,
-    subtitle: String,
-    isHighlighted: Boolean = false,
-    isDanger: Boolean = false,
+    description: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    // Use sidebar-like colors - no red, use white/gray theme
-    val backgroundColor = when {
-        isHighlighted -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-        else -> Color(0xFF1E1E26)  // Match sidebar item background
-    }
-
-    val iconTint = when {
-        isHighlighted -> Color(0xFF4CAF50)
-        else -> Color(0xFF9CA3AF)  // Gray like sidebar
-    }
-
     Surface(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp),
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        modifier = modifier.height(180.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = backgroundColor,
-            focusedContainerColor = Color(0xFF2A2A2A),  // Slightly lighter on focus
-            pressedContainerColor = backgroundColor
+            containerColor = if (isSelected) Color(0xFFE0E0E0) else Color(0xFF2A2A2A),
+            focusedContainerColor = if (isSelected) Color(0xFFF0F0F0) else Color(0xFF3A3A3A)
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
                 border = androidx.compose.foundation.BorderStroke(
-                    2.dp,
-                    Color.White  // White border like sidebar
+                    3.dp,
+                    if (isSelected) Color.White else Color(0xFF60A5FA)
                 )
             )
         ),
-        scale = ClickableSurfaceDefaults.scale(
-            focusedScale = 1.01f  // Very subtle scale - reduced from default
-        )
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(28.dp)  // Slightly smaller icon
+            // Icon in circle
+            Box(
+                modifier = Modifier
+                    .size(70.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) Color(0xFFB0B0B0) else Color(0xFF3A3A3A)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = if (isSelected) Color.Black else Color(0xFF9CA3AF),
+                    modifier = Modifier.size(34.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.Black else Color.White
             )
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White  // White text like sidebar
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9CA3AF)  // Gray subtitle
-                )
-            }
-
-            if (isHighlighted) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Active",
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
+                textAlign = TextAlign.Center,
+                lineHeight = 16.sp
+            )
         }
     }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-private fun ConfirmationDialog(
-    title: String,
-    message: String,
-    confirmText: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier
-                .width(400.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-
-                    Button(
-                        onClick = {
-                            onConfirm()
-                            onDismiss()
-                        },
-                        colors = ButtonDefaults.colors(
-                            containerColor = Color(0xFFE53935)
-                        )
-                    ) {
-                        Text(confirmText)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun BabyLockPinDialog(
+private fun ModernPinDialog(
     action: BabyLockAction,
     onSuccess: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    val focusRequester = remember { FocusRequester() }
 
     val title = when (action) {
-        BabyLockAction.Activate -> "Enter PIN to Enable Baby Mode"
-        BabyLockAction.Deactivate -> "Enter PIN to Disable Baby Mode"
-        else -> "Enter PIN"
-    }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        BabyLockAction.Activate -> "Enter PIN to switch to Parent Mode"
+        BabyLockAction.Deactivate -> "Enter PIN to switch to Parent Mode"
+        else -> "Enter PIN Code"
     }
 
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
-                .width(400.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .width(440.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xFF2A2A2A))
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Close button
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color(0xFF9CA3AF),
+                    modifier = Modifier.size(22.dp)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // PIN Input - 4 digit boxes
-                PinInput(
-                    pin = pin,
-                    onPinChange = { newPin ->
-                        if (newPin.length <= 4 && newPin.all { it.isDigit() }) {
-                            pin = newPin
-                            error = null
-                        }
-                    },
-                    modifier = Modifier.focusRequester(focusRequester)
-                )
-
-                if (error != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = error!!,
-                        color = Color(0xFFE53935),
-                        style = MaterialTheme.typography.bodySmall
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(36.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Lock Icon
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE0E0E0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-
-                    Button(
-                        onClick = {
-                            if (pin.length != 4) {
-                                error = "PIN must be 4 digits"
-                            } else if (!BabyLockManager.verifyPin(pin)) {
-                                error = "Incorrect PIN"
-                                pin = ""
-                            } else {
-                                onSuccess()
-                            }
-                        },
-                        enabled = pin.length == 4
-                    ) {
-                        Text("Confirm")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun ChangePinDialog(
-    onSuccess: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    var currentPin by remember { mutableStateOf("") }
-    var newPin by remember { mutableStateOf("") }
-    var confirmPin by remember { mutableStateOf("") }
-    var step by remember { mutableStateOf(1) } // 1 = current, 2 = new, 3 = confirm
-    var error by remember { mutableStateOf<String?>(null) }
-
-    val title = when (step) {
-        1 -> "Enter Current PIN"
-        2 -> "Enter New PIN"
-        3 -> "Confirm New PIN"
-        else -> ""
-    }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier
-                .width(400.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Pin,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center
+                    text = "Enter PIN Code",
+                    fontSize = 22.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
                 )
-
-                // Progress indicator
-                Row(
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    repeat(3) { index ->
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(
-                                    if (index < step) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                        )
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                val currentValue = when (step) {
-                    1 -> currentPin
-                    2 -> newPin
-                    3 -> confirmPin
-                    else -> ""
-                }
-
-                PinInput(
-                    pin = currentValue,
-                    onPinChange = { newValue ->
-                        if (newValue.length <= 4 && newValue.all { it.isDigit() }) {
-                            error = null
-                            when (step) {
-                                1 -> currentPin = newValue
-                                2 -> newPin = newValue
-                                3 -> confirmPin = newValue
-                            }
-                        }
-                    }
+                Text(
+                    text = "Please enter your PIN to switch to Parent Mode",
+                    fontSize = 13.sp,
+                    color = Color(0xFF9CA3AF),
+                    textAlign = TextAlign.Center
                 )
-
-                if (error != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = error!!,
-                        color = Color(0xFFE53935),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // PIN Dots Display
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            if (step > 1) {
-                                step--
-                                error = null
-                            } else {
-                                onDismiss()
-                            }
-                        },
-                        colors = ButtonDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text(if (step > 1) "Back" else "Cancel")
-                    }
-
-                    Button(
-                        onClick = {
-                            when (step) {
-                                1 -> {
-                                    if (currentPin.length != 4) {
-                                        error = "PIN must be 4 digits"
-                                    } else if (!BabyLockManager.verifyPin(currentPin)) {
-                                        error = "Incorrect PIN"
-                                        currentPin = ""
-                                    } else {
-                                        step = 2
-                                    }
-                                }
-                                2 -> {
-                                    if (newPin.length != 4) {
-                                        error = "PIN must be 4 digits"
-                                    } else {
-                                        step = 3
-                                    }
-                                }
-                                3 -> {
-                                    if (confirmPin != newPin) {
-                                        error = "PINs do not match"
-                                        confirmPin = ""
-                                    } else {
-                                        BabyLockManager.setPin(newPin)
-                                        onSuccess()
-                                    }
-                                }
-                            }
-                        },
-                        enabled = currentValue.length == 4
-                    ) {
-                        Text(if (step == 3) "Save" else "Next")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun PinInput(
-    pin: String,
-    onPinChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    // Visual PIN display (4 boxes)
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier
-    ) {
-        repeat(4) { index ->
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                if (index < pin.length) {
-                    Text(
-                        text = "●",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-    }
-
-    Spacer(modifier = Modifier.height(24.dp))
-
-    // Number pad
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Row 1-3
-        listOf(
-            listOf("1", "2", "3"),
-            listOf("4", "5", "6"),
-            listOf("7", "8", "9")
-        ).forEach { row ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { digit ->
-                    NumberButton(
-                        digit = digit,
-                        onClick = {
-                            if (pin.length < 4) {
-                                onPinChange(pin + digit)
+                    repeat(4) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF1E1E26))
+                                .border(
+                                    2.dp,
+                                    if (index == pin.length) Color.White else Color(0xFF3A3A3A),
+                                    RoundedCornerShape(10.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (index < pin.length) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
                             }
                         }
+                    }
+                }
+
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = error!!,
+                        color = Color(0xFFEF4444),
+                        fontSize = 13.sp
                     )
                 }
-            }
-        }
 
-        // Bottom row: Clear, 0, Backspace
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            NumberButton(
-                digit = "C",
-                onClick = { onPinChange("") }
-            )
-            NumberButton(
-                digit = "0",
-                onClick = {
-                    if (pin.length < 4) {
-                        onPinChange(pin + "0")
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Demo PIN hint
+                Text(
+                    text = "Demo PIN: 1234",
+                    color = Color(0xFF60A5FA),
+                    fontSize = 13.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Number Pad
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Rows 1-3
+                    listOf(
+                        listOf("1", "2", "3"),
+                        listOf("4", "5", "6"),
+                        listOf("7", "8", "9")
+                    ).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            row.forEach { digit ->
+                                PinNumberButton(
+                                    digit = digit,
+                                    onClick = {
+                                        if (pin.length < 4) {
+                                            pin += digit
+                                            error = null
+                                            // Auto-verify when 4 digits entered
+                                            if (pin.length == 4) {
+                                                if (BabyLockManager.verifyPin(pin)) {
+                                                    onSuccess()
+                                                } else {
+                                                    error = "Incorrect PIN"
+                                                    pin = ""
+                                                }
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Bottom row: 0, Backspace
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(modifier = Modifier.size(62.dp)) // Spacer
+                        PinNumberButton(
+                            digit = "0",
+                            onClick = {
+                                if (pin.length < 4) {
+                                    pin += "0"
+                                    error = null
+                                    if (pin.length == 4) {
+                                        if (BabyLockManager.verifyPin(pin)) {
+                                            onSuccess()
+                                        } else {
+                                            error = "Incorrect PIN"
+                                            pin = ""
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                        PinNumberButton(
+                            digit = "⌫",
+                            onClick = {
+                                if (pin.isNotEmpty()) {
+                                    pin = pin.dropLast(1)
+                                    error = null
+                                }
+                            }
+                        )
                     }
                 }
-            )
-            NumberButton(
-                digit = "⌫",
-                onClick = {
-                    if (pin.isNotEmpty()) {
-                        onPinChange(pin.dropLast(1))
-                    }
-                }
-            )
+            }
         }
     }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-private fun NumberButton(
+private fun PinNumberButton(
     digit: String,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(64.dp),
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        modifier = Modifier.size(62.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(10.dp)),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            focusedContainerColor = MaterialTheme.colorScheme.primary,
-            pressedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            containerColor = Color(0xFF3A3A3A),
+            focusedContainerColor = Color(0xFF4A4A4A)
         ),
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
-                border = androidx.compose.foundation.BorderStroke(
-                    2.dp,
-                    MaterialTheme.colorScheme.primary
-                )
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White)
             )
         )
     ) {
@@ -793,7 +607,9 @@ private fun NumberButton(
         ) {
             Text(
                 text = digit,
-                style = MaterialTheme.typography.titleLarge
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
             )
         }
     }

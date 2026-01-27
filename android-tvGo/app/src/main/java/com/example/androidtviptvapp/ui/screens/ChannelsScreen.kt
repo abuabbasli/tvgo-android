@@ -204,46 +204,63 @@ fun ChannelsScreen(
         // If scrolling, the scroll detection LaunchedEffect handles it
     }
     
-    // Initialize focus/preview when filtered channels change or when entering the screen
-    LaunchedEffect(filteredChannels) {
-        if (focusedChannel == null || focusedChannel !in filteredChannels) {
-            // Determine which channel to focus on
-            val channelToFocus = if (initialChannelId != null) {
-                // Coming from fullscreen player - focus on that channel
-                filteredChannels.find { it.id == initialChannelId }
-            } else {
-                // Check if we have a last played channel stored
-                val lastChannelId = ChannelFocusManager.getLastFocusedChannel()
-                if (lastChannelId != null) {
-                    // Returning from another section - restore last played channel
-                    filteredChannels.find { it.id == lastChannelId }
-                } else {
-                    // First time entering - start at first channel
-                    null
-                }
-            }
+    // Track when we enter the screen to restore focus
+    var hasInitialized by remember { mutableStateOf(false) }
 
-            // Set the focused channel
-            focusedChannel = channelToFocus ?: filteredChannels.firstOrNull()
-            debouncedFocusedChannel = focusedChannel
+    // Initialize focus/preview when entering the screen or when filtered channels change
+    LaunchedEffect(filteredChannels, initialChannelId) {
+        // Determine which channel to focus on
+        val channelToFocus = if (initialChannelId != null) {
+            // Coming from fullscreen player - focus on that channel
+            filteredChannels.find { it.id == initialChannelId }
+        } else if (!hasInitialized || focusedChannel == null || focusedChannel !in filteredChannels) {
+            // Check if we have a last played channel stored
+            val lastChannelId = ChannelFocusManager.getLastFocusedChannel()
+            if (lastChannelId != null) {
+                // Returning from another section - restore last played channel
+                filteredChannels.find { it.id == lastChannelId }
+            } else {
+                // First time entering - start at first channel
+                null
+            }
+        } else {
+            // Keep current focused channel if still valid
+            null
+        }
+
+        // Update focused channel if we found a target
+        if (channelToFocus != null) {
+            focusedChannel = channelToFocus
+            debouncedFocusedChannel = channelToFocus
 
             // Scroll to the channel and request focus
-            focusedChannel?.let { channel ->
-                val index = filteredChannels.indexOfFirst { it.id == channel.id }
-                if (index >= 0) {
-                    kotlinx.coroutines.delay(100)
-                    when (viewMode) {
-                        ViewMode.GRID -> gridState.scrollToItem(index)
-                        ViewMode.LIST -> listState.scrollToItem(index)
-                    }
-                    kotlinx.coroutines.delay(100)
-                    focusRequesters[channel.id]?.requestFocus()
+            val index = filteredChannels.indexOfFirst { it.id == channelToFocus.id }
+            if (index >= 0) {
+                kotlinx.coroutines.delay(100)
+                when (viewMode) {
+                    ViewMode.GRID -> gridState.scrollToItem(index)
+                    ViewMode.LIST -> listState.scrollToItem(index)
                 }
+                kotlinx.coroutines.delay(100)
+                focusRequesters[channelToFocus.id]?.requestFocus()
+            }
+        } else if (!hasInitialized) {
+            // First time - just focus on first channel
+            val firstChannel = filteredChannels.firstOrNull()
+            if (firstChannel != null) {
+                focusedChannel = firstChannel
+                debouncedFocusedChannel = firstChannel
+                kotlinx.coroutines.delay(100)
+                focusRequesters[firstChannel.id]?.requestFocus()
             }
         }
+
+        // Ensure preview channel is set
         if (previewChannel == null || previewChannel !in filteredChannels) {
             previewChannel = focusedChannel ?: filteredChannels.firstOrNull()
         }
+
+        hasInitialized = true
     }
     
     // NOTE: Don't release player here! It's shared with PlayerScreen (fullscreen).
@@ -375,7 +392,7 @@ fun ChannelsScreen(
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(2.dp),  // Minimal spacing
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                // Pivot offsets - focused item stays near top for faster visual feedback
+                                // Pivot offsets - focused item stays fixed, content scrolls (carousel mode)
                                 pivotOffsets = PivotOffsets(
                                     parentFraction = 0.4f,
                                     childFraction = 0.0f
@@ -408,7 +425,7 @@ fun ChannelsScreen(
                                 state = listState,
                                 contentPadding = PaddingValues(bottom = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(0.dp),  // No spacing for fastest scroll
-                                // Pivot offsets - focused item near top for faster visual feedback
+                                // Pivot offsets - focused item stays fixed, content scrolls (carousel mode)
                                 pivotOffsets = PivotOffsets(
                                     parentFraction = 0.4f,
                                     childFraction = 0.0f
