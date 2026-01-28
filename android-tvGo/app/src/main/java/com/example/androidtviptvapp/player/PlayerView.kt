@@ -587,6 +587,16 @@ class PlayerView @JvmOverloads constructor(
     }
 
     override fun reinit() {
+        // CRITICAL FIX: When using SharedPlayerManager, don't destroy/recreate the player!
+        // Use reloadStream() which stops and reopens the URL, properly resetting decoders
+        // without destroying the player instance. This prevents black screen when
+        // transitioning between preview and fullscreen.
+        if (SharedPlayerManager.isPlayerValid()) {
+            Timber.d("reinit - SharedPlayerManager active, using reloadStream() instead of destroy/init")
+            reloadStream()
+            return
+        }
+
         Timber.d("reinit - preserving playback source")
         super.reinit()
     }

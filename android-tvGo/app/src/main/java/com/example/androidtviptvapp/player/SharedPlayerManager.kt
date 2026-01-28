@@ -3,6 +3,7 @@ package com.example.androidtviptvapp.player
 import android.content.Context
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.compose.ui.geometry.Rect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -14,14 +15,16 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * SharedPlayerManager - TRUE SINGLETON player that persists across screens.
+ * SharedPlayerManager - TRUE SINGLETON player with GLOBAL OVERLAY support.
  *
- * KEY INSIGHT: Instead of creating/destroying players when navigating between
- * preview and fullscreen, we keep ONE player and just move it between containers.
+ * KEY INSIGHT: Instead of moving the player between containers (which causes
+ * MediaCodec errors), we keep ONE player in a FIXED root container and just
+ * change its size/position for preview vs fullscreen mode.
  *
  * This prevents:
  * - Channel reload when going fullscreen
  * - Channel reload when returning from fullscreen
+ * - MediaCodec errors from view parent changes
  * - Memory issues from multiple players
  * - Buffering/loading delays on navigation
  */
@@ -75,6 +78,67 @@ object SharedPlayerManager {
     private var _returningFromFullscreen = false
     val returningFromFullscreen: Boolean get() = _returningFromFullscreen
 
+    // ==========================================================================
+    // GLOBAL OVERLAY MODE - Player stays in one place, just changes size
+    // ==========================================================================
+
+    // Preview bounds (in dp) - where the preview area is on screen
+    data class OverlayBounds(
+        val x: Float = 0f,      // Left position in dp
+        val y: Float = 0f,      // Top position in dp
+        val width: Float = 0f,  // Width in dp
+        val height: Float = 0f, // Height in dp
+        val isVisible: Boolean = true
+    )
+
+    private val _previewBounds = MutableStateFlow(OverlayBounds())
+    val previewBounds: StateFlow<OverlayBounds> = _previewBounds.asStateFlow()
+
+    // Track if overlay is visible (when on channels screen or player screen)
+    private val _isOverlayVisible = MutableStateFlow(false)
+    val isOverlayVisible: StateFlow<Boolean> = _isOverlayVisible.asStateFlow()
+
+    // Global container - set once in MainActivity, never changed
+    private var globalContainer: FrameLayout? = null
+
+    /**
+     * Set the preview area bounds (called from ChannelsScreen when layout changes)
+     */
+    fun setPreviewBounds(x: Float, y: Float, width: Float, height: Float) {
+        _previewBounds.value = OverlayBounds(x, y, width, height, true)
+        Timber.d("Preview bounds set: x=$x, y=$y, w=$width, h=$height")
+    }
+
+    /**
+     * Show/hide the player overlay
+     */
+    fun setOverlayVisible(visible: Boolean) {
+        _isOverlayVisible.value = visible
+        Timber.d("Overlay visible: $visible")
+    }
+
+    /**
+     * Attach player to global container (called ONCE from MainActivity)
+     * The player NEVER moves from this container!
+     */
+    fun attachToGlobalContainer(container: FrameLayout, context: Context) {
+        val player = getOrCreatePlayer(context)
+
+        // Only attach if not already attached to this container
+        if (globalContainer != container || player.parent != container) {
+            // Remove from any previous parent
+            (player.parent as? ViewGroup)?.removeView(player)
+
+            Timber.d("Attaching player to GLOBAL container (one-time)")
+            container.addView(player, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ))
+
+            globalContainer = container
+        }
+    }
+
     // Track creation for debugging
     private var creationCount = 0
 
@@ -114,10 +178,15 @@ object SharedPlayerManager {
 
     /**
      * Attach the singleton player to a container.
-     * Removes from previous container first - NO RELOAD happens!
+     * When moving between containers, we reload the stream to avoid MediaCodec errors.
+     * The stream URL is preserved so it reloads the same content seamlessly.
      */
     fun attachToContainer(container: FrameLayout, context: Context) {
         val player = getOrCreatePlayer(context)
+        val isMovingContainers = currentContainer != null && currentContainer != container && player.parent != null
+
+        // Track if we need to reload after move
+        val needsReload = isMovingContainers && player.streamUrl != null
 
         // Remove from current container if attached elsewhere
         if (currentContainer != null && currentContainer != container) {
@@ -138,6 +207,12 @@ object SharedPlayerManager {
         }
 
         currentContainer = container
+
+        // Reload stream after move to reset MediaCodec and avoid decoder errors
+        if (needsReload) {
+            Timber.d("Reloading stream after container move to reset codecs")
+            player.reloadStream()
+        }
     }
 
     /**

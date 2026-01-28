@@ -529,6 +529,20 @@ open class AdaptExoPlayerView @JvmOverloads constructor(
         player?.prepare()
     }
 
+    /**
+     * Reload the current stream - stops and reopens with same URL.
+     * This properly resets the MediaCodec decoders without destroying the player.
+     * Used when moving player between containers causes decoder errors.
+     */
+    fun reloadStream() {
+        val currentUrl = streamUrl ?: return
+        Timber.d("reloadStream - reloading: $currentUrl")
+        // Close will stop and clear the stream
+        closeStream()
+        // Reopen with the same URL - this forces decoder reset
+        openStream(currentUrl, vod = false)
+    }
+
     open fun reinit() {
         destroy()
         init()
