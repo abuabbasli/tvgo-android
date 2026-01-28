@@ -20,7 +20,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -445,6 +448,9 @@ fun ChannelsScreen(
                     val onChannelClickAction: (Channel) -> Unit = { channel ->
                         if (previewChannel?.id == channel.id) {
                             // SECOND CLICK on same channel = go fullscreen
+                            // CRITICAL: Set fullscreen flag BEFORE navigation
+                            // This prevents ChannelPreview's onRelease from detaching the player
+                            com.example.androidtviptvapp.player.SharedPlayerManager.setFullscreen(true)
                             onChannelClick(channel)
                         } else {
                             // FIRST CLICK = play in preview area
@@ -865,12 +871,14 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
 }
 
 /**
- * ChannelPreview - Video preview with SIMPLE scroll optimization.
+ * ChannelPreview - Reports preview bounds to GlobalPlayerOverlay.
  *
- * STRATEGY:
- * - On click (isClickTriggered) -> instant play
- * - On focus change -> wait 500ms then play
- * - Player stays paused during the wait
+ * STRATEGY (GLOBAL OVERLAY MODE):
+ * - Does NOT embed the player view directly
+ * - Reports its position/size to SharedPlayerManager
+ * - GlobalPlayerOverlay (at MainActivity level) shows the player at those bounds
+ * - Player NEVER moves between containers, just changes size/position via animation
+ * - This prevents MediaCodec errors and enables seamless fullscreen transitions
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -880,90 +888,96 @@ fun ChannelPreview(
     selectedCategory: String = "all",
     onPlayStarted: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
     val sharedManager = com.example.androidtviptvapp.player.SharedPlayerManager
 
-    // Lifecycle
+    // Lifecycle - start ticking for player health monitoring
     DisposableEffect(Unit) {
         sharedManager.startTicking(scope)
         onDispose { sharedManager.stopTicking() }
     }
 
-    // Player reference
-    var playerViewRef by remember { mutableStateOf<TvPlayerView?>(null) }
-
     // Current channel being played (may lag behind focused channel)
     var playingChannel by remember { mutableStateOf(channel) }
 
-    // Simple debounced channel loading
+    // Track if player is paused (for overlay)
+    var isPaused by remember { mutableStateOf(true) }
+
+    // Check if we're returning from fullscreen - skip debounce and use existing playback
+    val isReturningFromFullscreen = sharedManager.returningFromFullscreen
+
+    // Handle channel loading with debounce
     LaunchedEffect(channel.id, isClickTriggered) {
+        // Clear the returning from fullscreen flag after first use
+        if (isReturningFromFullscreen) {
+            sharedManager.clearReturningFromFullscreen()
+            // If returning from fullscreen and same channel is playing, just update state
+            if (sharedManager.isChannelPlaying(channel.id)) {
+                playingChannel = channel
+                sharedManager.resume()
+                isPaused = false
+                onPlayStarted()
+                return@LaunchedEffect
+            }
+        }
+
         if (isClickTriggered) {
             // INSTANT play on click
             playingChannel = channel
-            playerViewRef?.let { player ->
-                if (player.streamUrl != channel.streamUrl) {
-                    player.playUrl(channel.streamUrl)
-                }
-                player.pause = false
-            }
-            sharedManager.setCurrentChannel(channel.id, channel.streamUrl)
+            // Use SharedPlayerManager.playChannel which skips reload if same channel
+            sharedManager.playChannel(channel.id, channel.name, channel.streamUrl)
+            sharedManager.resume()
+            isPaused = false
             // Store as last played channel and category
             ChannelFocusManager.updatePlayedChannel(channel.id, selectedCategory)
             onPlayStarted()
         } else {
             // Focus change - pause current and wait
-            playerViewRef?.pause = true
+            sharedManager.pause()
+            isPaused = true
 
             // Wait 500ms for scrolling to stop
             kotlinx.coroutines.delay(500)
 
             // Now play the new channel
             playingChannel = channel
-            playerViewRef?.let { player ->
-                if (player.streamUrl != channel.streamUrl) {
-                    player.playUrl(channel.streamUrl)
-                }
-                player.pause = false
-            }
-            sharedManager.setCurrentChannel(channel.id, channel.streamUrl)
+            // Use SharedPlayerManager.playChannel which skips reload if same channel
+            sharedManager.playChannel(channel.id, channel.name, channel.streamUrl)
+            sharedManager.resume()
+            isPaused = false
             // Store as last played channel and category
             ChannelFocusManager.updatePlayedChannel(channel.id, selectedCategory)
             TvRepository.triggerUpdatePrograms(channel.id)
         }
     }
 
-    // Track if player is paused (for overlay)
-    var isPaused by remember { mutableStateOf(true) }
-
+    // The preview area - report its bounds to GlobalPlayerOverlay
+    // Using 95% width to avoid covering channel names underneath
     Box(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth(0.95f)
             .aspectRatio(16f / 9f)
             .background(Color.Black, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
             .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-    ) {
-        AndroidView(
-            factory = { ctx ->
-                TvPlayerView(ctx).apply {
-                    resizeMode = com.example.androidtviptvapp.player.AdaptExoPlayerView.RESIZE_MODE_FIT
-                    init()
-                    playerViewRef = this
-                    pause = true
-                    isPaused = true
+            .onGloballyPositioned { coordinates ->
+                // Report preview bounds to SharedPlayerManager for GlobalPlayerOverlay
+                val position = coordinates.positionInRoot()
+                val size = coordinates.size
+                with(density) {
+                    sharedManager.setPreviewBounds(
+                        x = position.x.toDp().value,
+                        y = position.y.toDp().value,
+                        width = size.width.toDp().value,
+                        height = size.height.toDp().value
+                    )
                 }
-            },
-            update = { view ->
-                isPaused = view.pause
-            },
-            onRelease = { view ->
-                playerViewRef = null
-                view.destroy()
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Show overlay while paused/loading
+            }
+    ) {
+        // Just a placeholder - the actual player is shown by GlobalPlayerOverlay
+        // Show overlay while loading
         if (isPaused || playingChannel.id != channel.id) {
             Box(
                 modifier = Modifier

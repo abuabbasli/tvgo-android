@@ -5,6 +5,7 @@ import com.example.androidtviptvapp.data.ChannelPlaybackSource
 import com.example.androidtviptvapp.data.TvRepository
 import com.example.androidtviptvapp.player.PlayerView
 import com.example.androidtviptvapp.player.AdaptExoPlayerView
+import com.example.androidtviptvapp.player.SharedPlayerManager
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.animation.AnimatedVisibility
@@ -293,38 +294,45 @@ fun PlayerScreen(
             }
         }
 
-        // View-based PlayerView (OnTV-main pattern - dedicated player instance)
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    layoutParams = FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    resizeMode = AdaptExoPlayerView.RESIZE_MODE_FIT
+        // Use SharedPlayerManager singleton - prevents reload when transitioning from preview
+        val context = LocalContext.current
 
-                    // Initialize the player
-                    init()
-                    playerView = this
+        // Setup player and fullscreen mode on entry
+        // GLOBAL OVERLAY MODE: We just set fullscreen=true, GlobalPlayerOverlay handles the rest
+        DisposableEffect(channelId) {
+            // Get the singleton player (same instance used in preview)
+            val player = SharedPlayerManager.getOrCreatePlayer(context)
+            playerView = player
 
-                    // Register with PlaybackManager
-                    PlaybackManager.registerPlayerView(this)
+            // Mark as fullscreen - GlobalPlayerOverlay will animate to fullscreen
+            SharedPlayerManager.setFullscreen(true)
 
-                    // Start playback
-                    val source = initialSource
-                    if (source != null) {
-                        play(source)
-                    } else {
-                        playUrl(videoUrl)
-                    }
+            // Play channel - SharedPlayerManager will skip reload if same channel is already playing
+            channel?.let { ch ->
+                SharedPlayerManager.playChannel(ch.id, ch.name, ch.streamUrl)
+            } ?: run {
+                // Fallback for non-channel URLs
+                if (SharedPlayerManager.currentStreamUrl.value != videoUrl) {
+                    player.playUrl(videoUrl)
                 }
-            },
-            onRelease = { view ->
-                // Cleanup
-                PlaybackManager.unregisterPlayerView(view)
-                view.destroy()
-            },
-            modifier = Modifier.fillMaxSize()
+            }
+
+            // Ensure player is not paused
+            player.pause = false
+
+            onDispose {
+                // Mark as leaving fullscreen - GlobalPlayerOverlay will animate back to preview
+                SharedPlayerManager.setFullscreen(false)
+                SharedPlayerManager.markReturningFromFullscreen()
+            }
+        }
+
+        // GLOBAL OVERLAY MODE: No AndroidView here - GlobalPlayerOverlay handles player display
+        // Just show a black background as placeholder
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
         )
         
         // Top gradient for info overlay

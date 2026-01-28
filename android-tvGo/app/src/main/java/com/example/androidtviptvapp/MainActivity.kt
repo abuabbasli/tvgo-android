@@ -36,6 +36,8 @@ import com.example.androidtviptvapp.data.TvRepository
 import com.example.androidtviptvapp.data.SessionManager
 import com.example.androidtviptvapp.ui.screens.LoginScreen
 import com.example.androidtviptvapp.ui.screens.BabyLockManager
+import com.example.androidtviptvapp.ui.components.GlobalPlayerOverlay
+import com.example.androidtviptvapp.player.SharedPlayerManager
 
 class MainActivity : ComponentActivity() {
 
@@ -310,27 +312,35 @@ private fun MainContent() {
         } else false
     }
 
-    if (isPlayerScreen) {
-        // Full screen player - no sidebar, with number key support for channel jumping
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .onPreviewKeyEvent(numberKeyHandler)
-        ) {
-            AppNavigation(
-                navController = navController,
-                channelViewMode = channelViewMode,
-                onPlayUrl = { url ->
-                    val encodedUrl = android.util.Base64.encodeToString(
-                        url.toByteArray(),
-                        android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP
-                    )
-                    navController.navigate("player/$encodedUrl")
-                },
-                onPlayChannel = { channelId ->
-                    navController.navigate("player_channel/$channelId")
-                }
-            )
+    // Update overlay visibility based on current route
+    LaunchedEffect(currentRoute) {
+        val shouldShowOverlay = isChannelsScreen || isChannelPlayerScreen
+        SharedPlayerManager.setOverlayVisible(shouldShowOverlay)
+    }
+
+    // Root Box that contains everything + the global player overlay
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isPlayerScreen) {
+            // Full screen player - no sidebar, with number key support for channel jumping
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onPreviewKeyEvent(numberKeyHandler)
+            ) {
+                AppNavigation(
+                    navController = navController,
+                    channelViewMode = channelViewMode,
+                    onPlayUrl = { url ->
+                        val encodedUrl = android.util.Base64.encodeToString(
+                            url.toByteArray(),
+                            android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP
+                        )
+                        navController.navigate("player/$encodedUrl")
+                    },
+                    onPlayChannel = { channelId ->
+                        navController.navigate("player_channel/$channelId")
+                    }
+                )
 
             // Number input display overlay (for direct channel jump in fullscreen)
             AnimatedVisibility(
@@ -377,9 +387,9 @@ private fun MainContent() {
                 }
             }
         }
-    } else {
-        // Normal screens with sidebar
-        Box(modifier = Modifier.fillMaxSize()) {
+        } else {
+            // Normal screens with sidebar
+            Box(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -461,6 +471,15 @@ private fun MainContent() {
                     }
                 }
             }
+            }
         }
+
+        // =====================================================================
+        // GLOBAL PLAYER OVERLAY - Sits on top of everything, NEVER moves
+        // Position/size controlled by SharedPlayerManager state
+        // =====================================================================
+        GlobalPlayerOverlay(
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
