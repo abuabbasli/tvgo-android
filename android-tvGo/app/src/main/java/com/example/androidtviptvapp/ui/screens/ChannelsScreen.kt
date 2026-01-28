@@ -55,11 +55,17 @@ fun ChannelsScreen(
     val isBabyModeActive = BabyLockManager.isBabyModeActive
 
     // When baby mode is active, force "Uşaq" (Kids) category
-    var selectedCategory by remember { mutableStateOf(if (isBabyModeActive) "Uşaq" else "all") }
+    // Otherwise, restore the last selected category from ChannelFocusManager
+    var selectedCategory by remember {
+        mutableStateOf(
+            if (isBabyModeActive) "Uşaq"
+            else ChannelFocusManager.getLastCategory()
+        )
+    }
 
     // Update selected category when baby mode changes
     LaunchedEffect(isBabyModeActive) {
-        selectedCategory = if (isBabyModeActive) "Uşaq" else "all"
+        selectedCategory = if (isBabyModeActive) "Uşaq" else ChannelFocusManager.getLastCategory()
     }
 
     // OPTIMIZATION: Use derivedStateOf for filtered channels - only recomputes when dependencies change
@@ -262,6 +268,9 @@ fun ChannelsScreen(
     // Track when we enter the screen to restore focus
     var hasInitialized by remember { mutableStateOf(false) }
 
+    // Track user-initiated category change to avoid auto-switching back
+    var userChangedCategory by remember { mutableStateOf(false) }
+
     // Initialize focus/preview when entering the screen or when filtered channels change
     LaunchedEffect(filteredChannels, initialChannelId) {
         // Determine which channel to focus on
@@ -270,7 +279,8 @@ fun ChannelsScreen(
             var channel = filteredChannels.find { it.id == initialChannelId }
 
             // If channel not in filtered list, switch to "all" category to show it
-            if (channel == null && !isBabyModeActive) {
+            // But only if user didn't explicitly change the category
+            if (channel == null && !isBabyModeActive && !userChangedCategory) {
                 val fullChannel = allChannels.find { it.id == initialChannelId }
                 if (fullChannel != null) {
                     android.util.Log.d("ChannelsScreen", "Channel $initialChannelId not in current category, switching to 'all'")
@@ -282,7 +292,9 @@ fun ChannelsScreen(
             }
 
             channel
-        } else if (!hasInitialized || focusedChannel == null || focusedChannel !in filteredChannels) {
+        } else if (!hasInitialized) {
+            // First time initialization only - check for last played channel
+            // The category is already restored from ChannelFocusManager.getLastCategory()
             // Check if we have a currently playing preview channel first
             if (previewChannel != null && previewChannel in filteredChannels) {
                 android.util.Log.d("ChannelsScreen", "Restoring focus to currently playing preview channel: ${previewChannel?.name}")
@@ -292,29 +304,30 @@ fun ChannelsScreen(
                 val lastChannelId = ChannelFocusManager.getLastFocusedChannel()
                 if (lastChannelId != null) {
                     // Returning from another section - restore last played channel
-                    var channel = filteredChannels.find { it.id == lastChannelId }
-
-                    // If last played channel not in filtered list, switch to "all" category
-                    if (channel == null && !isBabyModeActive) {
-                        val fullChannel = allChannels.find { it.id == lastChannelId }
-                        if (fullChannel != null) {
-                            android.util.Log.d("ChannelsScreen", "Last played channel not in current category, switching to 'all'")
-                            selectedCategory = "all"
-                            // Wait for recomposition with new filter
-                            kotlinx.coroutines.delay(50)
-                            channel = filteredChannels.find { it.id == lastChannelId }
-                        }
+                    // The category was already restored, so the channel should be in filteredChannels
+                    val channel = filteredChannels.find { it.id == lastChannelId }
+                    if (channel != null) {
+                        android.util.Log.d("ChannelsScreen", "Restored last played channel: ${channel.name} in category: $selectedCategory")
+                    } else {
+                        android.util.Log.w("ChannelsScreen", "Last played channel $lastChannelId not found in category $selectedCategory")
                     }
-
                     channel
                 } else {
                     // First time entering - start at first channel
                     null
                 }
             }
-        } else {
-            // Keep current focused channel if still valid
+        } else if (userChangedCategory) {
+            // User changed category - focus on first channel in the new category
+            android.util.Log.d("ChannelsScreen", "User changed category, focusing on first channel")
+            userChangedCategory = false  // Reset the flag
+            filteredChannels.firstOrNull()
+        } else if (focusedChannel != null && focusedChannel in filteredChannels) {
+            // Keep current focused channel if still valid in filtered list
             null
+        } else {
+            // Current focused channel not in filtered list - focus on first channel
+            filteredChannels.firstOrNull()
         }
 
         // Update focused channel if we found a target
@@ -398,7 +411,12 @@ fun ChannelsScreen(
         CategoryFilter(
             categories = availableCategories,
             selectedCategory = selectedCategory,
-            onCategorySelected = { if (!isBabyModeActive) selectedCategory = it },
+            onCategorySelected = {
+                if (!isBabyModeActive) {
+                    userChangedCategory = true  // Mark as user-initiated category change
+                    selectedCategory = it
+                }
+            },
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -578,6 +596,7 @@ fun ChannelsScreen(
                             ChannelPreview(
                                 channel = channelToPreview,
                                 isClickTriggered = isClickTriggered,
+                                selectedCategory = selectedCategory,
                                 onPlayStarted = { isClickTriggered = false }
                             )
                         } else {
@@ -858,6 +877,7 @@ private fun calculateDuration(startIso: String?, endIso: String?): String {
 fun ChannelPreview(
     channel: Channel,
     isClickTriggered: Boolean = false,
+    selectedCategory: String = "all",
     onPlayStarted: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
@@ -887,8 +907,8 @@ fun ChannelPreview(
                 player.pause = false
             }
             sharedManager.setCurrentChannel(channel.id, channel.streamUrl)
-            // Store as last played channel
-            ChannelFocusManager.updatePlayedChannel(channel.id)
+            // Store as last played channel and category
+            ChannelFocusManager.updatePlayedChannel(channel.id, selectedCategory)
             onPlayStarted()
         } else {
             // Focus change - pause current and wait
@@ -906,8 +926,8 @@ fun ChannelPreview(
                 player.pause = false
             }
             sharedManager.setCurrentChannel(channel.id, channel.streamUrl)
-            // Store as last played channel
-            ChannelFocusManager.updatePlayedChannel(channel.id)
+            // Store as last played channel and category
+            ChannelFocusManager.updatePlayedChannel(channel.id, selectedCategory)
             TvRepository.triggerUpdatePrograms(channel.id)
         }
     }
