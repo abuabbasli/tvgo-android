@@ -152,9 +152,8 @@ fun ChannelsScreen(
         }
     }
 
-    // Number input for direct channel jump (remote number keys)
-    var enteredNumber by remember { mutableStateOf("") }
-    val numberInputTimeoutMs = 1500L  // Auto-jump after 1.5 seconds
+    // Number input is handled globally by MainActivity via initialChannelId
+    // This prevents duplicate handling and ensures consistent behavior
 
     // KEY THROTTLING - Disabled for maximum scroll speed
     // Only re-enable if crash issues occur on detached nodes
@@ -164,75 +163,85 @@ fun ChannelsScreen(
     // Track which channel index should be focused after scroll/composition
     var targetFocusIndex by remember { mutableStateOf<Int?>(null) }
 
-    // Auto-jump to channel after number input timeout
-    LaunchedEffect(enteredNumber) {
-        if (enteredNumber.isNotEmpty()) {
-            kotlinx.coroutines.delay(numberInputTimeoutMs)
-            val orderNumber = enteredNumber.toIntOrNull()
-            if (orderNumber != null) {
-                val targetChannel = TvRepository.getChannelByOrder(orderNumber)
-                if (targetChannel != null) {
-                    android.util.Log.d("ChannelsScreen", "Number jump to channel: ${targetChannel.name} (id=${targetChannel.id})")
-
-                    // Find the index in filtered list
-                    val targetIndex = filteredChannels.indexOfFirst { it.id == targetChannel.id }
-                    if (targetIndex >= 0) {
-                        android.util.Log.d("ChannelsScreen", "Found channel at index $targetIndex")
-
-                        // Update state variables
-                        focusedChannel = targetChannel
-                        debouncedFocusedChannel = targetChannel
-                        previewChannel = targetChannel
-                        // DON'T auto-play - let user explicitly click to play and store as last played
-                        // isClickTriggered = true
-
-                        // Set target index for scrolling
-                        targetFocusIndex = targetIndex
-                    } else {
-                        android.util.Log.w("ChannelsScreen", "Channel ${targetChannel.name} not found in filtered list")
-                    }
-                }
-            }
-            enteredNumber = ""
-        }
-    }
-
     // Handle scrolling and focus when target index changes
+    // Uses retry mechanism for reliable backward scrolling
     LaunchedEffect(targetFocusIndex) {
-        val index = targetFocusIndex
-        if (index != null && index >= 0 && index < filteredChannels.size) {
-            try {
-                android.util.Log.d("ChannelsScreen", "Scrolling to index $index in view mode $viewMode")
+        val index = targetFocusIndex ?: return@LaunchedEffect
+        android.util.Log.d("ChannelsScreen", "LaunchedEffect(targetFocusIndex) triggered with index: $index")
 
-                // Scroll the list/grid to make the item visible
+        if (index < 0 || index >= filteredChannels.size) {
+            android.util.Log.w("ChannelsScreen", "Index $index out of bounds (filteredChannels.size=${filteredChannels.size})")
+            targetFocusIndex = null
+            return@LaunchedEffect
+        }
+
+        try {
+            val channel = filteredChannels[index]
+            android.util.Log.d("ChannelsScreen", "Scrolling to index $index (${channel.name}) in view mode $viewMode")
+
+            // Step 1: Wait a frame to avoid "Place was called on a node which was placed already" error
+            // This ensures we're not in the middle of composition when scrolling
+            kotlinx.coroutines.delay(50)
+
+            // Step 2: Scroll to the item using try-catch to handle potential placement errors
+            try {
                 when (viewMode) {
                     ViewMode.GRID -> {
+                        android.util.Log.d("ChannelsScreen", "Calling gridState.scrollToItem($index)")
                         gridState.scrollToItem(index)
                     }
                     ViewMode.LIST -> {
+                        android.util.Log.d("ChannelsScreen", "Calling listState.scrollToItem($index)")
                         listState.scrollToItem(index)
                     }
                 }
+                android.util.Log.d("ChannelsScreen", "scrollToItem completed")
+            } catch (e: IllegalStateException) {
+                // "Place was called on a node which was placed already" - retry after delay
+                android.util.Log.w("ChannelsScreen", "scrollToItem failed with IllegalStateException, retrying: ${e.message}")
+                kotlinx.coroutines.delay(100)
+                try {
+                    when (viewMode) {
+                        ViewMode.GRID -> gridState.scrollToItem(index)
+                        ViewMode.LIST -> listState.scrollToItem(index)
+                    }
+                    android.util.Log.d("ChannelsScreen", "scrollToItem retry succeeded")
+                } catch (e2: Exception) {
+                    android.util.Log.e("ChannelsScreen", "scrollToItem retry also failed: ${e2.message}")
+                }
+            }
 
-                // Wait for scroll to complete and item to be composed
-                kotlinx.coroutines.delay(200)
+            // Step 3: Wait for composition and retry focus request
+            // This handles backward scrolling where items may not be composed immediately
+            var attempts = 0
+            var focusSucceeded = false
 
-                // Now request focus on the item
-                val channel = filteredChannels[index]
+            while (attempts < 15 && !focusSucceeded) {  // Max 15 attempts, ~750ms total
+                kotlinx.coroutines.delay(50)
+
+                // Try to focus - FocusRequester may not be attached yet after scroll
                 val requester = focusRequesters[channel.id]
                 if (requester != null) {
-                    android.util.Log.d("ChannelsScreen", "Requesting focus for ${channel.name} after scroll")
-                    requester.requestFocus()
+                    try {
+                        requester.requestFocus()
+                        focusSucceeded = true
+                        android.util.Log.d("ChannelsScreen", "Focus SUCCEEDED for ${channel.name} on attempt $attempts")
+                    } catch (e: Exception) {
+                        android.util.Log.w("ChannelsScreen", "Focus attempt $attempts failed: ${e.message}")
+                    }
                 } else {
-                    android.util.Log.w("ChannelsScreen", "No focus requester for ${channel.id} after scroll")
+                    android.util.Log.d("ChannelsScreen", "Attempt $attempts: requester for ${channel.id} is null")
                 }
-
-                // Clear the target
-                targetFocusIndex = null
-            } catch (e: Exception) {
-                android.util.Log.e("ChannelsScreen", "Error during scroll and focus: ${e.message}")
-                targetFocusIndex = null
+                attempts++
             }
+
+            if (!focusSucceeded) {
+                android.util.Log.w("ChannelsScreen", "Failed to focus ${channel.name} after $attempts attempts")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ChannelsScreen", "Error during scroll and focus: ${e.message}", e)
+        } finally {
+            targetFocusIndex = null
         }
     }
     
@@ -346,11 +355,11 @@ fun ChannelsScreen(
 
     // Update selection when returning with a new channel ID or jumping via number keys
     LaunchedEffect(initialChannelId) {
+        android.util.Log.d("ChannelsScreen", "LaunchedEffect(initialChannelId) triggered with: $initialChannelId")
         if (initialChannelId != null) {
             val channel = TvRepository.channels.find { it.id == initialChannelId }
             if (channel != null) {
-                android.util.Log.d("ChannelsScreen", "InitialChannelId jump to: ${channel.name} (id=$initialChannelId)")
-                val isReturningFromFullscreen = sharedPlayerManager.returningFromFullscreen
+                android.util.Log.d("ChannelsScreen", "InitialChannelId jump to: ${channel.name} (id=$initialChannelId, order=${channel.order})")
 
                 focusedChannel = channel
                 previewChannel = channel
@@ -358,15 +367,15 @@ fun ChannelsScreen(
 
                 // Find index and trigger scroll + focus
                 val targetIndex = filteredChannels.indexOfFirst { it.id == initialChannelId }
+                android.util.Log.d("ChannelsScreen", "Target index in filteredChannels: $targetIndex (filteredChannels.size=${filteredChannels.size})")
                 if (targetIndex >= 0) {
-                    android.util.Log.d("ChannelsScreen", "InitialChannelId: setting target index $targetIndex")
+                    android.util.Log.d("ChannelsScreen", "InitialChannelId: setting target index $targetIndex for ${channel.name}")
                     targetFocusIndex = targetIndex
+                } else {
+                    android.util.Log.w("ChannelsScreen", "Channel ${channel.name} NOT found in filteredChannels!")
                 }
-
-                // DON'T auto-play on number jumps - let user explicitly click to play
-                // Only the preview will update, not trigger full playback
-                // When returning from fullscreen, the preview channel is already playing
-                // so no need to trigger click
+            } else {
+                android.util.Log.w("ChannelsScreen", "Channel with id $initialChannelId not found in TvRepository.channels")
             }
         }
     }
@@ -376,25 +385,8 @@ fun ChannelsScreen(
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 // No throttling - let all navigation events through for maximum scroll speed
+                // Number keys are handled by MainActivity globally
                 false
-            }
-            .onKeyEvent { event ->
-                // Handle number keys for direct channel jump
-                if (event.type == KeyEventType.KeyDown) {
-                    when (event.key) {
-                        Key.Zero, Key.NumPad0 -> { enteredNumber += "0"; true }
-                        Key.One, Key.NumPad1 -> { enteredNumber += "1"; true }
-                        Key.Two, Key.NumPad2 -> { enteredNumber += "2"; true }
-                        Key.Three, Key.NumPad3 -> { enteredNumber += "3"; true }
-                        Key.Four, Key.NumPad4 -> { enteredNumber += "4"; true }
-                        Key.Five, Key.NumPad5 -> { enteredNumber += "5"; true }
-                        Key.Six, Key.NumPad6 -> { enteredNumber += "6"; true }
-                        Key.Seven, Key.NumPad7 -> { enteredNumber += "7"; true }
-                        Key.Eight, Key.NumPad8 -> { enteredNumber += "8"; true }
-                        Key.Nine, Key.NumPad9 -> { enteredNumber += "9"; true }
-                        else -> false
-                    }
-                } else false
             }
     ) {
         Column(
@@ -715,50 +707,7 @@ fun ChannelsScreen(
         }
         }  // End Column
 
-        // Number input display (for direct channel jump)
-        AnimatedVisibility(
-            visible = enteredNumber.isNotEmpty(),
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(24.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.85f),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = enteredNumber,
-                        color = Color.White,
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    // Show target channel name if found
-                    val targetChannel = enteredNumber.toIntOrNull()?.let { TvRepository.getChannelByOrder(it) }
-                    if (targetChannel != null) {
-                        Text(
-                            text = targetChannel.name,
-                            color = Color(0xFF60A5FA),
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    } else if (enteredNumber.isNotEmpty()) {
-                        Text(
-                            text = "Channel not found",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-            }
-        }
+        // Number input display is handled by MainActivity globally
     }  // End Box
 }
 
