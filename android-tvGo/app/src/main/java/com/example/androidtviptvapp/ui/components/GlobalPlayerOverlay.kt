@@ -54,12 +54,8 @@ fun GlobalPlayerOverlay(
     val isVisible by SharedPlayerManager.isOverlayVisible.collectAsState()
     val previewBounds by SharedPlayerManager.previewBounds.collectAsState()
 
-    // Animation specs - fast and smooth with easing
-    // 150ms is quick enough to feel instant but smooth enough to see the transition
-    val animationSpec = tween<androidx.compose.ui.unit.Dp>(
-        durationMillis = 150,
-        easing = FastOutSlowInEasing
-    )
+    // Animation specs - faster for snappier feel
+    val animationSpec = tween<androidx.compose.ui.unit.Dp>(durationMillis = 100)
 
     // Calculate target dimensions based on mode
     val targetX by animateDpAsState(
@@ -83,10 +79,10 @@ fun GlobalPlayerOverlay(
         label = "playerHeight"
     )
 
-    // Corner radius - 16dp in preview, 0 in fullscreen (faster animation for corners)
+    // Corner radius - 16dp in preview, 0 in fullscreen
     val cornerRadius by animateDpAsState(
         targetValue = if (isFullscreen) 0.dp else 16.dp,
-        animationSpec = tween(durationMillis = 100, easing = FastOutSlowInEasing),
+        animationSpec = animationSpec,
         label = "cornerRadius"
     )
 
