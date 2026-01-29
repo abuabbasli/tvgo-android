@@ -3,6 +3,8 @@ package com.example.androidtviptvapp.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +14,7 @@ import com.example.androidtviptvapp.player.PlayerView as TvPlayerView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +24,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.animation.core.tween
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.zIndex
 import androidx.tv.foundation.PivotOffsets
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
@@ -132,6 +141,27 @@ fun ChannelsScreen(
     // Track if user CLICKED (not just focused) - for instant playback
     var isClickTriggered by remember { mutableStateOf(false) }
 
+    // ==========================================================================
+    // FULLSCREEN MODE - Toggle in-place instead of navigating to PlayerScreen
+    // ==========================================================================
+    var isFullscreen by remember { mutableStateOf(false) }
+    var fullscreenShowOverlay by remember { mutableStateOf(true) }
+    var fullscreenShowControls by remember { mutableStateOf(false) }
+    val fullscreenFocusRequester = remember { FocusRequester() }
+
+    // Channel switching timing control for fullscreen
+    var lastChannelSwitchTime by remember { mutableStateOf(0L) }
+    val channelSwitchIntervalMs = 500L
+
+    // Auto-hide overlay after 8 seconds
+    LaunchedEffect(fullscreenShowOverlay, fullscreenShowControls, isFullscreen) {
+        if (isFullscreen && (fullscreenShowOverlay || fullscreenShowControls)) {
+            kotlinx.coroutines.delay(8000)
+            fullscreenShowOverlay = false
+            fullscreenShowControls = false
+        }
+    }
+
     // FocusRequesters for programmatic focus
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
 
@@ -199,86 +229,70 @@ fun ChannelsScreen(
 
     // Track which channel index should be focused after scroll/composition
     var targetFocusIndex by remember { mutableStateOf<Int?>(null) }
+    // When true, skip scrolling and just restore focus (e.g. returning from another section)
+    var focusOnlyMode by remember { mutableStateOf(false) }
 
     // Handle scrolling and focus when target index changes
     // Uses retry mechanism for reliable backward scrolling
     LaunchedEffect(targetFocusIndex) {
         val index = targetFocusIndex ?: return@LaunchedEffect
-        android.util.Log.d("ChannelsScreen", "LaunchedEffect(targetFocusIndex) triggered with index: $index")
+        android.util.Log.d("ChannelsScreen", "LaunchedEffect(targetFocusIndex) triggered with index: $index, focusOnly=$focusOnlyMode")
 
         if (index < 0 || index >= filteredChannels.size) {
             android.util.Log.w("ChannelsScreen", "Index $index out of bounds (filteredChannels.size=${filteredChannels.size})")
             targetFocusIndex = null
+            focusOnlyMode = false
             return@LaunchedEffect
         }
 
         try {
             val channel = filteredChannels[index]
-            android.util.Log.d("ChannelsScreen", "Scrolling to index $index (${channel.name}) in view mode $viewMode")
 
-            // Step 1: Wait a frame to avoid "Place was called on a node which was placed already" error
-            // This ensures we're not in the middle of composition when scrolling
+            // Step 1: Wait a frame for composition
             kotlinx.coroutines.delay(50)
 
-            // Step 2: Scroll to the item using try-catch to handle potential placement errors
-            try {
-                when (viewMode) {
-                    ViewMode.GRID -> {
-                        android.util.Log.d("ChannelsScreen", "Calling gridState.scrollToItem($index)")
-                        gridState.scrollToItem(index)
-                    }
-                    ViewMode.LIST -> {
-                        android.util.Log.d("ChannelsScreen", "Calling listState.scrollToItem($index)")
-                        listState.scrollToItem(index)
-                    }
-                }
-                android.util.Log.d("ChannelsScreen", "scrollToItem completed")
-            } catch (e: IllegalStateException) {
-                // "Place was called on a node which was placed already" - retry after delay
-                android.util.Log.w("ChannelsScreen", "scrollToItem failed with IllegalStateException, retrying: ${e.message}")
-                kotlinx.coroutines.delay(100)
+            // Step 2: Scroll to item (skip if focusOnlyMode)
+            if (!focusOnlyMode) {
                 try {
                     when (viewMode) {
                         ViewMode.GRID -> gridState.scrollToItem(index)
                         ViewMode.LIST -> listState.scrollToItem(index)
                     }
-                    android.util.Log.d("ChannelsScreen", "scrollToItem retry succeeded")
-                } catch (e2: Exception) {
-                    android.util.Log.e("ChannelsScreen", "scrollToItem retry also failed: ${e2.message}")
+                } catch (e: IllegalStateException) {
+                    kotlinx.coroutines.delay(100)
+                    try {
+                        when (viewMode) {
+                            ViewMode.GRID -> gridState.scrollToItem(index)
+                            ViewMode.LIST -> listState.scrollToItem(index)
+                        }
+                    } catch (e2: Exception) {
+                        android.util.Log.e("ChannelsScreen", "scrollToItem retry failed: ${e2.message}")
+                    }
                 }
             }
 
             // Step 3: Wait for composition and retry focus request
-            // This handles backward scrolling where items may not be composed immediately
             var attempts = 0
             var focusSucceeded = false
 
-            while (attempts < 15 && !focusSucceeded) {  // Max 15 attempts, ~750ms total
+            while (attempts < 15 && !focusSucceeded) {
                 kotlinx.coroutines.delay(50)
-
-                // Try to focus - FocusRequester may not be attached yet after scroll
                 val requester = focusRequesters[channel.id]
                 if (requester != null) {
                     try {
                         requester.requestFocus()
                         focusSucceeded = true
-                        android.util.Log.d("ChannelsScreen", "Focus SUCCEEDED for ${channel.name} on attempt $attempts")
                     } catch (e: Exception) {
-                        android.util.Log.w("ChannelsScreen", "Focus attempt $attempts failed: ${e.message}")
+                        // retry
                     }
-                } else {
-                    android.util.Log.d("ChannelsScreen", "Attempt $attempts: requester for ${channel.id} is null")
                 }
                 attempts++
-            }
-
-            if (!focusSucceeded) {
-                android.util.Log.w("ChannelsScreen", "Failed to focus ${channel.name} after $attempts attempts")
             }
         } catch (e: Exception) {
             android.util.Log.e("ChannelsScreen", "Error during scroll and focus: ${e.message}", e)
         } finally {
             targetFocusIndex = null
+            focusOnlyMode = false
         }
     }
     
@@ -475,11 +489,12 @@ fun ChannelsScreen(
                     // ==========================================================
                     val onChannelClickAction: (Channel) -> Unit = { channel ->
                         if (previewChannel?.id == channel.id) {
-                            // SECOND CLICK on same channel = go fullscreen
-                            // CRITICAL: Set fullscreen flag BEFORE navigation
-                            // This prevents ChannelPreview's onRelease from detaching the player
+                            // SECOND CLICK on same channel = go fullscreen IN-PLACE
+                            // No navigation needed - just toggle fullscreen mode
                             com.example.androidtviptvapp.player.SharedPlayerManager.setFullscreen(true)
-                            onChannelClick(channel)
+                            isFullscreen = true
+                            fullscreenShowOverlay = true
+                            fullscreenShowControls = false
                         } else {
                             // FIRST CLICK = play in preview area
                             isClickTriggered = true
@@ -780,7 +795,267 @@ fun ChannelsScreen(
         }  // End Column
 
         // Number input display is handled by MainActivity globally
+
+        // ==========================================================================
+        // FULLSCREEN OVERLAY - Shown on top of everything when fullscreen is active
+        // Player is already fullscreen via GlobalPlayerOverlay, this handles UI/controls
+        // ==========================================================================
+        if (isFullscreen) {
+            val playerView = remember { sharedPlayerManager.getPlayer() }
+
+            // Channel switch function
+            fun switchChannelWithRepeat(direction: Int, repeatCount: Int) {
+                val currentTime = System.currentTimeMillis()
+                val timeSinceLastSwitch = currentTime - lastChannelSwitchTime
+                val shouldSwitch = if (repeatCount == 0) true
+                    else timeSinceLastSwitch >= channelSwitchIntervalMs
+
+                if (shouldSwitch) {
+                    lastChannelSwitchTime = currentTime
+                    val next = playerView?.jumpChannel(direction)
+                    if (next != null) {
+                        val newChannel = TvRepository.channels.find { it.id == next.channel.id }
+                        if (newChannel != null) {
+                            previewChannel = newChannel
+                            ChannelFocusManager.updatePlayedChannel(newChannel.id, selectedCategory)
+                        }
+                        fullscreenShowOverlay = true
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(50f)
+                    .background(Color.Black)
+                    .onKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown) {
+                            val repeatCount = event.nativeKeyEvent.repeatCount
+                            when (event.key) {
+                                Key.DirectionUp -> {
+                                    if (fullscreenShowControls) false
+                                    else { switchChannelWithRepeat(1, repeatCount); true }
+                                }
+                                Key.DirectionDown -> {
+                                    if (fullscreenShowControls) false
+                                    else { switchChannelWithRepeat(-1, repeatCount); true }
+                                }
+                                Key.DirectionCenter, Key.Enter -> {
+                                    if (!fullscreenShowControls) {
+                                        fullscreenShowOverlay = true
+                                        fullscreenShowControls = true
+                                    }
+                                    true
+                                }
+                                Key.DirectionLeft, Key.DirectionRight -> {
+                                    if (!fullscreenShowControls) {
+                                        fullscreenShowOverlay = true
+                                        fullscreenShowControls = true
+                                        true
+                                    } else false
+                                }
+                                Key.MediaPlayPause -> {
+                                    sharedPlayerManager.togglePlayPause()
+                                    true
+                                }
+                                Key.Back, Key.Escape -> {
+                                    if (fullscreenShowControls) {
+                                        fullscreenShowControls = false
+                                        fullscreenShowOverlay = false
+                                    } else {
+                                        // EXIT fullscreen - instant, no navigation
+                                        sharedPlayerManager.setFullscreen(false)
+                                        isFullscreen = false
+                                        // Restore focus to the channel item without scrolling
+                                        val channelId = previewChannel?.id
+                                        if (channelId != null) {
+                                            focusRequesters[channelId]?.requestFocus()
+                                        }
+                                    }
+                                    true
+                                }
+                                Key.Menu -> {
+                                    fullscreenShowOverlay = true
+                                    fullscreenShowControls = !fullscreenShowControls
+                                    true
+                                }
+                                else -> false
+                            }
+                        } else false
+                    }
+                    .focusRequester(fullscreenFocusRequester)
+                    .focusable()
+            ) {
+                // Request focus for key capture
+                LaunchedEffect(isFullscreen) {
+                    if (isFullscreen) {
+                        fullscreenFocusRequester.requestFocus()
+                    }
+                }
+
+                // Top gradient for info overlay
+                AnimatedVisibility(
+                    visible = fullscreenShowOverlay,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    modifier = Modifier.align(Alignment.TopCenter)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.8f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
+                }
+
+                // Channel info overlay (top)
+                AnimatedVisibility(
+                    visible = fullscreenShowOverlay && previewChannel != null,
+                    enter = fadeIn() + slideInVertically { -it },
+                    exit = fadeOut() + slideOutVertically { -it },
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    previewChannel?.let { ch ->
+                        FullscreenChannelInfoOverlay(
+                            channel = ch,
+                            modifier = Modifier.padding(24.dp)
+                        )
+                    }
+                }
+
+                // Bottom gradient for controls
+                AnimatedVisibility(
+                    visible = fullscreenShowControls,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.9f)
+                                    )
+                                )
+                            )
+                    )
+                }
+
+                // Buffering indicator
+                val playerState by sharedPlayerManager.playerState.collectAsState()
+                if (playerState.isBuffering) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .border(3.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                                .padding(3.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .border(3.dp, Color.White, CircleShape)
+                            )
+                        }
+                    }
+                }
+
+                // Error display
+                if (playerState.error != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .background(
+                                Color.Black.copy(alpha = 0.8f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = playerState.error!!,
+                            color = if (playerState.isRetrying) Color(0xFFFFA500) else Color.Red
+                        )
+                    }
+                }
+            }
+        }
     }  // End Box
+}
+
+/**
+ * Channel info overlay for fullscreen mode
+ */
+@Composable
+private fun FullscreenChannelInfoOverlay(
+    channel: Channel,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val currentProgram = TvRepository.currentPrograms[channel.id]
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (channel.logo.isNotEmpty()) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(channel.logo)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = channel.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.1f))
+                    .padding(8.dp)
+            )
+            Spacer(modifier = Modifier.width(20.dp))
+        }
+
+        Column {
+            Text(
+                text = channel.displayName,
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (currentProgram != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = currentProgram.title ?: "No program info",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 18.sp
+                )
+
+                if (currentProgram.start != null && currentProgram.end != null) {
+                    Text(
+                        text = "${formatProgramTime(currentProgram.start)} - ${formatProgramTime(currentProgram.end)}",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
