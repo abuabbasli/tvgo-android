@@ -1,6 +1,8 @@
 package com.example.androidtviptvapp
 
 import android.os.Bundle
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.unit.IntOffset
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -427,17 +429,25 @@ private fun MainContent() {
                 )
             }
 
-            // Number input display overlay (for direct channel jump)
-            AnimatedVisibility(
-                visible = enteredNumber.isNotEmpty() && isChannelsScreen,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(24.dp)
+            }
+        }
+
+        // =====================================================================
+        // GLOBAL PLAYER OVERLAY - Sits on top of everything, NEVER moves
+        // Position/size controlled by SharedPlayerManager state
+        // =====================================================================
+        GlobalPlayerOverlay(
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Number input display overlay for channels screen - using Popup to render above native player view
+        if (enteredNumber.isNotEmpty() && isChannelsScreen) {
+            Popup(
+                alignment = Alignment.TopEnd
             ) {
                 Box(
                     modifier = Modifier
+                        .padding(24.dp)
                         .background(
                             Color.Black.copy(alpha = 0.85f),
                             RoundedCornerShape(12.dp)
@@ -451,7 +461,6 @@ private fun MainContent() {
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        // Show target channel name if found
                         val targetChannel = enteredNumber.toIntOrNull()?.let { TvRepository.getChannelByOrder(it) }
                         if (targetChannel != null) {
                             Text(
@@ -471,15 +480,6 @@ private fun MainContent() {
                     }
                 }
             }
-            }
         }
-
-        // =====================================================================
-        // GLOBAL PLAYER OVERLAY - Sits on top of everything, NEVER moves
-        // Position/size controlled by SharedPlayerManager state
-        // =====================================================================
-        GlobalPlayerOverlay(
-            modifier = Modifier.fillMaxSize()
-        )
     }
 }
