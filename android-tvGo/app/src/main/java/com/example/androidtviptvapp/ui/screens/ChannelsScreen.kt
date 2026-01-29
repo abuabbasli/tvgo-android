@@ -55,6 +55,9 @@ fun ChannelsScreen(
     initialChannelId: String? = null,
     onChannelClick: (Channel) -> Unit
 ) {
+    // Read channel view size preference
+    val channelViewSize = com.example.androidtviptvapp.data.UIPreferencesManager.channelViewSize
+
     // Check if baby mode is active - filter to kids content only
     val isBabyModeActive = BabyLockManager.isBabyModeActive
 
@@ -547,6 +550,7 @@ fun ChannelsScreen(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
                                         isPlaying = channel.id == ChannelFocusManager.lastPlayedChannelId,
+                                        viewSize = channelViewSize,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .focusRequester(focusRequester)
@@ -744,7 +748,8 @@ fun ChannelsScreen(
                                             time = formatProgramTime(program.start),
                                             title = program.title ?: "Unknown Program",
                                             duration = calculateDuration(program.start, program.end),
-                                            isLive = program.isLive
+                                            isLive = program.isLive,
+                                            viewSize = channelViewSize
                                         )
                                         // Divider line matching preview width
                                         Box(
@@ -783,8 +788,40 @@ private fun ProgramScheduleItem(
     time: String,
     title: String,
     duration: String,
-    isLive: Boolean = false
+    isLive: Boolean = false,
+    viewSize: com.example.androidtviptvapp.data.ChannelViewSize = com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM
 ) {
+    val rowVerticalPadding = when (viewSize) {
+        com.example.androidtviptvapp.data.ChannelViewSize.SMALL -> 6.dp
+        com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM -> 10.dp
+        com.example.androidtviptvapp.data.ChannelViewSize.LARGE -> 14.dp
+    }
+    val timeTextStyle = when (viewSize) {
+        com.example.androidtviptvapp.data.ChannelViewSize.SMALL -> MaterialTheme.typography.labelSmall
+        com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM -> MaterialTheme.typography.labelMedium
+        com.example.androidtviptvapp.data.ChannelViewSize.LARGE -> MaterialTheme.typography.bodyMedium
+    }
+    val titleTextStyle = when (viewSize) {
+        com.example.androidtviptvapp.data.ChannelViewSize.SMALL -> MaterialTheme.typography.bodyMedium
+        com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM -> MaterialTheme.typography.bodyLarge
+        com.example.androidtviptvapp.data.ChannelViewSize.LARGE -> MaterialTheme.typography.titleMedium
+    }
+    val durationTextStyle = when (viewSize) {
+        com.example.androidtviptvapp.data.ChannelViewSize.SMALL -> MaterialTheme.typography.labelSmall
+        com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM -> MaterialTheme.typography.bodySmall
+        com.example.androidtviptvapp.data.ChannelViewSize.LARGE -> MaterialTheme.typography.bodyMedium
+    }
+    val badgePaddingH = when (viewSize) {
+        com.example.androidtviptvapp.data.ChannelViewSize.SMALL -> 6.dp
+        com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM -> 8.dp
+        com.example.androidtviptvapp.data.ChannelViewSize.LARGE -> 10.dp
+    }
+    val badgePaddingV = when (viewSize) {
+        com.example.androidtviptvapp.data.ChannelViewSize.SMALL -> 2.dp
+        com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM -> 4.dp
+        com.example.androidtviptvapp.data.ChannelViewSize.LARGE -> 6.dp
+    }
+
     androidx.tv.material3.Surface(
         onClick = { /* No action needed */ },
         modifier = Modifier
@@ -809,7 +846,7 @@ private fun ProgramScheduleItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 10.dp),
+                .padding(horizontal = 8.dp, vertical = rowVerticalPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Time badge
@@ -824,28 +861,28 @@ private fun ProgramScheduleItem(
                         color = if (isLive) Color(0xFFE0E0E0) else Color(0xFF4B5563),
                         shape = RoundedCornerShape(4.dp)
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .padding(horizontal = badgePaddingH, vertical = badgePaddingV)
             ) {
                 Text(
                     text = time,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = timeTextStyle,
                     color = if (isLive) Color.Black else Color(0xFF9CA3AF)
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             // Title and duration
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = titleTextStyle,
                     color = Color.White,
                     maxLines = 1
                 )
                 Text(
                     text = duration,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = durationTextStyle,
                     color = Color(0xFF9CA3AF)
                 )
             }
@@ -856,11 +893,11 @@ private fun ProgramScheduleItem(
                 Box(
                     modifier = Modifier
                         .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = badgePaddingH, vertical = badgePaddingV)
                 ) {
                     Text(
                         text = "LIVE",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = timeTextStyle,
                         color = Color(0xFFE0E0E0)
                     )
                 }

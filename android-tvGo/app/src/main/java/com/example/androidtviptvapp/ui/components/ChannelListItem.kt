@@ -1,5 +1,6 @@
 package com.example.androidtviptvapp.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import androidx.tv.material3.Text
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
+import com.example.androidtviptvapp.data.ChannelViewSize
 
 /**
  * ChannelListItem - Compact design for faster scrolling.
@@ -33,9 +35,43 @@ import com.example.androidtviptvapp.data.Channel
 fun ChannelListItem(
     channel: Channel,
     onClick: (Channel) -> Unit,
+    isPlaying: Boolean = false,
+    viewSize: ChannelViewSize = ChannelViewSize.MEDIUM,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // Size values based on viewSize
+    val itemHeight = when (viewSize) {
+        ChannelViewSize.SMALL -> 46.dp
+        ChannelViewSize.MEDIUM -> 62.dp
+        ChannelViewSize.LARGE -> 80.dp
+    }
+    val logoBoxSize = when (viewSize) {
+        ChannelViewSize.SMALL -> 32.dp
+        ChannelViewSize.MEDIUM -> 45.dp
+        ChannelViewSize.LARGE -> 56.dp
+    }
+    val logoImageSize = when (viewSize) {
+        ChannelViewSize.SMALL -> 26.dp
+        ChannelViewSize.MEDIUM -> 38.dp
+        ChannelViewSize.LARGE -> 48.dp
+    }
+    val nameTextStyle = when (viewSize) {
+        ChannelViewSize.SMALL -> MaterialTheme.typography.bodyMedium
+        ChannelViewSize.MEDIUM -> MaterialTheme.typography.titleMedium
+        ChannelViewSize.LARGE -> MaterialTheme.typography.titleLarge
+    }
+    val playIconSize = when (viewSize) {
+        ChannelViewSize.SMALL -> 10.dp
+        ChannelViewSize.MEDIUM -> 14.dp
+        ChannelViewSize.LARGE -> 18.dp
+    }
+    val cornerRadius = when (viewSize) {
+        ChannelViewSize.SMALL -> 4.dp
+        ChannelViewSize.MEDIUM -> 6.dp
+        ChannelViewSize.LARGE -> 8.dp
+    }
 
     // OPTIMIZED image request - aggressive caching, no animations
     val imageRequest = remember(channel.id) {
@@ -56,13 +92,19 @@ fun ChannelListItem(
         onClick = { onClick(channel) },
         modifier = modifier
             .fillMaxWidth()
-            .height(62.dp),  // 40% larger (44dp * 1.4 = ~62dp)
+            .height(itemHeight),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
-            shape = RoundedCornerShape(6.dp)
+            shape = RoundedCornerShape(cornerRadius)
         ),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,
             focusedContainerColor = Color(0xFF2A2A2A)
+        ),
+        border = androidx.tv.material3.ClickableSurfaceDefaults.border(
+            focusedBorder = androidx.tv.material3.Border(
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White.copy(alpha = 0.85f)),
+                shape = RoundedCornerShape(cornerRadius)
+            )
         ),
         scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(
             focusedScale = 1.0f  // No zoom for speed
@@ -74,11 +116,11 @@ fun ChannelListItem(
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo - 40% larger
+            // Logo
             Box(
                 modifier = Modifier
-                    .size(45.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .size(logoBoxSize)
+                    .clip(RoundedCornerShape(cornerRadius))
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
@@ -86,7 +128,7 @@ fun ChannelListItem(
                     SubcomposeAsyncImage(
                         model = imageRequest,
                         contentDescription = null,
-                        modifier = Modifier.size(38.dp),
+                        modifier = Modifier.size(logoImageSize),
                         contentScale = ContentScale.Fit,
                         loading = {
                             Text(
@@ -114,13 +156,31 @@ fun ChannelListItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Channel name - larger text
+            // Channel name
             Text(
                 text = channel.displayName,
-                style = MaterialTheme.typography.titleMedium,
+                style = nameTextStyle,
                 color = Color.White,
-                maxLines = 1
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
             )
+
+            // Play triangle indicator for currently playing channel
+            if (isPlaying) {
+                Spacer(modifier = Modifier.width(8.dp))
+                androidx.compose.foundation.Canvas(
+                    modifier = Modifier.size(playIconSize)
+                ) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(size.width, size.height / 2f)
+                        lineTo(0f, size.height)
+                        close()
+                    }
+                    drawPath(path, Color.White)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
         }
     }
 }
