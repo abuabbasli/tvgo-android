@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -47,7 +48,7 @@ import com.example.androidtviptvapp.ui.components.ChannelListItem
 import com.example.androidtviptvapp.ui.components.ViewMode
 import com.example.androidtviptvapp.ui.screens.BabyLockManager
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun ChannelsScreen(
     viewMode: ViewMode = ViewMode.LIST,
@@ -134,6 +135,30 @@ fun ChannelsScreen(
     // Grid and list state
     val gridState = androidx.tv.foundation.lazy.grid.rememberTvLazyGridState()
     val listState = androidx.tv.foundation.lazy.list.rememberTvLazyListState()
+
+    // Pause player when leaving channels screen or app
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            val sharedManager = com.example.androidtviptvapp.player.SharedPlayerManager
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> sharedManager.pause()
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    // Only resume if we have a channel playing
+                    if (ChannelFocusManager.lastPlayedChannelId != null) {
+                        sharedManager.resume()
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            // Pause when composable leaves composition (navigating away)
+            com.example.androidtviptvapp.player.SharedPlayerManager.pause()
+        }
+    }
 
     // ==========================================================================
     // SCROLL DETECTION - Detect rapid focus changes (key held down)
@@ -521,6 +546,7 @@ fun ChannelsScreen(
                                     ChannelListItem(
                                         channel = channel,
                                         onClick = { onChannelClickAction(channel) },
+                                        isPlaying = channel.id == ChannelFocusManager.lastPlayedChannelId,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .focusRequester(focusRequester)
@@ -651,7 +677,7 @@ fun ChannelsScreen(
                             
                             // Program Schedule Header with divider effect
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth(0.95f),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -697,9 +723,18 @@ fun ChannelsScreen(
                                 TvLazyColumn(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .weight(1f),
-                                    contentPadding = PaddingValues(bottom = 24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        .weight(1f)
+                                        .focusProperties {
+                                            exit = { direction ->
+                                                // Allow left to go back to channel list, block up/down/right at boundaries
+                                                if (direction == androidx.compose.ui.focus.FocusDirection.Left) {
+                                                    FocusRequester.Default
+                                                } else {
+                                                    FocusRequester.Cancel
+                                                }
+                                            }
+                                        },
+                                    contentPadding = PaddingValues(bottom = 24.dp)
                                 ) {
                                     itemsIndexed(
                                         items = schedulePrograms,
@@ -710,6 +745,13 @@ fun ChannelsScreen(
                                             title = program.title ?: "Unknown Program",
                                             duration = calculateDuration(program.start, program.end),
                                             isLive = program.isLive
+                                        )
+                                        // Divider line matching preview width
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.95f)
+                                                .height(1.dp)
+                                                .background(Color.White.copy(alpha = 0.1f))
                                         )
                                     }
                                 }
@@ -743,28 +785,25 @@ private fun ProgramScheduleItem(
     duration: String,
     isLive: Boolean = false
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    
     androidx.tv.material3.Surface(
         onClick = { /* No action needed */ },
         modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { isFocused = it.isFocused },
+            .fillMaxWidth(),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(6.dp)
         ),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,
-            focusedContainerColor = Color(0xFF3B82F6).copy(alpha = 0.2f)
+            focusedContainerColor = Color(0xFF2A2A2A)
         ),
         border = androidx.tv.material3.ClickableSurfaceDefaults.border(
             focusedBorder = androidx.tv.material3.Border(
-                border = BorderStroke(2.dp, Color(0xFF3B82F6)),
-                shape = RoundedCornerShape(8.dp)
+                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.85f)),
+                shape = RoundedCornerShape(6.dp)
             )
         ),
         scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(
-            focusedScale = 1.02f
+            focusedScale = 1.0f
         )
     ) {
         Row(
@@ -810,20 +849,22 @@ private fun ProgramScheduleItem(
                     color = Color(0xFF9CA3AF)
                 )
             }
-            
+
             // LIVE badge
             if (isLive) {
+                Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFFDC2626), RoundedCornerShape(4.dp))
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "LIVE",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White
+                        color = Color(0xFFE0E0E0)
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
             }
         }
     }
