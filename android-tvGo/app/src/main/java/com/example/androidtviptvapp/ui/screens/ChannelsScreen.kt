@@ -139,33 +139,17 @@ fun ChannelsScreen(
     val gridState = androidx.tv.foundation.lazy.grid.rememberTvLazyGridState()
     val listState = androidx.tv.foundation.lazy.list.rememberTvLazyListState()
 
-    // Pause player when leaving channels screen, reload stream on return
-    // (live streams go out of sync if just paused/resumed after a while)
-    var leftScreenTime by remember { mutableStateOf(0L) }
+    // Pause player when leaving channels screen or app
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             val sharedManager = com.example.androidtviptvapp.player.SharedPlayerManager
             when (event) {
-                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
-                    leftScreenTime = System.currentTimeMillis()
-                    sharedManager.pause()
-                }
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> sharedManager.pause()
                 androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
-                    val channelId = ChannelFocusManager.lastPlayedChannelId
-                    if (channelId != null) {
-                        val awayMs = System.currentTimeMillis() - leftScreenTime
-                        if (awayMs > 5_000) {
-                            // Been away > 5s — reload stream to re-sync live content
-                            val channel = TvRepository.channels.find { it.id == channelId }
-                            if (channel != null) {
-                                // Clear current ID so playChannel forces a reload
-                                sharedManager.playChannel("", "", "")
-                                sharedManager.playChannel(channel.id, channel.name, channel.streamUrl)
-                            }
-                        } else {
-                            sharedManager.resume()
-                        }
+                    // Only resume if we have a channel playing
+                    if (ChannelFocusManager.lastPlayedChannelId != null) {
+                        sharedManager.resume()
                     }
                 }
                 else -> {}
@@ -174,7 +158,7 @@ fun ChannelsScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            leftScreenTime = System.currentTimeMillis()
+            // Pause when composable leaves composition (navigating away)
             com.example.androidtviptvapp.player.SharedPlayerManager.pause()
         }
     }

@@ -383,8 +383,8 @@ private fun ProfileModeCard(
     Surface(
         onClick = onClick,
         onLongClick = onLongClick,
-        modifier = modifier.height(120.dp),
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        modifier = modifier.height(180.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) Color(0xFFE0E0E0) else Color(0xFF2A2A2A),
             focusedContainerColor = if (isSelected) Color(0xFFF0F0F0) else Color(0xFF3A3A3A)
@@ -392,23 +392,24 @@ private fun ProfileModeCard(
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
                 border = androidx.compose.foundation.BorderStroke(
-                    2.dp,
+                    3.dp,
                     if (isSelected) Color.White else Color(0xFF60A5FA)
                 )
             )
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             // Icon in circle
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(70.dp)
                     .clip(CircleShape)
                     .background(if (isSelected) Color(0xFFB0B0B0) else Color(0xFF3A3A3A)),
                 contentAlignment = Alignment.Center
@@ -417,27 +418,28 @@ private fun ProfileModeCard(
                     imageVector = icon,
                     contentDescription = title,
                     tint = if (isSelected) Color.Black else Color(0xFF9CA3AF),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(34.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Column {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isSelected) Color.Black else Color.White
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = description,
-                    fontSize = 12.sp,
-                    color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
-                    lineHeight = 15.sp
-                )
-            }
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.Black else Color.White
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
+                textAlign = TextAlign.Center,
+                lineHeight = 16.sp
+            )
         }
     }
 }
@@ -454,8 +456,8 @@ private fun ViewSizeCard(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(90.dp),
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        modifier = modifier.height(150.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) Color(0xFFE0E0E0) else Color(0xFF2A2A2A),
             focusedContainerColor = if (isSelected) Color(0xFFF0F0F0) else Color(0xFF3A3A3A)
@@ -463,43 +465,45 @@ private fun ViewSizeCard(
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
                 border = androidx.compose.foundation.BorderStroke(
-                    2.dp,
+                    3.dp,
                     if (isSelected) Color.White else Color(0xFF60A5FA)
                 )
             )
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = title,
                 tint = if (isSelected) Color.Black else Color(0xFF9CA3AF),
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(32.dp)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Column {
-                Text(
-                    text = title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isSelected) Color.Black else Color.White
-                )
-                Text(
-                    text = description,
-                    fontSize = 11.sp,
-                    color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
-                    lineHeight = 14.sp
-                )
-            }
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.Black else Color.White
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = description,
+                fontSize = 11.sp,
+                color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
+                textAlign = TextAlign.Center,
+                lineHeight = 14.sp
+            )
         }
     }
 }

@@ -100,6 +100,9 @@ class MainActivity : ComponentActivity() {
         // Initialize BabyLockManager for parental controls
         BabyLockManager.init(this)
 
+        // Initialize UI Preferences (channel view size, etc.)
+        com.example.androidtviptvapp.data.UIPreferencesManager.init(this)
+
         // Load public config first (for branding on login screen)
         TvRepository.loadData()
 
