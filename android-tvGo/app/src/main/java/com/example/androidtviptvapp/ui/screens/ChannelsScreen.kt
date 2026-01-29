@@ -504,7 +504,7 @@ fun ChannelsScreen(
                             TvLazyColumn(
                                 state = listState,
                                 contentPadding = PaddingValues(bottom = 24.dp),
-                                verticalArrangement = Arrangement.spacedBy(0.dp),  // No spacing for fastest scroll
+                                verticalArrangement = Arrangement.spacedBy(3.dp),
                                 // Pivot offsets - focused item stays fixed, content scrolls (carousel mode)
                                 pivotOffsets = PivotOffsets(
                                     parentFraction = 0.4f,
@@ -589,14 +589,13 @@ fun ChannelsScreen(
                         .fillMaxSize()
                         .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
                 ) {
-                    // Video preview - proportional height (52% of available space)
+                    // Video preview with channel info overlay
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.52f)
                             .clip(RoundedCornerShape(12.dp))
                     ) {
-                        // Use local variable to avoid race conditions with mutable state
                         val channelToPreview = previewChannel
                         if (channelToPreview != null) {
                             ChannelPreview(
@@ -618,62 +617,43 @@ fun ChannelsScreen(
                                 )
                             }
                         }
+
+                        // Channel name overlay removed - shown below preview instead
                     }
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    // Channel name below preview
+                    if (infoChannel != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = infoChannel.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
+                            maxLines = 1
+                        )
+                        if (infoChannel.description.isNotBlank()) {
+                            Text(
+                                text = infoChannel.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.5f),
+                                maxLines = 1
+                            )
+                        }
+                    }
 
-                    // Channel Info & Schedule - remaining space
-                    Column(
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Program Schedule - in a rounded card frame
+                    Box(
                         modifier = Modifier
                             .weight(0.48f)
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF2A2A2A))
                     ) {
                         if (infoChannel != null) {
-                            // Channel Name - more prominent
-                            Text(
-                                text = infoChannel.name,
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.White,
-                                maxLines = 1
-                            )
-                            
-                            // Channel Description
-                            if (infoChannel.description.isNotBlank()) {
-                                Text(
-                                    text = infoChannel.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.5f),
-                                    maxLines = 1
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            // Program Schedule Header with divider effect
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Program Schedule",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = Color(0xFF60A5FA)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(1.dp)
-                                        .background(Color(0xFF60A5FA).copy(alpha = 0.3f))
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Scrollable Program List
                             if (isLoadingSchedule) {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -683,7 +663,7 @@ fun ChannelsScreen(
                                 }
                             } else if (schedulePrograms.isEmpty()) {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -693,17 +673,16 @@ fun ChannelsScreen(
                                     )
                                 }
                             } else {
-                                // Scrollable list of programs
                                 TvLazyColumn(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f),
-                                    contentPadding = PaddingValues(bottom = 24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        .fillMaxSize()
+                                        .padding(vertical = 4.dp),
+                                    contentPadding = PaddingValues(bottom = 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(0.dp)
                                 ) {
                                     itemsIndexed(
                                         items = schedulePrograms,
-                                        key = { index, item -> "${index}_${item.id ?: item.start ?: item.hashCode()}" }  // Include index to guarantee uniqueness
+                                        key = { index, item -> "${index}_${item.id ?: item.start ?: item.hashCode()}" }
                                     ) { index, program ->
                                         ProgramScheduleItem(
                                             time = formatProgramTime(program.start),
@@ -715,7 +694,6 @@ fun ChannelsScreen(
                                 }
                             }
                         } else {
-                            // No channel selected state
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -743,88 +721,87 @@ private fun ProgramScheduleItem(
     duration: String,
     isLive: Boolean = false
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    
     androidx.tv.material3.Surface(
-        onClick = { /* No action needed */ },
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { isFocused = it.isFocused },
+        onClick = { /* No action */ },
+        modifier = Modifier.fillMaxWidth(),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
             shape = RoundedCornerShape(8.dp)
         ),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,
-            focusedContainerColor = Color(0xFF3B82F6).copy(alpha = 0.2f)
-        ),
-        border = androidx.tv.material3.ClickableSurfaceDefaults.border(
-            focusedBorder = androidx.tv.material3.Border(
-                border = BorderStroke(2.dp, Color(0xFF3B82F6)),
-                shape = RoundedCornerShape(8.dp)
-            )
+            focusedContainerColor = Color(0xFF3A3A3A)
         ),
         scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(
-            focusedScale = 1.02f
+            focusedScale = 1.0f
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Time badge
-            Box(
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
                 modifier = Modifier
-                    .background(
-                        if (isLive) Color(0xFFE0E0E0) else Color.Transparent,
-                        RoundedCornerShape(4.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = if (isLive) Color(0xFFE0E0E0) else Color(0xFF4B5563),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = time,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isLive) Color.Black else Color(0xFF9CA3AF)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            // Title and duration
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
-                    maxLines = 1
-                )
-                Text(
-                    text = duration,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF9CA3AF)
-                )
-            }
-            
-            // LIVE badge
-            if (isLive) {
+                // Time badge
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFFDC2626), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .widthIn(min = 85.dp)
+                        .then(
+                            if (isLive) Modifier
+                                .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                            else Modifier
+                        ),
+                    contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        text = "LIVE",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White
+                        text = time,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isLive) Color.White else Color(0xFF9CA3AF)
                     )
                 }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Title and duration
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = duration,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF9CA3AF)
+                    )
+                }
+
+                // LIVE badge
+                if (isLive) {
+                    Box(
+                        modifier = Modifier
+                            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "LIVE",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White
+                        )
+                    }
+                }
             }
+
+            // Divider line
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(0.5.dp)
+                    .background(Color(0xFF3A3A3A))
+            )
         }
     }
 }
@@ -957,7 +934,7 @@ fun ChannelPreview(
     // Using 95% width to avoid covering channel names underneath
     Box(
         modifier = Modifier
-            .fillMaxWidth(0.95f)
+            .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .background(Color.Black, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))

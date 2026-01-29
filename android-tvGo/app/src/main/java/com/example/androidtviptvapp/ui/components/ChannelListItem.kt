@@ -14,20 +14,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.ListItem
-import androidx.tv.material3.ListItemDefaults
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
 
-/**
- * ChannelListItem - Compact design for faster scrolling.
- * Smaller height = more items visible = faster perceived scrolling.
- */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun ChannelListItem(
@@ -37,7 +38,6 @@ fun ChannelListItem(
 ) {
     val context = LocalContext.current
 
-    // OPTIMIZED image request - aggressive caching, no animations
     val imageRequest = remember(channel.id) {
         if (channel.logo.isNotBlank() && channel.logo.startsWith("http")) {
             ImageRequest.Builder(context)
@@ -46,47 +46,46 @@ fun ChannelListItem(
                 .diskCacheKey(channel.logo)
                 .crossfade(false)
                 .allowHardware(true)
-                .size(64, 64)  // Smaller size for compact items
+                .size(80, 80)
                 .build()
         } else null
     }
 
-    // Compact custom item using Surface for focus handling
     androidx.tv.material3.Surface(
         onClick = { onClick(channel) },
         modifier = modifier
             .fillMaxWidth()
-            .height(62.dp),  // 40% larger (44dp * 1.4 = ~62dp)
+            .height(56.dp),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
-            shape = RoundedCornerShape(6.dp)
+            shape = RoundedCornerShape(12.dp)
         ),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
-            containerColor = Color.Transparent,
-            focusedContainerColor = Color(0xFF2A2A2A)
+            containerColor = Color(0xFF2A2A2A),
+            focusedContainerColor = Color(0xFF3A3A3A)
         ),
         scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(
-            focusedScale = 1.0f  // No zoom for speed
+            focusedScale = 1.0f
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo - 40% larger
+            // Logo
             Box(
                 modifier = Modifier
-                    .size(45.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White),
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF3A3A3A)),
                 contentAlignment = Alignment.Center
             ) {
                 if (imageRequest != null) {
                     SubcomposeAsyncImage(
                         model = imageRequest,
                         contentDescription = null,
-                        modifier = Modifier.size(38.dp),
+                        modifier = Modifier.size(32.dp),
                         contentScale = ContentScale.Fit,
                         loading = {
                             Text(
@@ -112,14 +111,39 @@ fun ChannelListItem(
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // Channel name - larger text
-            Text(
-                text = channel.displayName,
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                maxLines = 1
+            // Name + description
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = channel.displayName,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (channel.description.isNotBlank()) {
+                    Text(
+                        text = channel.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF9CA3AF),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Bookmark icon
+            Icon(
+                imageVector = if (channel.isFavorite) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = if (channel.isFavorite) Color.White else Color(0xFF6B7280)
             )
         }
     }
