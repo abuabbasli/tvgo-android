@@ -4,31 +4,28 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LiveTv
+
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.PhotoLibrary
+
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.LiveTv
+
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Search
+
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.SportsEsports
-import androidx.compose.material.icons.outlined.PhotoLibrary
-import androidx.compose.material.icons.outlined.Favorite
+
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import com.example.androidtviptvapp.R
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.unit.Dp
+
 import androidx.tv.material3.*
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import androidx.compose.ui.platform.LocalContext
+
 import com.example.androidtviptvapp.data.TvRepository
 
 // Dark sidebar background color

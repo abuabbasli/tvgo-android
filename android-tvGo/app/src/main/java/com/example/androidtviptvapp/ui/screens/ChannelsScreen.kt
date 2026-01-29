@@ -9,8 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
-import com.example.androidtviptvapp.data.PlaybackManager
-import com.example.androidtviptvapp.player.PlayerView as TvPlayerView
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
@@ -32,8 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.animation.core.tween
+
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.layout.ContentScale
@@ -55,7 +53,10 @@ import com.example.androidtviptvapp.ui.components.CategoryFilter
 import com.example.androidtviptvapp.ui.components.ChannelCard
 import com.example.androidtviptvapp.ui.components.ChannelListItem
 import com.example.androidtviptvapp.ui.components.ViewMode
-import com.example.androidtviptvapp.ui.screens.BabyLockManager
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Icon
 
 @OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
@@ -834,12 +835,10 @@ fun ChannelsScreen(
                             val repeatCount = event.nativeKeyEvent.repeatCount
                             when (event.key) {
                                 Key.DirectionUp -> {
-                                    if (fullscreenShowControls) false
-                                    else { switchChannelWithRepeat(1, repeatCount); true }
+                                    switchChannelWithRepeat(1, repeatCount); true
                                 }
                                 Key.DirectionDown -> {
-                                    if (fullscreenShowControls) false
-                                    else { switchChannelWithRepeat(-1, repeatCount); true }
+                                    switchChannelWithRepeat(-1, repeatCount); true
                                 }
                                 Key.DirectionCenter, Key.Enter -> {
                                     if (!fullscreenShowControls) {
@@ -993,6 +992,24 @@ fun ChannelsScreen(
                         )
                     }
                 }
+
+                // Player controls (bottom) - play/pause, rewind, forward, prev/next
+                AnimatedVisibility(
+                    visible = fullscreenShowControls,
+                    enter = fadeIn() + slideInVertically { it },
+                    exit = fadeOut() + slideOutVertically { it },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    FullscreenPlayerControlsBar(
+                        isPlaying = playerState.isPlaying,
+                        onPlayPause = { sharedPlayerManager.togglePlayPause() },
+                        onPrev = { switchChannelWithRepeat(-1, 0) },
+                        onNext = { switchChannelWithRepeat(1, 0) },
+                        onBackward = { sharedPlayerManager.seekRelative(-10_000) },
+                        onForward = { sharedPlayerManager.seekRelative(10_000) },
+                        modifier = Modifier.padding(24.dp)
+                    )
+                }
             }
         }
     }  // End Box
@@ -1054,6 +1071,129 @@ private fun FullscreenChannelInfoOverlay(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Player controls bar for fullscreen mode
+ */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun FullscreenPlayerControlsBar(
+    isPlaying: Boolean,
+    onPlayPause: () -> Unit,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    onBackward: () -> Unit,
+    onForward: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // LIVE indicator
+        Row(
+            modifier = Modifier.padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(Color.Red, CircleShape)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "LIVE",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Control buttons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Previous channel
+            FullscreenControlButton(
+                icon = Icons.Filled.SkipPrevious,
+                onClick = onPrev,
+                contentDescription = "Previous"
+            )
+
+            // Rewind 10s
+            FullscreenControlButton(
+                icon = Icons.Filled.FastRewind,
+                onClick = onBackward,
+                contentDescription = "Rewind"
+            )
+
+            // Play/Pause (main button)
+            FullscreenControlButton(
+                icon = if (isPlaying) Icons.Filled.Pause
+                       else Icons.Filled.PlayArrow,
+                onClick = onPlayPause,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                isMain = true
+            )
+
+            // Forward 10s
+            FullscreenControlButton(
+                icon = Icons.Filled.FastForward,
+                onClick = onForward,
+                contentDescription = "Forward"
+            )
+
+            // Next channel
+            FullscreenControlButton(
+                icon = Icons.Filled.SkipNext,
+                onClick = onNext,
+                contentDescription = "Next"
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun FullscreenControlButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    contentDescription: String,
+    isMain: Boolean = false
+) {
+    val size = if (isMain) 64.dp else 48.dp
+    val iconSize = if (isMain) 36.dp else 24.dp
+
+    androidx.tv.material3.Surface(
+        onClick = onClick,
+        modifier = Modifier.size(size),
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(shape = CircleShape),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = if (isMain) Color.White.copy(alpha = 0.2f) else Color.Transparent,
+            focusedContainerColor = Color.White.copy(alpha = 0.3f)
+        ),
+        border = androidx.tv.material3.ClickableSurfaceDefaults.border(
+            focusedBorder = androidx.tv.material3.Border(
+                border = BorderStroke(2.dp, Color.White),
+                shape = CircleShape
+            )
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1.1f)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = Color.White,
+                modifier = Modifier.size(iconSize)
+            )
         }
     }
 }

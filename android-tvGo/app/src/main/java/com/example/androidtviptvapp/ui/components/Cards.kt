@@ -14,13 +14,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
+
 import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
+
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.example.androidtviptvapp.data.Channel
