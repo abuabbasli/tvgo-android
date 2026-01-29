@@ -150,9 +150,9 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 80.dp, vertical = 50.dp)
+                .padding(horizontal = 80.dp, vertical = 32.dp)
         ) {
-            // Profile Mode Section
+            // ── Profile Mode Section ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -161,58 +161,49 @@ fun SettingsScreen(
                     imageVector = Icons.Default.Shield,
                     contentDescription = "Profile Mode",
                     tint = Color.White,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(22.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = "Profile Mode",
-                    fontSize = 26.sp,
+                    fontSize = 20.sp,
                     color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Mode Cards Row - Smaller cards centered
+            // Mode Cards Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
             ) {
-                // Parent Mode Card
                 ProfileModeCard(
                     icon = Icons.Default.Person,
                     title = "Parent Mode",
                     description = "Full access to all content and settings",
                     isSelected = !isBabyModeActive,
-                    modifier = Modifier.width(320.dp),
+                    modifier = Modifier.weight(1f),
                     onClick = {
                         if (isBabyModeActive) {
-                            // Switching to Parent Mode - need PIN
-                            android.util.Log.d("SettingsScreen", "Requesting to switch to Parent Mode")
                             babyLockAction = BabyLockAction.Deactivate
                             showBabyLockDialog = true
-                        } else {
-                            android.util.Log.d("SettingsScreen", "Already in Parent Mode")
                         }
                     },
                     onLongClick = {
-                        // Emergency reset - force deactivate baby mode
-                        android.util.Log.w("SettingsScreen", "Emergency baby mode reset triggered")
                         BabyLockManager.deactivateBabyMode()
                     }
                 )
 
-                // Child Mode Card
                 ProfileModeCard(
                     icon = Icons.Default.ChildCare,
                     title = "Child Mode",
                     description = "Kid-safe content and limited access",
                     isSelected = isBabyModeActive,
-                    modifier = Modifier.width(320.dp),
+                    modifier = Modifier.weight(1f),
                     onClick = {
                         if (!isBabyModeActive) {
-                            // Switching to Child Mode - need PIN
                             babyLockAction = BabyLockAction.Activate
                             showBabyLockDialog = true
                         }
@@ -220,63 +211,113 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Info Box
-            Box(
+            // Info Box - compact
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF2A2A2A))
-                    .border(1.dp, Color(0xFF3A3A3A), RoundedCornerShape(12.dp))
-                    .padding(20.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF232323))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = Color(0xFF60A5FA),
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column {
-                        Text(
-                            text = "Parent Mode provides unrestricted access to all channels, movies, and games.",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Child Mode filters content to show only age-appropriate material.",
-                            color = Color(0xFF9CA3AF),
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = Color(0xFF60A5FA),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Parent Mode: full access.  Child Mode: age-appropriate content only.",
+                    color = Color(0xFF9CA3AF),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // ── Channel View Size Section ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = "Channel View Size",
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Channel View Size",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Size option cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+            ) {
+                val currentSize = com.example.androidtviptvapp.data.UIPreferencesManager.channelViewSize
+
+                ViewSizeCard(
+                    icon = Icons.Default.ZoomOut,
+                    title = "Small",
+                    description = "Compact · More channels",
+                    isSelected = currentSize == com.example.androidtviptvapp.data.ChannelViewSize.SMALL,
+                    onClick = { com.example.androidtviptvapp.data.UIPreferencesManager.setViewSize(com.example.androidtviptvapp.data.ChannelViewSize.SMALL) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                ViewSizeCard(
+                    icon = Icons.Default.Tv,
+                    title = "Medium",
+                    description = "Default · Balanced",
+                    isSelected = currentSize == com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM,
+                    onClick = { com.example.androidtviptvapp.data.UIPreferencesManager.setViewSize(com.example.androidtviptvapp.data.ChannelViewSize.MEDIUM) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                ViewSizeCard(
+                    icon = Icons.Default.ZoomIn,
+                    title = "Large",
+                    description = "Larger · Fewer channels",
+                    isSelected = currentSize == com.example.androidtviptvapp.data.ChannelViewSize.LARGE,
+                    onClick = { com.example.androidtviptvapp.data.UIPreferencesManager.setViewSize(com.example.androidtviptvapp.data.ChannelViewSize.LARGE) },
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Logout Button at the bottom
+            // ── Logout Button ── prominent, full width
             Surface(
                 onClick = onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(56.dp),
                 shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
                 colors = ClickableSurfaceDefaults.colors(
-                    containerColor = Color(0xFF2A2A2A),
-                    focusedContainerColor = Color(0xFF3A3A3A)
+                    containerColor = Color(0xFF7F1D1D),
+                    focusedContainerColor = Color(0xFFDC2626)
                 ),
                 border = ClickableSurfaceDefaults.border(
                     focusedBorder = Border(
-                        border = androidx.compose.foundation.BorderStroke(2.dp, Color.White)
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFEF4444))
+                    ),
+                    border = Border(
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF991B1B))
                     )
-                )
+                ),
+                scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)
             ) {
                 Row(
                     modifier = Modifier
@@ -288,15 +329,15 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.Logout,
                         contentDescription = "Logout",
-                        tint = Color(0xFFEF4444),
+                        tint = Color.White,
                         modifier = Modifier.size(22.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = "Log Out",
                         color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -342,8 +383,8 @@ private fun ProfileModeCard(
     Surface(
         onClick = onClick,
         onLongClick = onLongClick,
-        modifier = modifier.height(180.dp),
-        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(14.dp)),
+        modifier = modifier.height(120.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) Color(0xFFE0E0E0) else Color(0xFF2A2A2A),
             focusedContainerColor = if (isSelected) Color(0xFFF0F0F0) else Color(0xFF3A3A3A)
@@ -351,24 +392,23 @@ private fun ProfileModeCard(
         border = ClickableSurfaceDefaults.border(
             focusedBorder = Border(
                 border = androidx.compose.foundation.BorderStroke(
-                    3.dp,
+                    2.dp,
                     if (isSelected) Color.White else Color(0xFF60A5FA)
                 )
             )
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon in circle
             Box(
                 modifier = Modifier
-                    .size(70.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(if (isSelected) Color(0xFFB0B0B0) else Color(0xFF3A3A3A)),
                 contentAlignment = Alignment.Center
@@ -377,28 +417,89 @@ private fun ProfileModeCard(
                     imageVector = icon,
                     contentDescription = title,
                     tint = if (isSelected) Color.Black else Color(0xFF9CA3AF),
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color.Black else Color.White
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected) Color.Black else Color.White
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
+                    lineHeight = 15.sp
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun ViewSizeCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(90.dp),
+        shape = ClickableSurfaceDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (isSelected) Color(0xFFE0E0E0) else Color(0xFF2A2A2A),
+            focusedContainerColor = if (isSelected) Color(0xFFF0F0F0) else Color(0xFF3A3A3A)
+        ),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(
+                border = androidx.compose.foundation.BorderStroke(
+                    2.dp,
+                    if (isSelected) Color.White else Color(0xFF60A5FA)
+                )
+            )
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = if (isSelected) Color.Black else Color(0xFF9CA3AF),
+                modifier = Modifier.size(24.dp)
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            Text(
-                text = description,
-                fontSize = 12.sp,
-                color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected) Color.Black else Color.White
+                )
+                Text(
+                    text = description,
+                    fontSize = 11.sp,
+                    color = if (isSelected) Color(0xFF666666) else Color(0xFF9CA3AF),
+                    lineHeight = 14.sp
+                )
+            }
         }
     }
 }
