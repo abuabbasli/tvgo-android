@@ -788,7 +788,7 @@ private fun ProgramScheduleItem(
     androidx.tv.material3.Surface(
         onClick = { /* No action needed */ },
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth(0.95f),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(
             shape = RoundedCornerShape(6.dp)
         ),
@@ -864,7 +864,6 @@ private fun ProgramScheduleItem(
                         color = Color(0xFFE0E0E0)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
             }
         }
     }
