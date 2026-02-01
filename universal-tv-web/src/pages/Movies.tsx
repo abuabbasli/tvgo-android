@@ -300,8 +300,8 @@ export default function MoviesPage({ isFocused = false }: MoviesPageProps) {
             const rowElement = rowsRef.current.querySelector(`[data-row-index="${focusedRowIndex}"]`);
             if (rowElement) {
                 rowElement.scrollIntoView({
-                    behavior: getSmartScrollBehavior(),
-                    block: 'center',
+                    behavior: 'auto',
+                    block: 'nearest',
                 });
             }
         }

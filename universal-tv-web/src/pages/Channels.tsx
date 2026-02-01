@@ -441,8 +441,8 @@ export default function ChannelsPage({ viewMode, isFocused = false }: ChannelsPa
             const channelElements = channelListRef.current.querySelectorAll('[data-channel-item]');
             if (channelElements[focusedIndex]) {
                 channelElements[focusedIndex].scrollIntoView({
-                    behavior: getSmartScrollBehavior(),
-                    block: 'center' // Center the focused item
+                    behavior: 'auto',
+                    block: 'nearest',
                 });
             }
         }
