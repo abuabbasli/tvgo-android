@@ -172,44 +172,15 @@ body {
 }
 
 /* ============================================
-   Premium Scrollbar Styling
+   Hide All Scrollbars (TV app - no mouse)
    ============================================ */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Slim scrollbar variant for channels/movies */
-.slim-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.slim-scroll::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-}
-
-.slim-scroll::-webkit-scrollbar-thumb {
-  background: rgba(225, 227, 224, 0.3);
-  border-radius: 10px;
-}
-
-.slim-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(225, 227, 224, 0.5);
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Tizen */
 }
 
 /* ============================================

@@ -592,8 +592,7 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
         // Content rows navigation
         else if (focusArea === 'rows') {
             const currentRow = rows[focusedRowIndex];
-            const itemCount = currentRow ? currentRow.items.length + 1 : 0; // +1 for "See All" button
-            const isOnSeeAll = focusedItemIndex === currentRow?.items.length; // Last position is See All
+            const itemCount = currentRow ? currentRow.items.length : 0;
 
             switch (keyCode) {
                 // Left Arrow
@@ -631,7 +630,7 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
                         setFocusArea('hero');
                         setHeroFocusedButton('play');
                         // Scroll hero into view
-                        heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        heroRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
                     }
                     break;
 
@@ -652,20 +651,11 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
                 case 13:
                     e.preventDefault();
                     if (currentRow) {
-                        if (isOnSeeAll) {
-                            // Trigger See All navigation
-                            if (currentRow.type === 'channel' && onNavigateToChannels) {
-                                onNavigateToChannels();
-                            } else if (currentRow.type === 'movie' && onNavigateToMovies) {
-                                onNavigateToMovies();
-                            }
+                        const item = currentRow.items[focusedItemIndex];
+                        if (currentRow.type === 'channel') {
+                            handleChannelClick(item as Channel);
                         } else {
-                            const item = currentRow.items[focusedItemIndex];
-                            if (currentRow.type === 'channel') {
-                                handleChannelClick(item as Channel);
-                            } else {
-                                handleMovieClick(item as Movie);
-                            }
+                            handleMovieClick(item as Movie);
                         }
                     }
                     break;
@@ -684,8 +674,8 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
             const rowElement = rowsContainerRef.current.querySelector(`[data-row-index="${focusedRowIndex}"]`);
             if (rowElement) {
                 rowElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
+                    behavior: 'auto',
+                    block: 'nearest',
                 });
             }
         }
@@ -756,15 +746,11 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
     // Render row with focus tracking
     const renderRow = (row: RowData, rowIndex: number) => {
         const isRowFocused = isFocused && focusArea === 'rows' && focusedRowIndex === rowIndex;
-        const isSeeAllFocused = isRowFocused && focusedItemIndex === row.items.length;
-
         if (row.type === 'channel') {
             return (
                 <ContentRow
                     key={row.title}
                     title={row.title}
-                    onSeeAll={onNavigateToChannels}
-                    isSeeAllFocused={isSeeAllFocused}
                 >
                     {row.items.map((channel, itemIndex) => (
                         <HomeChannelCard
@@ -781,8 +767,6 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
                 <ContentRow
                     key={row.title}
                     title={row.title}
-                    onSeeAll={onNavigateToMovies}
-                    isSeeAllFocused={isSeeAllFocused}
                 >
                     {row.items.map((movie, itemIndex) => (
                         <HomeMovieCard
@@ -830,7 +814,7 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
 
                 {/* Fallback: All Movies if no categories */}
                 {rows.length === 0 && movies.length > 0 && (
-                    <ContentRow title="Movies" onSeeAll={onNavigateToMovies}>
+                    <ContentRow title="Movies">
                         {movies.slice(0, 8).map((movie, itemIndex) => (
                             <HomeMovieCard
                                 key={movie.id}
@@ -844,7 +828,7 @@ export default function HomePage({ onNavigateToChannels, onNavigateToMovies, isF
 
                 {/* Fallback: All Channels if no categories */}
                 {rows.length === 0 && channels.length > 0 && movies.length === 0 && (
-                    <ContentRow title="Channels" onSeeAll={onNavigateToChannels}>
+                    <ContentRow title="Channels">
                         {channels.slice(0, 8).map((channel, itemIndex) => (
                             <HomeChannelCard
                                 key={channel.id}
